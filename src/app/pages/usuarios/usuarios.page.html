@@ -1,0 +1,71 @@
+<ion-content class="ion-padding">
+  <main class="users-shell">
+    <header class="users-header">
+      <div>
+        <p class="eyebrow">Administración</p>
+        <h1>Usuarios</h1>
+        <p class="welcome">Crea cuentas para el personal y controla quién puede ingresar.</p>
+      </div>
+      <div class="header-actions">
+        <ion-button fill="outline" routerLink="/dashboard-admin">Volver</ion-button>
+        <ion-button type="button" (click)="alternarFormulario()">
+          {{ formularioVisible ? 'Cancelar' : 'Agregar usuario' }}
+        </ion-button>
+      </div>
+    </header>
+
+    <section class="summary-grid" aria-label="Resumen de usuarios">
+      <article><span>Total</span><strong>{{ usuarios.length }}</strong></article>
+      <article><span>Activos</span><strong>{{ usuariosActivos }}</strong></article>
+      <article><span>Inactivos</span><strong>{{ usuarios.length - usuariosActivos }}</strong></article>
+    </section>
+
+    <section class="user-form" *ngIf="formularioVisible" aria-label="Registrar usuario">
+      <ion-item lines="none">
+        <ion-label position="stacked">Nombre</ion-label>
+        <ion-input [(ngModel)]="nuevoUsuario.nombre" autocomplete="name"></ion-input>
+      </ion-item>
+      <ion-item lines="none">
+        <ion-label position="stacked">Correo</ion-label>
+        <ion-input [(ngModel)]="nuevoUsuario.correo" type="email" inputmode="email" autocomplete="email"></ion-input>
+      </ion-item>
+      <ion-item lines="none">
+        <ion-label position="stacked">Contraseña</ion-label>
+        <ion-input [(ngModel)]="nuevoUsuario.password" type="password" autocomplete="new-password"></ion-input>
+      </ion-item>
+      <ion-item lines="none">
+        <ion-label position="stacked">Rol</ion-label>
+        <ion-select [(ngModel)]="nuevoUsuario.rol" interface="popover">
+          <ion-select-option value="cajera">Cajero/a</ion-select-option>
+          <ion-select-option value="gerente">Gerente</ion-select-option>
+          <ion-select-option value="administrador">Administrador</ion-select-option>
+        </ion-select>
+      </ion-item>
+      <ion-button type="button" (click)="guardarUsuario()">Guardar usuario</ion-button>
+    </section>
+
+    <p class="message" [class.error]="esError" aria-live="polite" *ngIf="mensaje">{{ mensaje }}</p>
+
+    <ion-card>
+      <ion-card-header><ion-card-title>Personal registrado</ion-card-title></ion-card-header>
+      <ion-card-content>
+        <div class="user-list">
+          <article class="user" *ngFor="let usuario of usuarios">
+            <div>
+              <h2>{{ usuario.nombre }}</h2>
+              <p>{{ usuario.correo }} · {{ etiquetaRol(usuario.rol) }}</p>
+            </div>
+            <div class="user-actions">
+              <span class="status" [class.inactive]="!usuario.activo">
+                {{ usuario.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+              <ion-button size="small" [fill]="usuario.activo ? 'outline' : 'solid'" (click)="cambiarEstado(usuario)">
+                {{ usuario.activo ? 'Desactivar' : 'Activar' }}
+              </ion-button>
+            </div>
+          </article>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </main>
+</ion-content>

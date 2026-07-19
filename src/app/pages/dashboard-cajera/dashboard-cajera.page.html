@@ -1,0 +1,76 @@
+<ion-content class="ion-padding">
+  <main class="dashboard-shell">
+    <header class="dashboard-header">
+      <div>
+        <p class="eyebrow">Punto de venta</p>
+        <h1>Dashboard Cajera</h1>
+        <p class="welcome">Consulta el estado de tu turno y realiza las operaciones del día.</p>
+      </div>
+
+      <ion-button fill="outline" color="tertiary" (click)="cerrarSesion()">
+        Cerrar sesión
+      </ion-button>
+    </header>
+
+    <nav class="quick-actions" aria-label="Accesos rápidos de cajera">
+      <ion-button routerLink="/caja">Ir a caja</ion-button>
+      <ion-button routerLink="/clientes">Clientes</ion-button>
+      <ion-button routerLink="/fiados">Fiados</ion-button>
+    </nav>
+
+    <p *ngIf="cargando">Cargando información de tu turno...</p>
+    <p *ngIf="error" role="alert">{{ error }}</p>
+
+    <section class="cards" aria-label="Resumen del turno">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Ventas del día</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>{{ ventasDia }}</ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Ventas realizadas</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>{{ numeroVentas }}</ion-card-content>
+      </ion-card>
+
+      <ion-card class="cash-card">
+        <ion-card-header>
+          <ion-card-title>Estado de caja</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <span class="status-dot" aria-hidden="true"></span>{{ caja }}
+        </ion-card-content>
+      </ion-card>
+    </section>
+
+    <section class="details-grid" aria-label="Actividad y pendientes">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Últimas ventas</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ul class="activity-list">
+            <li *ngFor="let venta of ultimasVentas">{{ venta }}</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="pending-card">
+        <ion-card-header>
+          <ion-card-title>Pendientes del turno</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ul class="activity-list">
+            <li *ngFor="let pendiente of pendientes">
+              <span>{{ pendiente.mensaje }}</span>
+              <a [routerLink]="pendiente.enlace">{{ pendiente.accion }}</a>
+            </li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+    </section>
+  </main>
+</ion-content>

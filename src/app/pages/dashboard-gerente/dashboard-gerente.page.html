@@ -1,0 +1,89 @@
+<ion-content class="ion-padding">
+  <main class="dashboard-shell">
+    <header class="dashboard-header">
+      <div>
+        <p class="eyebrow">Panel de supervisión</p>
+        <h1>Dashboard Gerente</h1>
+        <p class="welcome">Revisa las ventas, el inventario y las tareas pendientes del negocio.</p>
+      </div>
+
+      <ion-button fill="outline" color="tertiary" (click)="cerrarSesion()">
+        Cerrar sesión
+      </ion-button>
+    </header>
+
+    <nav class="quick-actions" aria-label="Accesos rápidos de gerente">
+      <ion-button routerLink="/inventario">Inventario</ion-button>
+      <ion-button routerLink="/caja">Caja</ion-button>
+      <ion-button routerLink="/fiados">Fiados</ion-button>
+      <ion-button routerLink="/proveedores">Proveedores</ion-button>
+    </nav>
+
+    <p *ngIf="cargando">Cargando información del negocio...</p>
+    <p *ngIf="error" role="alert">{{ error }}</p>
+
+    <section class="cards" aria-label="Resumen de negocio">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Ventas del día</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>{{ ventasDia }}</ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Ventas de la semana</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>{{ ventasSemana }}</ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Productos bajos</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>{{ productosBajos }}</ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Fiados pendientes</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>{{ fiados }}</ion-card-content>
+      </ion-card>
+    </section>
+
+    <section class="details-grid" aria-label="Actividad y alertas">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Últimos movimientos</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>
+          <ul class="activity-list">
+            <li *ngFor="let movimiento of movimientos">{{ movimiento }}</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="alerts-card">
+        <ion-card-header>
+          <ion-card-title>Alertas que requieren atención</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>
+          <ul class="activity-list">
+            <li *ngFor="let alerta of alertas">
+              <span>{{ alerta.mensaje }}</span>
+              <a [routerLink]="alerta.enlace">{{ alerta.accion }}</a>
+            </li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+    </section>
+  </main>
+
+</ion-content>

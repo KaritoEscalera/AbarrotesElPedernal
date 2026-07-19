@@ -1,13 +1,211 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>inventario</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">inventario</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <div class="page-container">
+
+    <section class="page-header">
+
+      <div>
+        <p class="eyebrow">Control de existencias</p>
+        <h1>Inventario</h1>
+        <p class="subtitle">
+          Consulta y actualiza las existencias de los productos.
+        </p>
+      </div>
+
+      <ion-button
+        class="primary-button"
+        (click)="registrarEntrada()"
+      >
+        Registrar entrada
+      </ion-button>
+
+    </section>
+
+    <section class="summary-grid">
+
+      <article class="summary-card">
+        <span>Total de productos</span>
+        <strong>{{ totalProductos }}</strong>
+        <small>Productos registrados</small>
+      </article>
+
+      <article class="summary-card warning-card">
+        <span>Stock bajo</span>
+        <strong>{{ productosBajos }}</strong>
+        <small>Requieren surtido</small>
+      </article>
+
+      <article class="summary-card danger-card">
+        <span>Agotados</span>
+        <strong>{{ productosAgotados }}</strong>
+        <small>Sin existencias</small>
+      </article>
+
+    </section>
+
+    <section class="entry-form" *ngIf="entradaVisible" aria-label="Registrar entrada de inventario">
+      <ion-item lines="none">
+        <ion-label>Producto</ion-label>
+        <ion-select [(ngModel)]="productoEntradaId" interface="popover">
+          <ion-select-option *ngFor="let producto of productos" [value]="producto.id">
+            {{ producto.nombre }}
+          </ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <ion-item lines="none">
+        <ion-label position="stacked">Unidades recibidas</ion-label>
+        <ion-input [(ngModel)]="cantidadEntrada" min="1" type="number"></ion-input>
+      </ion-item>
+
+      <ion-button class="save-entry" type="button" (click)="guardarEntrada()">
+        Guardar entrada
+      </ion-button>
+
+      <p class="entry-message" aria-live="polite" *ngIf="mensajeEntrada">{{ mensajeEntrada }}</p>
+    </section>
+
+    <section class="inventory-card">
+
+      <div class="filters">
+
+        <ion-searchbar
+          [(ngModel)]="busqueda"
+          placeholder="Buscar por nombre, código o categoría"
+          animated="true"
+        >
+        </ion-searchbar>
+
+        <ion-item class="filter-select" lines="none">
+          <ion-label>Estado</ion-label>
+
+          <ion-select
+            [(ngModel)]="filtroEstado"
+            interface="popover"
+          >
+            <ion-select-option value="todos">
+              Todos
+            </ion-select-option>
+
+            <ion-select-option value="disponible">
+              Disponible
+            </ion-select-option>
+
+            <ion-select-option value="bajo">
+              Stock bajo
+            </ion-select-option>
+
+            <ion-select-option value="agotado">
+              Agotado
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+      </div>
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Precio</th>
+              <th>Stock mínimo</th>
+              <th>Existencia</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr *ngFor="let producto of productosFiltrados">
+
+              <td>{{ producto.codigo }}</td>
+
+              <td>
+                <strong>{{ producto.nombre }}</strong>
+              </td>
+
+              <td>{{ producto.categoria }}</td>
+
+              <td>
+                {{ producto.precioVenta | currency:'MXN':'symbol':'1.2-2' }}
+              </td>
+
+              <td>{{ producto.stockMinimo }}</td>
+
+              <td>
+                <span class="stock-number">
+                  {{ producto.stock }}
+                </span>
+              </td>
+
+              <td>
+
+                <span
+                  class="status"
+                  [class.available]="obtenerEstado(producto) === 'disponible'"
+                  [class.low]="obtenerEstado(producto) === 'bajo'"
+                  [class.out]="obtenerEstado(producto) === 'agotado'"
+                >
+
+                  {{
+                    obtenerEstado(producto) === 'disponible'
+                      ? 'Disponible'
+                      : obtenerEstado(producto) === 'bajo'
+                      ? 'Stock bajo'
+                      : 'Agotado'
+                  }}
+
+                </span>
+
+              </td>
+
+              <td>
+
+                <div class="actions">
+
+                  <button
+                    class="stock-button"
+                    type="button"
+                    (click)="disminuirStock(producto)"
+                    [disabled]="producto.stock === 0"
+                  >
+                    −
+                  </button>
+
+                  <button
+                    class="stock-button add"
+                    type="button"
+                    (click)="aumentarStock(producto)"
+                  >
+                    +
+                  </button>
+
+                </div>
+
+              </td>
+
+            </tr>
+
+            <tr *ngIf="productosFiltrados.length === 0">
+              <td colspan="8" class="empty-state">
+                No se encontraron productos con esos filtros.
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </div>
+
 </ion-content>

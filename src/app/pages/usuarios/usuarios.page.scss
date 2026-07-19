@@ -1,0 +1,27 @@
+ion-content { --background: #f5e6d3; }
+.users-shell { width: min(100%, 75rem); margin: 0 auto; }
+.users-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
+.eyebrow { margin: 0 0 .25rem; color: #f57c1f; font-size: .8rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+h1 { margin: 0; color: #4a2c1d; font-size: clamp(1.7rem, 4vw, 2.4rem); }
+.welcome { margin: .5rem 0 0; color: #7a4e2d; }
+.header-actions { display: flex; gap: .5rem; }
+ion-button { --border-radius: .75rem; margin: 0; }
+.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-bottom: 1.25rem; }
+.summary-grid article { padding: 1rem; color: #4a2c1d; background: #fff; border-radius: 1rem; box-shadow: 0 5px 15px rgba(0, 0, 0, .08); }
+.summary-grid span { display: block; color: #7a4e2d; font-size: .85rem; }
+.summary-grid strong { font-size: 1.7rem; }
+.user-form { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: .75rem; align-items: end; margin-bottom: 1rem; padding: 1rem; background: #fffaf5; border: 1px solid #e8e3dc; border-radius: 1rem; }
+.user-form ion-item { --background: #fff; --border-radius: .7rem; --color: #4a2c1d; border: 1px solid #e8e3dc; border-radius: .7rem; }
+.message { margin: 0 0 1rem; padding: .75rem 1rem; color: #216d34; background: #dff3e3; border-radius: .75rem; font-weight: 700; }
+.message.error { color: #a43e27; background: #fde5df; }
+ion-card { margin: 0; border-radius: 1rem; box-shadow: 0 5px 15px rgba(0, 0, 0, .1); }
+ion-card-title { color: #f57c1f; }
+.user-list { display: grid; }
+.user { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0; border-top: 1px solid #e8e3dc; }
+.user h2 { margin: 0; color: #4a2c1d; font-size: 1rem; }
+.user p { margin: .3rem 0 0; color: #7a4e2d; }
+.user-actions { display: flex; align-items: center; gap: .75rem; }
+.status { padding: .2rem .55rem; color: #216d34; background: #dff3e3; border-radius: 999px; font-size: .8rem; font-weight: 700; }
+.status.inactive { color: #7a4e2d; background: #eee2d7; }
+@media (max-width: 800px) { .user-form { grid-template-columns: 1fr 1fr; } .user-form ion-button { width: 100%; } }
+@media (max-width: 575px) { .users-header, .user { align-items: stretch; flex-direction: column; } .header-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; } .summary-grid, .user-form { grid-template-columns: 1fr; } .user-actions { justify-content: space-between; } }

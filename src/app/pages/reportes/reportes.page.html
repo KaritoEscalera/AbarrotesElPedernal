@@ -1,13 +1,537 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>reportes</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">reportes</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <div class="page-container">
+
+    <section class="page-header">
+
+      <div>
+        <p class="eyebrow">
+          Administración
+        </p>
+
+        <h1>Reportes</h1>
+
+        <p class="subtitle">
+          Consulta la información del negocio y genera documentos en PDF.
+        </p>
+      </div>
+
+      <div class="admin-badge">
+        Acceso exclusivo del Administrador
+      </div>
+
+    </section>
+
+    <section class="filters-card">
+
+      <div class="filters-grid">
+
+        <ion-item lines="none">
+
+          <ion-label position="stacked">
+            Tipo de reporte
+          </ion-label>
+
+          <ion-select
+            [(ngModel)]="tipoReporteSeleccionado"
+            interface="popover"
+          >
+
+            <ion-select-option value="ventas">
+              Ventas
+            </ion-select-option>
+
+            <ion-select-option value="inventario">
+              Inventario
+            </ion-select-option>
+
+            <ion-select-option value="fiados">
+              Fiados
+            </ion-select-option>
+
+          </ion-select>
+
+        </ion-item>
+
+        <ion-item lines="none">
+
+          <ion-label position="stacked">
+            Periodo
+          </ion-label>
+
+          <ion-select
+            [(ngModel)]="periodoSeleccionado"
+            interface="popover"
+          >
+
+            <ion-select-option value="diario">
+              Diario
+            </ion-select-option>
+
+            <ion-select-option value="semanal">
+              Semanal
+            </ion-select-option>
+
+            <ion-select-option value="mensual">
+              Mensual
+            </ion-select-option>
+
+            <ion-select-option value="anual">
+              Anual
+            </ion-select-option>
+
+          </ion-select>
+
+        </ion-item>
+
+      </div>
+
+      <ion-button
+        class="pdf-button"
+        (click)="generarPDF()"
+      >
+        Descargar reporte PDF
+      </ion-button>
+
+    </section>
+
+    <!-- RESUMEN DE VENTAS -->
+
+    <section
+      class="summary-grid"
+      *ngIf="tipoReporteSeleccionado === 'ventas'"
+    >
+
+      <article class="summary-card">
+
+        <span>Total vendido</span>
+
+        <strong>
+          {{ totalVentas | currency:'MXN':'symbol':'1.2-2' }}
+        </strong>
+
+        <small>
+          Periodo {{ obtenerNombrePeriodo().toLowerCase() }}
+        </small>
+
+      </article>
+
+      <article class="summary-card">
+
+        <span>Ventas registradas</span>
+
+        <strong>
+          {{ numeroVentas }}
+        </strong>
+
+        <small>Operaciones realizadas</small>
+
+      </article>
+
+      <article class="summary-card">
+
+        <span>Productos vendidos</span>
+
+        <strong>
+          {{ productosVendidos }}
+        </strong>
+
+        <small>Unidades registradas</small>
+
+      </article>
+
+      <article class="summary-card success-card">
+
+        <span>Venta promedio</span>
+
+        <strong>
+          {{ promedioVenta | currency:'MXN':'symbol':'1.2-2' }}
+        </strong>
+
+        <small>Promedio por operación</small>
+
+      </article>
+
+    </section>
+
+    <!-- RESUMEN DE INVENTARIO -->
+
+    <section
+      class="summary-grid inventory-summary"
+      *ngIf="tipoReporteSeleccionado === 'inventario'"
+    >
+
+      <article class="summary-card">
+
+        <span>Productos registrados</span>
+
+        <strong>
+          {{ inventario.length }}
+        </strong>
+
+        <small>Total del catálogo</small>
+
+      </article>
+
+      <article class="summary-card warning-card">
+
+        <span>Stock bajo o agotado</span>
+
+        <strong>
+          {{ productosStockBajo }}
+        </strong>
+
+        <small>Requieren atención</small>
+
+      </article>
+
+      <article class="summary-card success-card">
+
+        <span>Valor estimado</span>
+
+        <strong>
+          {{ valorInventario | currency:'MXN':'symbol':'1.2-2' }}
+        </strong>
+
+        <small>Valor de venta del inventario</small>
+
+      </article>
+
+    </section>
+
+    <!-- RESUMEN DE FIADOS -->
+
+    <section
+      class="summary-grid inventory-summary"
+      *ngIf="tipoReporteSeleccionado === 'fiados'"
+    >
+
+      <article class="summary-card">
+
+        <span>Cuentas registradas</span>
+
+        <strong>
+          {{ fiadosFiltrados.length }}
+        </strong>
+
+        <small>
+          Periodo {{ obtenerNombrePeriodo().toLowerCase() }}
+        </small>
+
+      </article>
+
+      <article class="summary-card success-card">
+
+        <span>Abonos recibidos</span>
+
+        <strong>
+          {{ totalAbonos | currency:'MXN':'symbol':'1.2-2' }}
+        </strong>
+
+        <small>Pagos de clientes</small>
+
+      </article>
+
+      <article class="summary-card warning-card">
+
+        <span>Saldo pendiente</span>
+
+        <strong>
+          {{ saldoFiados | currency:'MXN':'symbol':'1.2-2' }}
+        </strong>
+
+        <small>Deuda por recuperar</small>
+
+      </article>
+
+    </section>
+
+    <!-- TABLA DE VENTAS -->
+
+    <section
+      class="report-card"
+      *ngIf="tipoReporteSeleccionado === 'ventas'"
+    >
+
+      <div class="table-title">
+
+        <div>
+          <h2>
+            Reporte de ventas
+          </h2>
+
+          <p>
+            Periodo {{ obtenerNombrePeriodo().toLowerCase() }}
+          </p>
+        </div>
+
+        <span class="records">
+          {{ ventasFiltradas.length }} registros
+        </span>
+
+      </div>
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Fecha</th>
+              <th>Responsable</th>
+              <th>Método de pago</th>
+              <th>Productos</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr *ngFor="let venta of ventasFiltradas">
+
+              <td>
+                <strong>{{ venta.folio }}</strong>
+              </td>
+
+              <td>
+                {{ venta.fecha | date:'dd/MM/yyyy' }}
+              </td>
+
+              <td>{{ venta.usuario }}</td>
+
+              <td>{{ venta.metodoPago }}</td>
+
+              <td>{{ venta.productos }}</td>
+
+              <td class="money">
+                {{ venta.total | currency:'MXN':'symbol':'1.2-2' }}
+              </td>
+
+            </tr>
+
+            <tr *ngIf="ventasFiltradas.length === 0">
+
+              <td colspan="6" class="empty-state">
+                No existen ventas registradas durante este periodo.
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+    <!-- TABLA DE INVENTARIO -->
+
+    <section
+      class="report-card"
+      *ngIf="tipoReporteSeleccionado === 'inventario'"
+    >
+
+      <div class="table-title">
+
+        <div>
+          <h2>Reporte de inventario</h2>
+
+          <p>
+            Existencias actuales del negocio
+          </p>
+        </div>
+
+        <span class="records">
+          {{ inventario.length }} productos
+        </span>
+
+      </div>
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Stock</th>
+              <th>Stock mínimo</th>
+              <th>Precio</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr *ngFor="let producto of inventario">
+
+              <td>{{ producto.codigo }}</td>
+
+              <td>
+                <strong>{{ producto.producto }}</strong>
+              </td>
+
+              <td>{{ producto.categoria }}</td>
+
+              <td>{{ producto.stock }}</td>
+
+              <td>{{ producto.stockMinimo }}</td>
+
+              <td class="money">
+                {{
+                  producto.precioVenta
+                    | currency:'MXN':'symbol':'1.2-2'
+                }}
+              </td>
+
+              <td>
+
+                <span
+                  class="status"
+                  [class.available]="
+                    producto.stock > producto.stockMinimo
+                  "
+                  [class.low]="
+                    producto.stock > 0 &&
+                    producto.stock <= producto.stockMinimo
+                  "
+                  [class.out]="
+                    producto.stock === 0
+                  "
+                >
+
+                  {{
+                    producto.stock === 0
+                      ? 'Agotado'
+                      : producto.stock <= producto.stockMinimo
+                      ? 'Stock bajo'
+                      : 'Disponible'
+                  }}
+
+                </span>
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+    <!-- TABLA DE FIADOS -->
+
+    <section
+      class="report-card"
+      *ngIf="tipoReporteSeleccionado === 'fiados'"
+    >
+
+      <div class="table-title">
+
+        <div>
+          <h2>Reporte de fiados</h2>
+
+          <p>
+            Periodo {{ obtenerNombrePeriodo().toLowerCase() }}
+          </p>
+        </div>
+
+        <span class="records">
+          {{ fiadosFiltrados.length }} cuentas
+        </span>
+
+      </div>
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Fecha</th>
+              <th>Deuda original</th>
+              <th>Abonos</th>
+              <th>Saldo pendiente</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr *ngFor="let fiado of fiadosFiltrados">
+
+              <td>
+                <strong>{{ fiado.cliente }}</strong>
+              </td>
+
+              <td>
+                {{ fiado.fecha | date:'dd/MM/yyyy' }}
+              </td>
+
+              <td class="money">
+                {{
+                  fiado.deudaOriginal
+                    | currency:'MXN':'symbol':'1.2-2'
+                }}
+              </td>
+
+              <td class="money">
+                {{
+                  fiado.abonos
+                    | currency:'MXN':'symbol':'1.2-2'
+                }}
+              </td>
+
+              <td class="money">
+                {{
+                  fiado.saldoPendiente
+                    | currency:'MXN':'symbol':'1.2-2'
+                }}
+              </td>
+
+              <td>
+                <span
+                  class="status"
+                  [class.available]="
+                    fiado.estado === 'Liquidado'
+                  "
+                  [class.low]="
+                    fiado.estado === 'Pendiente'
+                  "
+                  [class.out]="
+                    fiado.estado === 'Vencido'
+                  "
+                >
+                  {{ fiado.estado }}
+                </span>
+              </td>
+
+            </tr>
+
+            <tr *ngIf="fiadosFiltrados.length === 0">
+
+              <td colspan="6" class="empty-state">
+                No existen cuentas registradas durante este periodo.
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </div>
+
 </ion-content>

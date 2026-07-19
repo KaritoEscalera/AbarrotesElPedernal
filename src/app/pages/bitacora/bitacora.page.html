@@ -1,13 +1,274 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>bitacora</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">bitacora</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <div class="page-container">
+
+    <section class="page-header">
+
+      <div>
+        <p class="eyebrow">Auditoría del sistema</p>
+
+        <h1>Bitácora</h1>
+
+        <p class="subtitle">
+          Consulta las acciones realizadas por los usuarios.
+        </p>
+      </div>
+
+      <div class="header-actions">
+
+        <span class="admin-badge">
+          Solo Administrador
+        </span>
+
+        <ion-button
+          class="primary-button"
+          (click)="exportarBitacora()"
+        >
+          Exportar CSV
+        </ion-button>
+
+      </div>
+
+    </section>
+
+    <section class="summary-grid">
+
+      <article class="summary-card">
+
+        <span>Total de registros</span>
+
+        <strong>
+          {{ totalRegistros }}
+        </strong>
+
+        <small>Acciones almacenadas</small>
+
+      </article>
+
+      <article class="summary-card success-card">
+
+        <span>Acciones exitosas</span>
+
+        <strong>
+          {{ accionesExitosas }}
+        </strong>
+
+        <small>Operaciones completadas</small>
+
+      </article>
+
+      <article class="summary-card danger-card">
+
+        <span>Acciones fallidas</span>
+
+        <strong>
+          {{ accionesFallidas }}
+        </strong>
+
+        <small>Intentos con error</small>
+
+      </article>
+
+      <article class="summary-card warning-card">
+
+        <span>Usuarios activos</span>
+
+        <strong>
+          {{ usuariosActivos }}
+        </strong>
+
+        <small>Usuarios identificados</small>
+
+      </article>
+
+    </section>
+
+    <section class="bitacora-card">
+
+      <div class="filters">
+
+        <ion-searchbar
+          [(ngModel)]="busqueda"
+          placeholder="Buscar usuario, acción, módulo o descripción"
+          animated="true"
+        >
+        </ion-searchbar>
+
+        <ion-item
+          class="filter-select"
+          lines="none"
+        >
+
+          <ion-label>Módulo</ion-label>
+
+          <ion-select
+            [(ngModel)]="filtroModulo"
+            interface="popover"
+          >
+
+            <ion-select-option value="Todos">
+              Todos
+            </ion-select-option>
+
+            <ion-select-option value="Autenticación">
+              Autenticación
+            </ion-select-option>
+
+            <ion-select-option value="Caja">
+              Caja
+            </ion-select-option>
+
+            <ion-select-option value="Inventario">
+              Inventario
+            </ion-select-option>
+
+            <ion-select-option value="Fiados">
+              Fiados
+            </ion-select-option>
+
+            <ion-select-option value="Proveedores">
+              Proveedores
+            </ion-select-option>
+
+          </ion-select>
+
+        </ion-item>
+
+        <ion-item
+          class="filter-select"
+          lines="none"
+        >
+
+          <ion-label>Resultado</ion-label>
+
+          <ion-select
+            [(ngModel)]="filtroResultado"
+            interface="popover"
+          >
+
+            <ion-select-option value="Todos">
+              Todos
+            </ion-select-option>
+
+            <ion-select-option value="Exitoso">
+              Exitoso
+            </ion-select-option>
+
+            <ion-select-option value="Fallido">
+              Fallido
+            </ion-select-option>
+
+          </ion-select>
+
+        </ion-item>
+
+        <ion-button
+          fill="outline"
+          class="clean-button"
+          (click)="limpiarFiltros()"
+        >
+          Limpiar
+        </ion-button>
+
+      </div>
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+
+            <tr>
+              <th>Fecha y hora</th>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Acción</th>
+              <th>Módulo</th>
+              <th>Descripción</th>
+              <th>Resultado</th>
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            <tr
+              *ngFor="let registro of registrosFiltrados"
+            >
+
+              <td class="date-cell">
+
+                <strong>
+                  {{ registro.fecha | date:'dd/MM/yyyy' }}
+                </strong>
+
+                <span>
+                  {{ registro.fecha | date:'HH:mm:ss' }}
+                </span>
+
+              </td>
+
+              <td>
+                <strong>{{ registro.usuario }}</strong>
+              </td>
+
+              <td>
+                {{ registro.rol }}
+              </td>
+
+              <td>
+                {{ registro.accion }}
+              </td>
+
+              <td>
+
+                <span class="module-badge">
+                  {{ registro.modulo }}
+                </span>
+
+              </td>
+
+              <td class="description-cell">
+                {{ registro.descripcion }}
+              </td>
+
+              <td>
+
+                <span
+                  class="status"
+                  [class.success]="
+                    registro.resultado === 'Exitoso'
+                  "
+                  [class.failed]="
+                    registro.resultado === 'Fallido'
+                  "
+                >
+                  {{ registro.resultado }}
+                </span>
+
+              </td>
+
+            </tr>
+
+            <tr *ngIf="registrosFiltrados.length === 0">
+
+              <td
+                colspan="7"
+                class="empty-state"
+              >
+                No se encontraron registros con esos filtros.
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </div>
+
 </ion-content>

@@ -1,0 +1,152 @@
+ion-content {
+  --background: #f5e6d3;
+}
+
+.dashboard-shell {
+  width: min(100%, 75rem);
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 .25rem;
+  color: #f57c1f;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: #4a2c1d;
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+}
+
+.welcome {
+  margin: .5rem 0 0;
+  color: #7a4e2d;
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: .5rem;
+  margin-bottom: 1.25rem;
+}
+
+.quick-actions ion-button {
+  margin: 0;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: clamp(.75rem, 2vw, 1.25rem);
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: clamp(.75rem, 2vw, 1.25rem);
+  margin-top: clamp(.75rem, 2vw, 1.25rem);
+}
+
+ion-card {
+  margin: 0;
+  border-radius: 1rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, .1);
+}
+
+ion-card-title {
+  color: #f57c1f;
+  font-size: clamp(1rem, 2vw, 1.15rem);
+}
+
+.cards ion-card-content {
+  color: #4a2c1d;
+  font-size: clamp(1.5rem, 4vw, 1.9rem);
+  font-weight: 700;
+}
+
+.status-dot {
+  display: inline-block;
+  width: .65rem;
+  height: .65rem;
+  margin-right: .45rem;
+  border-radius: 50%;
+  background: #328a48;
+}
+
+.activity-list {
+  display: grid;
+  gap: .75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #7a4e2d;
+}
+
+.activity-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding-bottom: .75rem;
+  border-bottom: 1px solid #e8e3dc;
+}
+
+.activity-list li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.pending-card .activity-list li::before {
+  content: '•';
+  color: #f57c1f;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.pending-card .activity-list span {
+  flex: 1;
+}
+
+.activity-list a {
+  flex: 0 0 auto;
+  color: #b85c17;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.activity-list a:focus-visible,
+.activity-list a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 575px) {
+  .dashboard-header {
+    flex-direction: column;
+  }
+
+  .dashboard-header > ion-button {
+    width: 100%;
+    margin: 0;
+  }
+
+  .activity-list li {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .activity-list a {
+    margin-left: 1rem;
+  }
+}

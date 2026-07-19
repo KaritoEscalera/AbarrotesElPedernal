@@ -1,13 +1,46 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>respaldos</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content>
+  <main class="page-container">
+    <header class="page-header">
+      <div><p class="eyebrow">Protección de información</p><h1>Respaldos</h1><p class="subtitle">Crea copias verificables y restaura únicamente la información que necesites.</p></div>
+      <div class="header-actions"><span class="admin-badge">Solo Administrador</span><ion-button class="primary-button" [disabled]="creandoRespaldo" (click)="crearRespaldo()">{{ creandoRespaldo ? 'Creando…' : 'Crear respaldo real' }}</ion-button></div>
+    </header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">respaldos</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <div class="message" [class.success-message]="tipoMensaje === 'exito'" [class.error-message]="tipoMensaje === 'error'" *ngIf="mensaje" aria-live="polite">{{ mensaje }}</div>
+
+    <section class="summary-grid">
+      <article class="summary-card"><span>Respaldos conservados</span><strong>{{ respaldos.length }}</strong><small>Máximo 20 copias locales</small></article>
+      <article class="summary-card success-card"><span>Completados</span><strong>{{ respaldosExitosos }}</strong><small>Integridad comprobada</small></article>
+      <article class="summary-card danger-card"><span>Fallidos</span><strong>{{ respaldosFallidos }}</strong><small>Copias con errores</small></article>
+      <article class="summary-card warning-card"><span>Último respaldo</span><strong class="last-backup">{{ ultimoRespaldo ? (ultimoRespaldo.fecha | date:'dd/MM/yyyy') : 'Sin respaldo' }}</strong><small>{{ ultimoRespaldo ? (ultimoRespaldo.fecha | date:'HH:mm') : 'No disponible' }}</small></article>
+    </section>
+
+    <aside class="security-notice"><strong>Archivo sensible</strong><p>El respaldo puede incluir cuentas y contraseñas del prototipo. No lo envíes por medios inseguros. Los respaldos automáticos reales requieren un servidor; el navegador no puede ejecutarlos cuando está cerrado.</p></aside>
+
+    <section class="restore-card">
+      <div class="restore-info"><p class="eyebrow">Restauración segura</p><h2>Seleccionar archivo JSON</h2><p>Se comprobarán versión, estructura, tamaño e integridad antes de permitir cambios.</p></div>
+      <div class="restore-actions"><label class="file-button" for="archivoRespaldo">Seleccionar archivo</label><input id="archivoRespaldo" type="file" accept=".json,application/json" (change)="seleccionarArchivo($event)"></div>
+    </section>
+
+    <section class="preview-card" *ngIf="vistaPrevia">
+      <div class="table-title"><div><p class="eyebrow">Vista previa validada</p><h2>{{ archivoSeleccionado?.name }}</h2><p>Creado {{ vistaPrevia.fecha | date:'dd/MM/yyyy HH:mm' }} por {{ vistaPrevia.usuario }} · versión {{ vistaPrevia.version }} · {{ vistaPrevia.tamanio }}</p></div><span class="records">Integridad correcta</span></div>
+      <div class="preview-content">
+        <div class="dataset-list"><label *ngFor="let item of vistaPrevia.claves"><ion-checkbox [(ngModel)]="seleccion[item.clave]"></ion-checkbox><span><strong>{{ item.clave | titlecase }}</strong><small>{{ item.registros }} registros</small></span></label></div>
+        <div class="warnings"><p *ngFor="let advertencia of vistaPrevia.advertencias">⚠ {{ advertencia }}</p></div>
+        <div class="confirmation-grid">
+          <ion-item lines="none"><ion-label position="stacked">Escribe RESTAURAR</ion-label><ion-input [(ngModel)]="textoConfirmacion" autocomplete="off"></ion-input></ion-item>
+          <ion-item lines="none"><ion-label position="stacked">Contraseña del administrador</ion-label><ion-input [(ngModel)]="passwordConfirmacion" type="password" autocomplete="current-password"></ion-input></ion-item>
+          <ion-button class="restore-button" [disabled]="restaurandoRespaldo" (click)="restaurarRespaldo()">{{ restaurandoRespaldo ? 'Restaurando…' : 'Restaurar selección' }}</ion-button>
+        </div>
+        <p class="emergency-note">Antes de reemplazar datos se guardará automáticamente una copia de emergencia del estado actual.</p>
+      </div>
+    </section>
+
+    <section class="backups-card">
+      <div class="table-title"><div><h2>Historial local</h2><p>Copias reales disponibles en este navegador.</p></div><span class="records">{{ respaldos.length }} registros</span></div>
+      <div class="table-wrapper"><table><thead><tr><th>Archivo</th><th>Fecha</th><th>Responsable</th><th>Tipo</th><th>Datos</th><th>Tamaño</th><th>Acciones</th></tr></thead><tbody>
+        <tr *ngFor="let respaldo of respaldos"><td><strong class="file-name">{{ respaldo.nombre }}</strong></td><td class="date-cell"><strong>{{ respaldo.fecha | date:'dd/MM/yyyy' }}</strong><span>{{ respaldo.fecha | date:'HH:mm:ss' }}</span></td><td>{{ respaldo.usuario }}</td><td><span class="type-badge" [class.automatic]="respaldo.tipo === 'Emergencia'">{{ respaldo.tipo }}</span></td><td>{{ respaldo.tablas }} conjuntos</td><td>{{ respaldo.tamanio }}</td><td><div class="actions"><button type="button" class="action-button download" (click)="descargarRespaldo(respaldo)">Descargar</button><button type="button" class="action-button delete" (click)="eliminarRespaldo(respaldo)">Eliminar</button></div></td></tr>
+        <tr *ngIf="respaldos.length === 0"><td colspan="7" class="empty-state">Todavía no existen respaldos reales. Crea el primero para proteger los datos actuales.</td></tr>
+      </tbody></table></div>
+    </section>
+  </main>
 </ion-content>

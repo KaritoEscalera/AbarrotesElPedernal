@@ -1,0 +1,88 @@
+<ion-content class="ion-padding">
+  <main class="dashboard-shell">
+    <header class="dashboard-header">
+      <div>
+        <p class="eyebrow">Panel de control</p>
+        <h1>Dashboard Administrador</h1>
+        <p class="welcome">Consulta el estado general de Abarrotes El Pedernal.</p>
+      </div>
+
+      <ion-button fill="outline" color="tertiary" (click)="cerrarSesion()">
+        Cerrar sesión
+      </ion-button>
+    </header>
+
+    <nav class="quick-actions" aria-label="Accesos rápidos">
+      <ion-button routerLink="/usuarios">Usuarios</ion-button>
+      <ion-button routerLink="/productos">Productos</ion-button>
+      <ion-button routerLink="/inventario">Inventario</ion-button>
+      <ion-button routerLink="/caja">Caja</ion-button>
+      <ion-button routerLink="/clientes">Clientes</ion-button>
+      <ion-button routerLink="/reportes">Reportes</ion-button>
+    </nav>
+
+    <section class="cards" aria-label="Resumen de negocio">
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Ventas del día</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>{{ ventasDia }}</ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Ventas del mes</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>{{ ventasMes }}</ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Productos bajos</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>{{ productosBajos }}</ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Clientes registrados</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>{{ clientes }}</ion-card-content>
+      </ion-card>
+
+    </section>
+
+    <section class="details-grid">
+      <ion-card>
+
+        <ion-card-header>
+          <ion-card-title>Últimos movimientos</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>
+          <ul class="activity-list">
+            <li *ngFor="let movimiento of movimientos">{{ movimiento }}</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="alerts-card">
+        <ion-card-header>
+          <ion-card-title>Alertas</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>
+          <ul class="activity-list">
+            <li *ngFor="let alerta of alertas">{{ alerta }}</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+    </section>
+  </main>
+
+</ion-content>

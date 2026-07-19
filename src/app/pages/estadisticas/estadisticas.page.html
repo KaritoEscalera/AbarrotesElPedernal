@@ -1,13 +1,38 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>estadisticas</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content>
+  <main class="page-container">
+    <header class="page-header">
+      <div><p class="eyebrow">Análisis del negocio</p><h1>Estadísticas</h1><p class="subtitle">Decisiones basadas en ventas, rentabilidad, inventario y cobranza.</p></div>
+      <div class="export-actions"><ion-button fill="outline" (click)="exportarCsv()">Exportar Excel/CSV</ion-button><ion-button (click)="exportarPdf()">Exportar PDF</ion-button></div>
+    </header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">estadisticas</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <section class="filters-card">
+      <ion-item lines="none"><ion-label>Periodo</ion-label><ion-select [(ngModel)]="periodoSeleccionado" interface="popover" (ionChange)="cambiarPeriodo()"><ion-select-option value="hoy">Hoy</ion-select-option><ion-select-option value="ayer">Ayer</ion-select-option><ion-select-option value="semana">Últimos 7 días</ion-select-option><ion-select-option value="mes">Últimos 30 días</ion-select-option><ion-select-option value="anio">Este año</ion-select-option><ion-select-option value="personalizado">Personalizado</ion-select-option></ion-select></ion-item>
+      <ng-container *ngIf="periodoSeleccionado === 'personalizado'"><ion-item lines="none"><ion-label position="stacked">Desde</ion-label><ion-input type="date" [(ngModel)]="fechaInicio"></ion-input></ion-item><ion-item lines="none"><ion-label position="stacked">Hasta</ion-label><ion-input type="date" [(ngModel)]="fechaFin"></ion-input></ion-item><ion-button (click)="aplicarFechas()">Aplicar</ion-button></ng-container>
+      <p class="filter-error" *ngIf="mensajeFechas">{{ mensajeFechas }}</p>
+    </section>
+
+    <section class="summary-grid" aria-label="Indicadores principales">
+      <article class="summary-card"><span>Ventas</span><strong>{{ totalVentas | currency:'MXN' }}</strong><small [class]="claseVariacion(variacionVentas)">{{ variacionVentas >= 0 ? '+' : '' }}{{ variacionVentas | number:'1.1-1' }}% vs. periodo anterior</small></article>
+      <article class="summary-card"><span>Operaciones</span><strong>{{ ventasFiltradas.length }}</strong><small [class]="claseVariacion(variacionOperaciones)">{{ variacionOperaciones >= 0 ? '+' : '' }}{{ variacionOperaciones | number:'1.1-1' }}% vs. periodo anterior</small></article>
+      <article class="summary-card warning-card"><span>Ticket promedio</span><strong>{{ ticketPromedio | currency:'MXN' }}</strong><small [class]="claseVariacion(variacionTicket)">{{ variacionTicket >= 0 ? '+' : '' }}{{ variacionTicket | number:'1.1-1' }}% vs. periodo anterior</small></article>
+      <article class="summary-card success-card"><span>Utilidad neta estimada</span><strong>{{ utilidad | currency:'MXN' }}</strong><small>Margen {{ margen | number:'1.1-1' }}% · incluye costo y gastos</small></article>
+    </section>
+
+    <section class="main-chart-card"><div class="chart-header"><div><h2>Ventas y costo de mercancía</h2><p>Evolución diaria dentro del periodo.</p></div></div><div class="large-chart"><canvas #graficaVentas></canvas></div></section>
+
+    <section class="charts-grid">
+      <article class="chart-card"><div class="chart-header"><div><h2>Métodos de pago</h2><p>Importes reales por forma de cobro.</p></div></div><div class="small-chart"><canvas #graficaPagos></canvas></div></article>
+      <article class="chart-card"><div class="chart-header"><div><h2>Ventas por categoría</h2><p>Categorías con mayores ingresos.</p></div></div><div class="small-chart"><canvas #graficaCategorias></canvas></div></article>
+      <article class="chart-card full-chart"><div class="chart-header"><div><h2>Horarios con más ventas</h2><p>Ayuda a planear personal y reposición.</p></div></div><div class="small-chart"><canvas #graficaHoras></canvas></div></article>
+    </section>
+
+    <section class="business-grid">
+      <article class="insight-card"><h2>Rentabilidad</h2><dl><div><dt>Ingresos</dt><dd>{{ totalVentas | currency:'MXN' }}</dd></div><div><dt>Costo vendido</dt><dd>{{ costoVentas | currency:'MXN' }}</dd></div><div><dt>Gastos estimados</dt><dd>{{ gastos | currency:'MXN' }}</dd></div><div><dt>Utilidad neta</dt><dd>{{ utilidad | currency:'MXN' }}</dd></div></dl></article>
+      <article class="insight-card debt-card"><h2>Fiados y cobranza</h2><dl><div><dt>Total pendiente</dt><dd>{{ totalFiado | currency:'MXN' }}</dd></div><div><dt>Cartera vencida</dt><dd>{{ carteraVencida | currency:'MXN' }}</dd></div><div><dt>Abonos recibidos</dt><dd>{{ totalAbonos | currency:'MXN' }}</dd></div><div><dt>Clientes con adeudo</dt><dd>{{ fiados.length }}</dd></div></dl></article>
+    </section>
+
+    <section class="products-card"><div class="table-title"><div><h2>Productos con atención requerida</h2><p>Existencia baja, agotados, mermas o falta de movimiento.</p></div><span class="records">{{ productosProblematicos.length }} alertas</span></div><div class="table-wrapper"><table><thead><tr><th>Producto</th><th>Existencia</th><th>Vendidos</th><th>Días sin venta</th><th>Merma</th><th>Margen</th><th>Situación</th></tr></thead><tbody><tr *ngFor="let producto of productosProblematicos"><td><strong>{{ producto.producto }}</strong><small>{{ producto.categoria }}</small></td><td>{{ producto.stock }} / mín. {{ producto.minimo }}</td><td>{{ producto.vendidos }}</td><td>{{ producto.diasSinVenta }}</td><td>{{ producto.merma }}</td><td>{{ ((producto.precio - producto.costo) / producto.precio) * 100 | number:'1.1-1' }}%</td><td><span class="alert-badge">{{ producto.stock === 0 ? 'Agotado' : producto.stock <= producto.minimo ? 'Existencia baja' : producto.diasSinVenta >= 14 ? 'Sin movimiento' : 'Merma alta' }}</span></td></tr></tbody></table></div></section>
+
+    <section class="products-card"><div class="table-title"><div><h2>Productos más vendidos</h2><p>Clasificación por unidades vendidas.</p></div><span class="records">Top 5</span></div><div class="table-wrapper"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Unidades</th><th>Ingreso estimado</th><th>Margen unitario</th></tr></thead><tbody><tr *ngFor="let producto of productosMasVendidos"><td><strong>{{ producto.producto }}</strong></td><td>{{ producto.categoria }}</td><td>{{ producto.vendidos }}</td><td>{{ producto.vendidos * producto.precio | currency:'MXN' }}</td><td>{{ producto.precio - producto.costo | currency:'MXN' }}</td></tr></tbody></table></div></section>
+  </main>
 </ion-content>

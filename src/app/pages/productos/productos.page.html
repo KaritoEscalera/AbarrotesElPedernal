@@ -1,13 +1,52 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>productos</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content class="ion-padding">
+  <main class="products-shell">
+    <header class="products-header">
+      <div>
+        <p class="eyebrow">Inventario</p>
+        <h1>Gestión de productos</h1>
+        <p class="welcome">Consulta precios, existencias y productos que requieren reabastecimiento.</p>
+      </div>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">productos</ion-title>
-    </ion-toolbar>
-  </ion-header>
+      <ion-button type="button">Agregar producto</ion-button>
+    </header>
+
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Productos registrados</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <ion-searchbar
+          [(ngModel)]="terminoBusqueda"
+          aria-label="Buscar producto por nombre o código"
+          placeholder="Buscar por nombre o código">
+        </ion-searchbar>
+
+        <div class="products-table" role="table" aria-label="Lista de productos">
+          <div class="table-heading" role="row">
+            <span role="columnheader">Producto</span>
+            <span role="columnheader">Precio</span>
+            <span role="columnheader">Existencias</span>
+            <span role="columnheader">Estado</span>
+          </div>
+
+          <div class="product-row" role="row" *ngFor="let producto of productosFiltrados">
+            <div class="product-name" role="cell">
+              <strong>{{ producto.nombre }}</strong>
+              <small>Cód. {{ producto.codigo }}</small>
+            </div>
+            <span class="price" role="cell">{{ producto.precio }}</span>
+            <span role="cell">{{ producto.stock }} unidades</span>
+            <span class="stock-status" [class.is-low]="producto.stock <= producto.minimo" role="cell">
+              {{ estadoStock(producto) }}
+            </span>
+          </div>
+
+          <p class="empty-state" *ngIf="productosFiltrados.length === 0">
+            No se encontraron productos con esa búsqueda.
+          </p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </main>
 </ion-content>

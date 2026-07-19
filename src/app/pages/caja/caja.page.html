@@ -1,13 +1,181 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>caja</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content class="ion-padding">
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">caja</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <h1>Caja</h1>
+
+  <div class="cards">
+
+    <ion-card>
+
+      <ion-card-header>
+        <ion-card-title>
+          Estado
+        </ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        {{estadoCaja}}
+      </ion-card-content>
+
+    </ion-card>
+
+    <ion-card>
+
+      <ion-card-header>
+        <ion-card-title>
+          Fondo Inicial
+        </ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        ${{fondoInicial}}
+      </ion-card-content>
+
+    </ion-card>
+
+    <ion-card>
+
+      <ion-card-header>
+        <ion-card-title>
+          Ventas
+        </ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        ${{ventas}}
+      </ion-card-content>
+
+    </ion-card>
+
+    <ion-card>
+
+      <ion-card-header>
+        <ion-card-title>
+          Ventas en efectivo
+        </ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        ${{totalEfectivo}}
+      </ion-card-content>
+
+    </ion-card>
+
+    <ion-card>
+
+      <ion-card-header>
+        <ion-card-title>
+          Ventas con tarjeta
+        </ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        ${{totalTarjeta}}
+      </ion-card-content>
+
+    </ion-card>
+
+    <ion-card>
+
+      <ion-card-header>
+        <ion-card-title>
+          Ventas a fiado
+        </ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        ${{totalFiado}}
+      </ion-card-content>
+
+    </ion-card>
+
+    <ion-card>
+
+      <ion-card-header>
+        <ion-card-title>
+          Total Caja
+        </ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        ${{totalCaja}}
+      </ion-card-content>
+
+    </ion-card>
+
+  </div>
+
+  <ion-card class="register-card">
+
+    <ion-card-header>
+      <ion-card-title>
+        Registrar pago
+      </ion-card-title>
+    </ion-card-header>
+
+    <ion-card-content>
+      <ion-item lines="none">
+        <ion-label position="stacked">Método de pago</ion-label>
+        <ion-select [(ngModel)]="metodoPago" interface="popover">
+          <ion-select-option value="Efectivo">Efectivo</ion-select-option>
+          <ion-select-option value="Tarjeta">Tarjeta</ion-select-option>
+          <ion-select-option value="Fiado">Fiado</ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <ion-item lines="none">
+        <ion-label position="stacked">Monto</ion-label>
+        <ion-input [(ngModel)]="montoVenta" type="number" min="1" placeholder="0.00"></ion-input>
+      </ion-item>
+
+      <ion-item lines="none" *ngIf="metodoPago === 'Fiado'">
+        <ion-label position="stacked">Cliente</ion-label>
+        <ion-select [(ngModel)]="clienteFiado" interface="popover">
+          <ion-select-option *ngFor="let cliente of clientesFiado" [value]="cliente">
+            {{ cliente }}
+          </ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <ion-item lines="none" *ngIf="metodoPago === 'Tarjeta'">
+        <ion-label position="stacked">Referencia de tarjeta</ion-label>
+        <ion-input [(ngModel)]="tarjetaReferencia" placeholder="1234 5678 9012 3456"></ion-input>
+      </ion-item>
+
+      <p class="message" *ngIf="mensajePago">{{ mensajePago }}</p>
+
+      <div class="register-actions">
+        <ion-button fill="outline" (click)="registrarPago()">Registrar pago</ion-button>
+      </div>
+    </ion-card-content>
+
+  </ion-card>
+
+  <ion-card>
+
+    <ion-card-header>
+      <ion-card-title>
+        Movimientos recientes
+      </ion-card-title>
+    </ion-card-header>
+
+    <ion-card-content>
+      <div class="movement-list">
+        <article *ngFor="let movimiento of movimientos" [ngClass]="movimiento.tipo.toLowerCase()">
+          <div class="movement-row">
+            <span class="movement-badge">{{ movimiento.tipo }}</span>
+            <span>{{ movimiento.fecha }}</span>
+          </div>
+          <p class="movement-description">{{ movimiento.descripcion }}</p>
+          <p class="movement-amount">${{ movimiento.monto }}</p>
+        </article>
+      </div>
+    </ion-card-content>
+
+  </ion-card>
+
+  <div class="buttons">
+    <ion-button (click)="abrirCaja()">Abrir Caja</ion-button>
+    <ion-button color="danger" (click)="cerrarCaja()">Cerrar Caja</ion-button>
+  </div>
+
 </ion-content>

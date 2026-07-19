@@ -1,13 +1,61 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>sat</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content>
+  <main class="page-container">
+    <header class="page-header">
+      <div><p class="eyebrow">Control fiscal interno</p><h1>SAT y Contabilidad</h1><p class="subtitle">Concilia operaciones y CFDI sin almacenar e.firma ni simular envíos oficiales.</p></div>
+      <div class="header-actions"><span class="admin-badge">Solo Administrador</span><ion-button fill="outline" (click)="mostrarConfiguracion = !mostrarConfiguracion">Configuración fiscal</ion-button></div>
+    </header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">sat</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <div class="message" [class.error-message]="esError" [class.success-message]="!esError" *ngIf="mensaje" aria-live="polite">{{ mensaje }}</div>
+
+    <section class="notice-card"><strong>Herramienta de control, no portal del SAT.</strong><p>No timbra, cancela ni presenta declaraciones. Los cálculos son preliminares y deben validarse con las obligaciones del RFC y un profesional fiscal. Nunca ingreses e.firma, contraseña SAT o sellos digitales aquí.</p></section>
+
+    <section class="form-card" *ngIf="mostrarConfiguracion">
+      <div class="form-header"><div><p class="eyebrow">Datos del contribuyente</p><h2>Configuración fiscal</h2></div><button class="close-button" type="button" (click)="mostrarConfiguracion = false">×</button></div>
+      <div class="form-grid">
+        <ion-item lines="none"><ion-label position="stacked">RFC</ion-label><ion-input [(ngModel)]="configuracion.rfc" maxlength="13"></ion-input></ion-item>
+        <ion-item lines="none"><ion-label position="stacked">Nombre o razón social</ion-label><ion-input [(ngModel)]="configuracion.nombre"></ion-input></ion-item>
+        <ion-item lines="none"><ion-label position="stacked">Código postal fiscal</ion-label><ion-input [(ngModel)]="configuracion.codigoPostal" inputmode="numeric" maxlength="5"></ion-input></ion-item>
+        <ion-item lines="none"><ion-label>Tipo de persona</ion-label><ion-select [(ngModel)]="configuracion.tipoPersona"><ion-select-option value="Física">Física</ion-select-option><ion-select-option value="Moral">Moral</ion-select-option></ion-select></ion-item>
+        <ion-item lines="none"><ion-label>Régimen</ion-label><ion-select [(ngModel)]="configuracion.regimen"><ion-select-option value="626">626 · RESICO</ion-select-option><ion-select-option value="612">612 · Actividad empresarial</ion-select-option><ion-select-option value="601">601 · General de ley</ion-select-option><ion-select-option value="otro">Otro</ion-select-option></ion-select></ion-item>
+        <ion-item lines="none"><ion-label position="stacked">Tasa ISR preliminar (%)</ion-label><ion-input [(ngModel)]="configuracion.tasaIsrEstimada" type="number" min="0" max="35"></ion-input></ion-item>
+      </div><div class="form-actions"><ion-button (click)="guardarConfiguracion()">Guardar configuración</ion-button></div>
+    </section>
+
+    <section class="filter-row">
+      <ion-item lines="none"><ion-label>Periodo</ion-label><ion-select [(ngModel)]="periodoSeleccionado"><ion-select-option value="mensual">Este mes</ion-select-option><ion-select-option value="anual">Este año</ion-select-option><ion-select-option value="personalizado">Personalizado</ion-select-option></ion-select></ion-item>
+      <ng-container *ngIf="periodoSeleccionado === 'personalizado'"><ion-item lines="none"><ion-label position="stacked">Desde</ion-label><ion-input [(ngModel)]="fechaInicio" type="date"></ion-input></ion-item><ion-item lines="none"><ion-label position="stacked">Hasta</ion-label><ion-input [(ngModel)]="fechaFin" type="date"></ion-input></ion-item></ng-container>
+    </section>
+
+    <section class="summary-grid">
+      <article class="summary-card success-card"><span>Ingresos cobrados</span><strong>{{ ingresos | currency:'MXN' }}</strong><small>Caja y registros manuales</small></article>
+      <article class="summary-card danger-card"><span>Egresos</span><strong>{{ egresos | currency:'MXN' }}</strong><small>Gastos registrados</small></article>
+      <article class="summary-card"><span>IVA preliminar a cargo</span><strong>{{ ivaEstimadoCargo | currency:'MXN' }}</strong><small>Trasladado menos acreditable y retenciones</small></article>
+      <article class="summary-card warning-card"><span>ISR preliminar</span><strong>{{ isrEstimado | currency:'MXN' }}</strong><small>Tasa configurable; validar con contador</small></article>
+    </section>
+
+    <section class="tax-grid"><article class="tax-card"><span>IVA trasladado</span><strong>{{ ivaTrasladado | currency:'MXN' }}</strong><small>Registrado en ingresos</small></article><article class="tax-card"><span>IVA acreditable potencial</span><strong>{{ ivaAcreditable | currency:'MXN' }}</strong><small>CFDI vigentes recibidos; sujeto a requisitos</small></article><article class="tax-card net-card"><span>Utilidad contable</span><strong>{{ utilidadContable | currency:'MXN' }}</strong><small>Antes de ajustes fiscales</small></article></section>
+
+    <section class="actions-row"><ion-button (click)="mostrarMovimiento = !mostrarMovimiento">Registrar movimiento</ion-button><label class="xml-button" for="cfdiXml">Importar CFDI XML</label><input id="cfdiXml" type="file" accept=".xml,application/xml,text/xml" multiple (change)="importarXml($event)"><ion-button fill="outline" (click)="exportarResumen()">Resumen PDF</ion-button><ion-button fill="outline" (click)="exportarContabilidadXml()">XML contable de trabajo</ion-button></section>
+
+    <section class="form-card" *ngIf="mostrarMovimiento"><div class="form-header"><div><p class="eyebrow">Registro manual</p><h2>Movimiento fiscal</h2></div><button class="close-button" type="button" (click)="mostrarMovimiento = false">×</button></div><div class="form-grid">
+      <ion-item lines="none"><ion-label>Tipo</ion-label><ion-select [(ngModel)]="nuevoMovimiento.tipo"><ion-select-option value="Ingreso">Ingreso</ion-select-option><ion-select-option value="Egreso">Egreso</ion-select-option></ion-select></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Fecha</ion-label><ion-input [(ngModel)]="nuevoMovimiento.fecha" type="date"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Concepto</ion-label><ion-input [(ngModel)]="nuevoMovimiento.concepto"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Categoría</ion-label><ion-input [(ngModel)]="nuevoMovimiento.categoria"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Referencia/folio</ion-label><ion-input [(ngModel)]="nuevoMovimiento.referencia"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label>Método de pago</ion-label><ion-select [(ngModel)]="nuevoMovimiento.metodoPago"><ion-select-option value="Efectivo">Efectivo</ion-select-option><ion-select-option value="Tarjeta">Tarjeta</ion-select-option><ion-select-option value="Transferencia">Transferencia</ion-select-option><ion-select-option value="Mixto">Mixto</ion-select-option></ion-select></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Subtotal</ion-label><ion-input [(ngModel)]="nuevoMovimiento.subtotal" type="number" min="0"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">IVA</ion-label><ion-input [(ngModel)]="nuevoMovimiento.iva" type="number" min="0"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Retenciones</ion-label><ion-input [(ngModel)]="nuevoMovimiento.retenciones" type="number" min="0"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Total</ion-label><ion-input [(ngModel)]="nuevoMovimiento.total" type="number" min="0"></ion-input></ion-item>
+    </div><div class="form-actions"><ion-button (click)="guardarMovimiento()">Guardar movimiento</ion-button></div></section>
+
+    <section class="reconciliation-grid"><article class="reconciliation-card"><span>Egresos sin CFDI relacionado</span><strong>{{ movimientosSinComprobante.length }}</strong><small>Revisar referencias e importación XML</small></article><article class="reconciliation-card"><span>CFDI sin movimiento relacionado</span><strong>{{ documentosSinMovimiento.length }}</strong><small>Revisar fecha, total o folio</small></article><article class="reconciliation-card"><span>Operaciones público general</span><strong>{{ totalPublicoGeneral | currency:'MXN' }}</strong><small>Base preliminar para revisar factura global</small></article><article class="reconciliation-card"><span>CFDI pendientes</span><strong>{{ pendientes }}</strong><small>Validar vigencia fuera del sistema</small></article></section>
+
+    <section class="calendar-card"><div class="table-title"><div><h2>Calendario preventivo</h2><p>Recordatorios orientativos; confirma fechas oficiales según RFC.</p></div></div><div class="calendar-list"><article *ngFor="let alerta of alertas" [class.urgent]="alerta.nivel === 'urgente'"><time>{{ alerta.fecha | date:'dd/MM/yyyy' }}</time><div><strong>{{ alerta.titulo }}</strong><p>{{ alerta.detalle }}</p></div></article></div></section>
+
+    <section class="table-card"><div class="table-title"><div><h2>Conciliación de movimientos</h2><p>Origen Caja o manual y relación con comprobantes.</p></div><span class="records">{{ movimientosFiltrados.length }}</span></div><div class="table-wrapper"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Referencia</th><th>Origen</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Conciliación</th></tr></thead><tbody><tr *ngFor="let movimiento of movimientosFiltrados"><td>{{ movimiento.fecha | date:'dd/MM/yyyy' }}</td><td><span class="status" [class.income]="movimiento.tipo === 'Ingreso'" [class.expense]="movimiento.tipo === 'Egreso'">{{ movimiento.tipo }}</span></td><td>{{ movimiento.concepto }}</td><td>{{ movimiento.referencia || 'Sin referencia' }}</td><td>{{ movimiento.origen }}</td><td>{{ movimiento.subtotal | currency:'MXN' }}</td><td>{{ movimiento.iva | currency:'MXN' }}</td><td class="money">{{ movimiento.total | currency:'MXN' }}</td><td>{{ movimiento.tipo === 'Ingreso' || !movimientosSinComprobante.includes(movimiento) ? 'Relacionado' : 'Sin CFDI' }}</td></tr></tbody></table></div></section>
+
+    <section class="table-card"><div class="table-title"><div><h2>CFDI importados</h2><p>Metadatos extraídos de XML; el estado debe verificarse con servicios oficiales.</p></div><span class="records">{{ documentosFiltrados.length }}</span></div><div class="table-wrapper"><table><thead><tr><th>Fecha</th><th>UUID/Folio</th><th>Emisor</th><th>RFC</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Estado local</th><th>Acción</th></tr></thead><tbody><tr *ngFor="let documento of documentosFiltrados"><td>{{ documento.fecha | date:'dd/MM/yyyy' }}</td><td><strong>{{ documento.uuid || documento.folio }}</strong></td><td>{{ documento.emisor }}</td><td>{{ documento.rfcEmisor }}</td><td>{{ documento.subtotal | currency:'MXN' }}</td><td>{{ documento.iva | currency:'MXN' }}</td><td class="money">{{ documento.total | currency:'MXN' }}</td><td><span class="document-status" [class.registered]="documento.estado === 'Vigente'" [class.pending]="documento.estado === 'Pendiente'" [class.cancelled]="documento.estado === 'Cancelado'">{{ documento.estado }}</span></td><td><button type="button" class="change-button" (click)="cambiarEstado(documento)">Cambiar estado local</button></td></tr><tr *ngIf="documentosFiltrados.length === 0"><td colspan="9" class="empty-state">Importa CFDI XML para comenzar la conciliación.</td></tr></tbody></table></div></section>
+  </main>
 </ion-content>

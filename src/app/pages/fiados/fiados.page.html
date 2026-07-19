@@ -1,13 +1,365 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>fiados</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">fiados</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <div class="page-container">
+
+    <section class="page-header">
+
+      <div>
+        <p class="eyebrow">Control de créditos</p>
+        <h1>Fiados</h1>
+
+        <p class="subtitle">
+          Consulta adeudos y registra los abonos de los clientes.
+        </p>
+      </div>
+
+      <ion-button
+        class="primary-button"
+        (click)="nuevoFiado()"
+      >
+        Nuevo fiado
+      </ion-button>
+
+    </section>
+
+    <section class="new-fiado-panel" *ngIf="nuevoFiadoVisible">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Registrar nuevo fiado</p>
+          <h2>Nuevo crédito</h2>
+        </div>
+        <button type="button" class="close-button" (click)="cancelarNuevoFiado()">
+          ×
+        </button>
+      </div>
+
+      <div class="new-fiado-form">
+        <ion-item lines="none">
+          <ion-label position="stacked">Cliente</ion-label>
+          <ion-input [(ngModel)]="nuevoFiadoForm.cliente" placeholder="Nombre del cliente"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none">
+          <ion-label position="stacked">Teléfono</ion-label>
+          <ion-input [(ngModel)]="nuevoFiadoForm.telefono" type="tel" placeholder="4491234567"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none">
+          <ion-label position="stacked">Deuda original</ion-label>
+          <ion-input [(ngModel)]="nuevoFiadoForm.deudaOriginal" type="number" min="1" placeholder="0.00"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none">
+          <ion-label position="stacked">Fecha límite</ion-label>
+          <ion-input [(ngModel)]="nuevoFiadoForm.fechaLimite" type="date"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none" *ngIf="puedeConfigurarLimite">
+          <ion-label position="stacked">Límite</ion-label>
+          <ion-input [(ngModel)]="nuevoFiadoForm.limite" type="number" min="1" placeholder="Monto máximo"></ion-input>
+        </ion-item>
+
+        <p class="message" [class.success-message]="mensaje === 'Fiado registrado correctamente.'" *ngIf="mensaje">
+          {{ mensaje }}
+        </p>
+
+        <div class="new-fiado-actions">
+          <ion-button fill="outline" class="cancel-button" (click)="cancelarNuevoFiado()">Cancelar</ion-button>
+          <ion-button class="primary-button" (click)="guardarNuevoFiado()">Guardar fiado</ion-button>
+        </div>
+      </div>
+    </section>
+
+    <section class="summary-grid">
+
+      <article class="summary-card">
+
+        <span>Saldo total pendiente</span>
+
+        <strong>
+          {{ totalPendiente | currency:'MXN':'symbol':'1.2-2' }}
+        </strong>
+
+        <small>Deuda acumulada</small>
+
+      </article>
+
+      <article class="summary-card warning-card">
+
+        <span>Clientes con adeudo</span>
+
+        <strong>
+          {{ clientesConAdeudo }}
+        </strong>
+
+        <small>Cuentas pendientes</small>
+
+      </article>
+
+      <article class="summary-card success-card">
+
+        <span>Cuentas liquidadas</span>
+
+        <strong>
+          {{ cuentasLiquidadas }}
+        </strong>
+
+        <small>Sin saldo pendiente</small>
+
+      </article>
+
+    </section>
+
+    <section
+      class="abono-panel"
+      *ngIf="fiadoSeleccionado"
+    >
+
+      <div class="abono-header">
+
+        <div>
+          <p class="eyebrow">Registrar abono</p>
+
+          <h2>
+            {{ fiadoSeleccionado.cliente }}
+          </h2>
+
+          <p>
+            Saldo actual:
+            <strong>
+              {{
+                fiadoSeleccionado.saldoPendiente
+                  | currency:'MXN':'symbol':'1.2-2'
+              }}
+            </strong>
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="close-button"
+          (click)="cancelarAbono()"
+        >
+          ×
+        </button>
+
+      </div>
+
+      <ion-item class="abono-input" lines="none">
+
+        <ion-label position="stacked">
+          Cantidad del abono
+        </ion-label>
+
+        <ion-input
+          [(ngModel)]="cantidadAbono"
+          type="number"
+          min="1"
+          placeholder="0.00"
+        >
+        </ion-input>
+
+      </ion-item>
+
+      <p
+        class="message"
+        [class.success-message]="
+          mensaje === 'Abono registrado correctamente.'
+        "
+        *ngIf="mensaje"
+      >
+        {{ mensaje }}
+      </p>
+
+      <div class="abono-actions">
+
+        <ion-button
+          fill="outline"
+          class="cancel-button"
+          (click)="cancelarAbono()"
+        >
+          Cancelar
+        </ion-button>
+
+        <ion-button
+          class="primary-button"
+          (click)="guardarAbono()"
+        >
+          Guardar abono
+        </ion-button>
+
+      </div>
+
+    </section>
+
+    <section class="fiados-card">
+
+      <div class="filters">
+
+        <ion-searchbar
+          [(ngModel)]="busqueda"
+          placeholder="Buscar cliente o teléfono"
+          animated="true"
+        >
+        </ion-searchbar>
+
+        <ion-item class="filter-select" lines="none">
+
+          <ion-label>Estado</ion-label>
+
+          <ion-select
+            [(ngModel)]="filtroEstado"
+            interface="popover"
+          >
+
+            <ion-select-option value="todos">
+              Todos
+            </ion-select-option>
+
+            <ion-select-option value="pendiente">
+              Pendientes
+            </ion-select-option>
+
+            <ion-select-option value="vencido">
+              Vencidos
+            </ion-select-option>
+
+            <ion-select-option value="liquidado">
+              Liquidados
+            </ion-select-option>
+
+          </ion-select>
+
+        </ion-item>
+
+      </div>
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+
+            <tr>
+              <th>Cliente</th>
+              <th>Teléfono</th>
+              <th>Deuda original</th>
+              <th>Límite</th>
+              <th>Último abono</th>
+              <th>Saldo pendiente</th>
+              <th>Fecha límite</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            <tr *ngFor="let fiado of fiadosFiltrados">
+
+              <td>
+                <strong>{{ fiado.cliente }}</strong>
+              </td>
+
+              <td>{{ fiado.telefono }}</td>
+
+              <td>
+                {{
+                  fiado.deudaOriginal
+                    | currency:'MXN':'symbol':'1.2-2'
+                }}
+              </td>
+
+              <td>
+                {{
+                  fiado.limite
+                    | currency:'MXN':'symbol':'1.2-2'
+                }}
+              </td>
+
+              <td>
+                {{
+                  fiado.ultimoAbono
+                    | currency:'MXN':'symbol':'1.2-2'
+                }}
+              </td>
+
+              <td>
+
+                <strong class="saldo">
+
+                  {{
+                    fiado.saldoPendiente
+                      | currency:'MXN':'symbol':'1.2-2'
+                  }}
+
+                </strong>
+
+              </td>
+
+              <td>
+                {{ fiado.fechaLimite | date:'dd/MM/yyyy' }}
+              </td>
+
+              <td>
+
+                <span
+                  class="status"
+                  [class.pending]="
+                    obtenerEstado(fiado) === 'pendiente'
+                  "
+                  [class.expired]="
+                    obtenerEstado(fiado) === 'vencido'
+                  "
+                  [class.paid]="
+                    obtenerEstado(fiado) === 'liquidado'
+                  "
+                >
+
+                  {{
+                    obtenerEstado(fiado) === 'pendiente'
+                      ? 'Pendiente'
+                      : obtenerEstado(fiado) === 'vencido'
+                      ? 'Vencido'
+                      : 'Liquidado'
+                  }}
+
+                </span>
+
+              </td>
+
+              <td>
+
+                <ion-button
+                  size="small"
+                  class="abono-button"
+                  [disabled]="fiado.saldoPendiente === 0"
+                  (click)="abrirAbono(fiado)"
+                >
+                  Registrar abono
+                </ion-button>
+
+              </td>
+
+            </tr>
+
+            <tr *ngIf="fiadosFiltrados.length === 0">
+
+              <td colspan="8" class="empty-state">
+                No se encontraron cuentas con esos filtros.
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </div>
+
 </ion-content>

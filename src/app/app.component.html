@@ -1,3 +1,19 @@
 <ion-app>
-  <ion-router-outlet></ion-router-outlet>
+  <ion-menu *ngIf="mostrarMenu" menuId="menu-principal" contentId="contenido-principal" type="overlay">
+    <ion-content class="menu-content">
+      <div class="menu-brand"><span class="store-mark">EP</span><div><strong>Abarrotes</strong><small>El Pedernal</small></div></div>
+      <div class="user-card"><span>{{ usuario.charAt(0) || 'U' }}</span><div><strong>{{ usuario }}</strong><small>{{ etiquetaRol() }}</small></div></div>
+      <ion-list lines="none">
+        <ion-list-header>Navegación</ion-list-header>
+        <ion-item button [class.selected]="rutaActiva(rutaDashboard)" (click)="navegar(rutaDashboard)"><ion-label>Panel principal</ion-label></ion-item>
+        <ion-item button *ngFor="let opcion of opcionesVisibles" [class.selected]="rutaActiva(opcion.ruta)" (click)="navegar(opcion.ruta)"><ion-label>{{ opcion.etiqueta }}</ion-label></ion-item>
+      </ion-list>
+      <div class="menu-footer"><ion-button expand="block" fill="outline" (click)="cerrarSesion()">Cerrar sesión</ion-button><small>Sesión protegida por rol</small></div>
+    </ion-content>
+  </ion-menu>
+
+  <button *ngIf="mostrarMenu" type="button" class="menu-trigger" aria-label="Abrir menú principal" (click)="abrirMenu()">☰</button>
+  <main id="contenido-principal" class="routed-content">
+    <router-outlet></router-outlet>
+  </main>
 </ion-app>
