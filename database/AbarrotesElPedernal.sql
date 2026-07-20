@@ -289,6 +289,22 @@ CREATE TABLE IF NOT EXISTS fiado_abonos (
   INDEX idx_abonos_fiado_fecha (fiado_id, creado_en)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS saldos_clientes (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  cliente_id BIGINT UNSIGNED NOT NULL,
+  usuario_id BIGINT UNSIGNED NOT NULL,
+  monto DECIMAL(12,2) NOT NULL,
+  estado ENUM('PENDIENTE','ENTREGADO','CANCELADO') NOT NULL DEFAULT 'PENDIENTE',
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  liquidado_por BIGINT UNSIGNED NULL,
+  liquidado_en DATETIME NULL,
+  CONSTRAINT chk_saldo_cliente_monto CHECK (monto > 0),
+  CONSTRAINT fk_saldo_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+  CONSTRAINT fk_saldo_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  CONSTRAINT fk_saldo_liquidado FOREIGN KEY (liquidado_por) REFERENCES usuarios(id),
+  INDEX idx_saldos_cliente_estado (cliente_id, estado)
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS configuracion_fiscal (
   id TINYINT UNSIGNED PRIMARY KEY DEFAULT 1,
   rfc VARCHAR(13) NOT NULL,
@@ -488,7 +504,10 @@ INSERT INTO categorias (nombre, descripcion) VALUES
   ('Botanas', 'Frituras, galletas y snacks'),
   ('Lácteos', 'Leche, queso y productos refrigerados'),
   ('Panadería', 'Pan empacado y pan dulce'),
-  ('Granel', 'Productos vendidos por peso')
+  ('Granel', 'Productos vendidos por peso'),
+  ('Frutas', 'Frutas frescas vendidas por kilogramo'),
+  ('Verduras', 'Verduras frescas vendidas por kilogramo'),
+  ('Carnes', 'Carne fresca vendida por kilogramo')
 ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
 
 CREATE OR REPLACE VIEW vista_inventario_alertas AS

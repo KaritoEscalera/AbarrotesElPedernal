@@ -6,11 +6,15 @@ try {
     ['750100011111','Leche Lala 1 L','Lácteos',7,10,23,30],
     ['750103049292','Sabritas Original','Botanas',3,8,14,20],
     ['750100015555','Pan Blanco Bimbo','Panadería',14,6,34,45],
-    ['750101700123','Frijol a granel','Granel',0,5,25,38],
+    ['750101700123','Frijol a granel','Granel',20,5,25,38],
+    ['200000000001','Jitomate','Verduras',25,5,18,32],
+    ['200000000002','Plátano','Frutas',25,5,17,29],
+    ['200000000003','Carne de res','Carnes',15,3,125,168],
   ];
   for (const [codigo,nombre,categoria,stock,minimo,costo,precio] of products) {
     const [[cat]] = await pool.execute('SELECT id FROM categorias WHERE nombre=?',[categoria]);
-    await pool.execute(`INSERT INTO productos(categoria_id,codigo_barras,nombre,stock_actual,stock_minimo,costo,precio_venta) VALUES(?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE nombre=VALUES(nombre),categoria_id=VALUES(categoria_id)`,[cat.id,codigo,nombre,stock,minimo,costo,precio]);
+    const granel=['Granel','Frutas','Verduras','Carnes'].includes(categoria);
+    await pool.execute(`INSERT INTO productos(categoria_id,codigo_barras,nombre,unidad_medida,stock_actual,stock_minimo,costo,precio_venta) VALUES(?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE nombre=VALUES(nombre),categoria_id=VALUES(categoria_id),unidad_medida=VALUES(unidad_medida)`,[cat.id,codigo,nombre,granel?'Kilogramo':'Pieza',stock,minimo,costo,precio]);
   }
   const clients = [['Juan Pérez','4491234567','Centro'],['María López','4497654321','La Labor'],['Carlos Hernández','4499876543','Ojocaliente']];
   for (const [nombre,telefono,direccion] of clients) { const [[exists]]=await pool.execute('SELECT id FROM clientes WHERE telefono=?',[telefono]); if(!exists) await pool.execute('INSERT INTO clientes(nombre,telefono,direccion) VALUES(?,?,?)',[nombre,telefono,direccion]); }

@@ -15,11 +15,14 @@ interface ProductoCaja {
   precioVenta: number;
   tasaIva: number;
   activo: boolean;
+  categoria?: string;
+  unidadMedida?: string;
   promoTipo?: 'PORCENTAJE'|'PRECIO_ESPECIAL'|'DOS_POR_UNO'|'TRES_POR_DOS'|null;
   promoValor?: number|null;
 }
 
 interface ClienteCaja { id: number; nombre: string; telefono: string; activo: boolean; }
+interface CambioPendiente { id:number; clienteId:number; cliente:string; telefono:string; monto:number; estado:'PENDIENTE'|'ENTREGADO'; fecha:string; }
 interface LineaCarrito extends ProductoCaja { cantidad: number; }
 interface SesionCaja { id: number; estado: 'ABIERTA'; fondoInicial: number; fechaApertura: string; }
 interface MovimientoCaja { id: number; tipo: string; descripcion: string; metodo: string; monto: number; fecha: string; }
@@ -60,6 +63,14 @@ export class CajaPage implements OnInit, OnDestroy {
   pagoMixtoEfectivo: number | null = null;
   pagoMixtoTarjeta: number | null = null;
   pagoMixtoTransferencia: number | null = null;
+  pagoMixtoFiado: number | null = null;
+  plazoCredito = 30;
+  recargaCompania = 'TELCEL';
+  recargaTelefono = '';
+  recargaMonto: number | null = null;
+  cambioClienteId: number | null = null;
+  cambioPendienteMonto: number | null = null;
+  cambiosPendientes: CambioPendiente[] = [];
   efectivoContado: number | null = null;
   movimientoTipo: 'INGRESO' | 'SALIDA' = 'SALIDA';
   movimientoMonto: number | null = null;
@@ -88,7 +99,7 @@ export class CajaPage implements OnInit, OnDestroy {
   totalLinea(p:LineaCarrito):number{return p.precioVenta*p.cantidad-this.descuentoLinea(p);}
   get cambio(): number { return this.metodo === 'EFECTIVO' && Number(this.efectivoRecibido) > this.total ? Number(this.efectivoRecibido) - this.total : 0; }
   get efectivoFaltante(): number { return this.metodo === 'EFECTIVO' ? Math.max(0, this.total - Number(this.efectivoRecibido || 0)) : 0; }
-  get totalPagoMixto(): number { return Number(this.pagoMixtoEfectivo || 0) + Number(this.pagoMixtoTarjeta || 0) + Number(this.pagoMixtoTransferencia || 0); }
+  get totalPagoMixto(): number { return Number(this.pagoMixtoEfectivo || 0) + Number(this.pagoMixtoTarjeta || 0) + Number(this.pagoMixtoTransferencia || 0) + Number(this.pagoMixtoFiado || 0); }
   get diferenciaPagoMixto(): number { return Math.round((this.total - this.totalPagoMixto) * 100) / 100; }
 
   usarEfectivo(monto: number): void { this.efectivoRecibido = monto; }
@@ -136,6 +147,8 @@ export class CajaPage implements OnInit, OnDestroy {
 
   quitar(id: number): void { this.carrito = this.carrito.filter((item) => item.id !== id); }
 
+  esVentaGranel(producto: ProductoCaja): boolean { return producto.unidadMedida?.toLowerCase() === 'kilogramo' || ['granel','frutas','verduras','carnes'].includes(producto.categoria?.toLowerCase() ?? ''); }
+
   async abrirCaja(): Promise<void> {
     const fondo = Number(this.fondoInicial);
     if (!Number.isFinite(fondo) || fondo < 0) return this.fallar('Ingresa un fondo inicial válido.');
@@ -150,6 +163,7 @@ export class CajaPage implements OnInit, OnDestroy {
     if (!this.sesion) return this.fallar('Abre la caja antes de cobrar.');
     if (!this.carrito.length) return this.fallar('Agrega al menos un producto.');
     if (this.metodo === 'FIADO' && !this.clienteId) return this.fallar('Selecciona un cliente para el fiado.');
+    if (this.metodo === 'MIXTO' && Number(this.pagoMixtoFiado || 0) > 0 && !this.clienteId) return this.fallar('Selecciona un cliente para la parte a fiado.');
     if (['TARJETA', 'TRANSFERENCIA'].includes(this.metodo) && !this.referencia.trim()) return this.fallar('Captura la referencia del pago.');
     if (this.metodo === 'EFECTIVO' && Number(this.efectivoRecibido) < this.total) return this.fallar('El efectivo recibido es menor al total.');
     if (this.metodo === 'MIXTO' && Math.abs(this.diferenciaPagoMixto) > .009) return this.fallar('La suma del pago mixto debe coincidir con el total.');
@@ -164,7 +178,9 @@ export class CajaPage implements OnInit, OnDestroy {
           { metodo: 'EFECTIVO', monto: Number(this.pagoMixtoEfectivo || 0) },
           { metodo: 'TARJETA', monto: Number(this.pagoMixtoTarjeta || 0), referencia: this.referencia },
           { metodo: 'TRANSFERENCIA', monto: Number(this.pagoMixtoTransferencia || 0), referencia: this.referencia },
-        ] : undefined };
+          { metodo: 'FIADO', monto: Number(this.pagoMixtoFiado || 0) },
+        ] : undefined,
+        plazoDias: (this.metodo === 'FIADO' || Number(this.pagoMixtoFiado || 0) > 0) ? this.plazoCredito : undefined };
       let venta:{folio:string;total:number};
       try{venta=await this.api.post<{folio:string;total:number}>('sales',payload);}catch(e:unknown){const x=e as{status?:number};if(x.status===0||!navigator.onLine){this.ventasPendientes=[...this.ventasPendientes,{operacionUuid,payload,creada:new Date().toISOString()}];localStorage.setItem('ventasPendientesSync',JSON.stringify(this.ventasPendientes));this.carrito=[];this.mensaje='Venta guardada sin conexión. Se sincronizará automáticamente; no cierres la caja todavía.';return;}throw e;}
       const cambio = this.cambio;
@@ -172,7 +188,7 @@ export class CajaPage implements OnInit, OnDestroy {
       this.referencia = '';
       this.clienteId = null;
       this.efectivoRecibido = null;
-      this.pagoMixtoEfectivo = null; this.pagoMixtoTarjeta = null; this.pagoMixtoTransferencia = null;
+      this.pagoMixtoEfectivo = null; this.pagoMixtoTarjeta = null; this.pagoMixtoTransferencia = null; this.pagoMixtoFiado = null;
       await this.cargarTodo();
       this.mensaje = `Venta ${venta.folio} registrada por $${Number(venta.total).toFixed(2)}${cambio ? `; cambio $${cambio.toFixed(2)}` : ''}.`;
     });
@@ -189,6 +205,20 @@ export class CajaPage implements OnInit, OnDestroy {
       this.mensaje = 'Movimiento registrado.';
     });
   }
+
+  async registrarRecarga():Promise<void>{
+    const monto=Number(this.recargaMonto); const telefono=this.recargaTelefono.trim();
+    if(!/^\d{10}$/.test(telefono)||!Number.isFinite(monto)||monto<=0)return this.fallar('Captura un teléfono de 10 dígitos y un monto válido.');
+    await this.ejecutar(async()=>{await this.api.post('cash/services',{tipo:'RECARGA',compania:this.recargaCompania,telefono,monto});this.recargaTelefono='';this.recargaMonto=null;await this.cargarEstado();this.mensaje=`Recarga ${this.recargaCompania} registrada correctamente.`;});
+  }
+
+  async guardarCambioPendiente():Promise<void>{
+    const monto=Number(this.cambioPendienteMonto);
+    if(!this.cambioClienteId||!Number.isFinite(monto)||monto<=0)return this.fallar('Selecciona el cliente e indica el cambio pendiente.');
+    await this.ejecutar(async()=>{await this.api.post('customer-balances',{clienteId:this.cambioClienteId,monto});this.cambioClienteId=null;this.cambioPendienteMonto=null;await this.cargarCambios();this.mensaje='Cambio guardado a favor del cliente.';});
+  }
+
+  async entregarCambio(item:CambioPendiente):Promise<void>{await this.ejecutar(async()=>{await this.api.patch(`customer-balances/${item.id}/settle`,{});await this.cargarCambios();await this.cargarEstado();this.mensaje='Cambio entregado y saldo liquidado.';});}
 
   async cerrarCaja(): Promise<void> {
     if(this.ventasPendientes.length)return this.fallar('Hay ventas sin conexión pendientes. Conecta la red y sincronízalas antes de cerrar caja.');
@@ -215,7 +245,7 @@ export class CajaPage implements OnInit, OnDestroy {
   }
 
   private async cargarTodo(): Promise<void> {
-    await Promise.all([this.cargarEstado(), this.cargarCatalogos()]);
+    await Promise.all([this.cargarEstado(), this.cargarCatalogos(),this.cargarCambios()]);
   }
 
   private async cargarCatalogos(): Promise<void> {
@@ -226,6 +256,7 @@ export class CajaPage implements OnInit, OnDestroy {
     this.productos = productos.map((p) => ({ ...p, stock: Number(p.stock), precioVenta: Number(p.precioVenta), tasaIva: Number(p.tasaIva),promoValor:p.promoValor===null?null:Number(p.promoValor) }));
     this.clientes = clientes.filter((c) => c.activo);
   }
+  private async cargarCambios():Promise<void>{try{const datos=await this.api.get<CambioPendiente[]>('customer-balances');this.cambiosPendientes=datos.map(x=>({...x,monto:Number(x.monto)}));}catch{this.cambiosPendientes=[];}}
 
   private async cargarEstado(): Promise<void> {
     const estado = await this.api.get<EstadoCaja>('cash/current');

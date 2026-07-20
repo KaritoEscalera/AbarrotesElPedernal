@@ -56,6 +56,8 @@ export class FiadosPage implements OnInit {
 
   fiadoSeleccionado: Fiado | null = null;
   cantidadAbono: number | null = null;
+  metodoAbono: 'EFECTIVO'|'TARJETA'|'TRANSFERENCIA' = 'EFECTIVO';
+  referenciaAbono = '';
   mensaje = '';
 
   rolActual = this.auth.obtenerRol() ?? 'cajera';
@@ -206,13 +208,16 @@ export class FiadosPage implements OnInit {
       this.mensaje = 'El abono no puede ser mayor al saldo pendiente.';
       return;
     }
+    if(this.metodoAbono!=='EFECTIVO'&&!this.referenciaAbono.trim()){this.mensaje='Captura la referencia del pago.';return;}
 
-    try { await this.api.post(`credits/${this.fiadoSeleccionado.id}/payments`, { monto: this.cantidadAbono, metodo: 'EFECTIVO' }); await this.cargarFiados(); this.cancelarAbono(); this.mensaje = 'Abono registrado correctamente en MySQL.'; } catch { this.mensaje = 'No fue posible registrar el abono.'; }
+    try { await this.api.post(`credits/${this.fiadoSeleccionado.id}/payments`, { monto: this.cantidadAbono, metodo: this.metodoAbono, referencia:this.referenciaAbono.trim()||null }); await this.cargarFiados(); this.cancelarAbono(); this.mensaje = 'Abono registrado correctamente en MySQL.'; } catch { this.mensaje = 'No fue posible registrar el abono.'; }
   }
 
   cancelarAbono(): void {
     this.fiadoSeleccionado = null;
     this.cantidadAbono = null;
+    this.metodoAbono = 'EFECTIVO';
+    this.referenciaAbono = '';
     this.mensaje = '';
   }
 

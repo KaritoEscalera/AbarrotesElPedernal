@@ -162,6 +162,9 @@
 
       </ion-item>
 
+      <ion-item class="abono-input" lines="none"><ion-label position="stacked">Método de pago</ion-label><ion-select [(ngModel)]="metodoAbono"><ion-select-option value="EFECTIVO">Efectivo</ion-select-option><ion-select-option value="TARJETA">Tarjeta</ion-select-option><ion-select-option value="TRANSFERENCIA">Transferencia</ion-select-option></ion-select></ion-item>
+      <ion-item class="abono-input" lines="none" *ngIf="metodoAbono !== 'EFECTIVO'"><ion-label position="stacked">Referencia</ion-label><ion-input [(ngModel)]="referenciaAbono" placeholder="Folio o referencia bancaria"></ion-input></ion-item>
+
       <p
         class="message"
         [class.success-message]="
