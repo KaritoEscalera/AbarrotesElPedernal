@@ -1,6 +1,6 @@
 body {
   margin: 0;
-  background: #f5e6d3;
+  background: #ffffff;
   color: #2e2e2e;
   font-family: "Segoe UI", sans-serif;
 }
@@ -10,6 +10,8 @@ body {
 }
 
 ion-content {
+  --background: #ffffff !important;
+  --color: #2e2e2e;
   --padding-top: clamp(1rem, 3vw, 2rem);
   --padding-bottom: clamp(1rem, 3vw, 2rem);
   --padding-start: clamp(1rem, 4vw, 2.5rem);

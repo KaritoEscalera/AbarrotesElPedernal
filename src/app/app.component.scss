@@ -1,5 +1,5 @@
 .menu-content { --background: #4a2c1d; --color: #fff; }
-.routed-content { position: absolute; inset: 0; display: block; overflow: hidden; background: #f5e6d3; }
+.routed-content { position: absolute; inset: 0; display: block; overflow: hidden; color: #2e2e2e; background: #fff; }
 .menu-brand { display: flex; align-items: center; gap: 12px; padding: 25px 20px 18px; border-bottom: 1px solid rgba(255,255,255,.12); }
 .menu-logo { width: 62px; height: 54px; object-fit: contain; flex: 0 0 auto; }
 .menu-brand strong, .menu-brand small, .user-card strong, .user-card small { display: block; }
