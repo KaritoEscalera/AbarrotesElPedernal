@@ -11,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 
 import { Router } from '@angular/router';
 import { Auth } from '../../services/auth';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-login',
@@ -42,8 +43,13 @@ export class LoginPage {
     try {
       const rol = await this.auth.iniciarSesionApi(this.correo, this.password);
       void this.router.navigateByUrl(this.auth.rutaInicial(rol));
-    } catch {
-      alert('No fue posible iniciar sesión. Verifica tus datos y que la API esté encendida.');
+    } catch (error) {
+      const status = error instanceof HttpErrorResponse ? error.status : 0;
+      const apiMessage = error instanceof HttpErrorResponse ? String(error.error?.error ?? '') : '';
+      if (status === 401) alert('Correo o contraseña incorrectos.');
+      else if (status === 429) alert(apiMessage || 'Demasiados intentos. Espera unos minutos.');
+      else if (status === 0) alert('No hay conexión con el servidor. Verifica que la API esté encendida.');
+      else alert(apiMessage || 'Ocurrió un error al iniciar sesión. Intenta nuevamente.');
     } finally {
       this.cargando = false;
     }

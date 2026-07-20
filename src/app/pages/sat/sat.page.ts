@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonButton, IonContent, IonInput, IonItem, IonLabel, IonSelect, IonSelectOption } from '@ionic/angular/standalone';
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
+import { BusinessApi } from '../../services/business-api';
 
 type Periodo = 'mensual' | 'anual' | 'personalizado';
 type TipoMovimiento = 'Ingreso' | 'Egreso';
@@ -17,8 +18,8 @@ interface AlertaFiscal { fecha: string; titulo: string; detalle: string; nivel: 
   selector: 'app-sat', templateUrl: './sat.page.html', styleUrls: ['./sat.page.scss'], standalone: true,
   imports: [CommonModule, FormsModule, IonButton, IonContent, IonInput, IonItem, IonLabel, IonSelect, IonSelectOption],
 })
-export class SatPage {
-  private readonly claveConfiguracion = 'satConfiguracion';
+export class SatPage implements OnInit {
+  private readonly api = inject(BusinessApi);
   private readonly claveMovimientos = 'satMovimientos';
   private readonly claveDocumentos = 'satDocumentos';
 
@@ -29,10 +30,19 @@ export class SatPage {
   mostrarMovimiento = false;
   mensaje = '';
   esError = false;
-  configuracion: ConfiguracionFiscal = this.cargarConfiguracion();
-  movimientos: MovimientoFiscal[] = this.cargarMovimientos();
+  configuracion: ConfiguracionFiscal = { rfc: '', nombre: '', codigoPostal: '', tipoPersona: 'Física', regimen: '626', tasaIsrEstimada: 1 };
+  movimientos: MovimientoFiscal[] = [];
   documentos: DocumentoFiscal[] = this.cargarDocumentos();
   nuevoMovimiento: MovimientoFiscal = this.movimientoVacio();
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const data = await this.api.get<{ settings: null | { rfc:string; nombre:string; codigoPostal:string; tipoPersona:'FISICA'|'MORAL'; regimen:string; tasaIsr:number }; ledger: MovimientoFiscal[]; pac:{configured:boolean;provider:string|null} }>('fiscal');
+      if (data.settings) this.configuracion = { ...data.settings, tipoPersona: data.settings.tipoPersona === 'MORAL' ? 'Moral' : 'Física', tasaIsrEstimada: Number(data.settings.tasaIsr) };
+      this.movimientos = data.ledger.map(m => ({ ...m, subtotal:Number(m.subtotal), iva:Number(m.iva), retenciones:Number(m.retenciones), total:Number(m.total) }));
+      if (!data.pac.configured) this.notificar('Control fiscal conectado a MySQL. La emisión CFDI permanece bloqueada hasta configurar un PAC.', false);
+    } catch { this.notificar('No fue posible cargar el control fiscal desde MySQL.', true); }
+  }
 
   get movimientosFiltrados(): MovimientoFiscal[] { const [inicio, fin] = this.rango(); return this.movimientos.filter((m) => m.fecha >= inicio && m.fecha <= fin); }
   get documentosFiltrados(): DocumentoFiscal[] { const [inicio, fin] = this.rango(); return this.documentos.filter((d) => d.fecha >= inicio && d.fecha <= fin); }
@@ -60,10 +70,11 @@ export class SatPage {
     ];
   }
 
-  guardarConfiguracion(): void {
+  async guardarConfiguracion(): Promise<void> {
     this.configuracion.rfc = this.configuracion.rfc.trim().toUpperCase();
     if (!/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(this.configuracion.rfc) || !/^\d{5}$/.test(this.configuracion.codigoPostal) || !this.configuracion.nombre.trim() || !this.configuracion.regimen) { this.notificar('Revisa RFC, nombre, código postal y régimen fiscal.', true); return; }
-    localStorage.setItem(this.claveConfiguracion, JSON.stringify(this.configuracion)); this.mostrarConfiguracion = false; this.registrarBitacora('Actualizó la configuración fiscal'); this.notificar('Configuración fiscal guardada.', false);
+    try { await this.api.put('fiscal', { ...this.configuracion, tipoPersona: this.configuracion.tipoPersona === 'Moral' ? 'MORAL' : 'FISICA', tasaIsr: this.configuracion.tasaIsrEstimada }); this.mostrarConfiguracion = false; this.notificar('Configuración fiscal guardada en MySQL.', false); }
+    catch { this.notificar('No fue posible guardar la configuración fiscal.', true); }
   }
 
   guardarMovimiento(): void {
@@ -106,7 +117,6 @@ export class SatPage {
     });
   }
 
-  private cargarConfiguracion(): ConfiguracionFiscal { try { return JSON.parse(localStorage.getItem(this.claveConfiguracion) ?? '') as ConfiguracionFiscal; } catch { return { rfc: '', nombre: '', codigoPostal: '', tipoPersona: 'Física', regimen: '626', tasaIsrEstimada: 1 }; } }
   private cargarMovimientos(): MovimientoFiscal[] {
     let manuales: MovimientoFiscal[] = []; try { manuales = JSON.parse(localStorage.getItem(this.claveMovimientos) ?? '[]') as MovimientoFiscal[]; } catch { manuales = []; }
     let caja: Array<{ id: number; tipo: string; descripcion: string; monto: number; fecha: string }> = []; try { caja = JSON.parse(localStorage.getItem('movimientosCaja') ?? '[]') as typeof caja; } catch { caja = []; }

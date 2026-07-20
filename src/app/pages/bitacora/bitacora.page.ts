@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import {
@@ -11,6 +11,7 @@ import {
   IonSelect,
   IonSelectOption
 } from '@ionic/angular/standalone';
+import { BusinessApi } from '../../services/business-api';
 
 type TipoAccion =
   | 'Inicio de sesión'
@@ -25,7 +26,7 @@ interface RegistroBitacora {
   id: number;
   usuario: string;
   rol: string;
-  accion: TipoAccion;
+  accion: TipoAccion | string;
   modulo: string;
   descripcion: string;
   fecha: Date;
@@ -49,7 +50,9 @@ interface RegistroBitacora {
     IonSelectOption
   ]
 })
-export class BitacoraPage {
+export class BitacoraPage implements OnInit {
+
+  private readonly api = inject(BusinessApi);
 
   busqueda = '';
   filtroModulo = 'Todos';
@@ -117,6 +120,13 @@ export class BitacoraPage {
       resultado: 'Exitoso'
     }
   ];
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const datos = await this.api.get<Array<Omit<RegistroBitacora, 'fecha' | 'resultado'> & { fecha: string }>>('audit');
+      this.registros = datos.map((registro) => ({ ...registro, fecha: new Date(registro.fecha), resultado: 'Exitoso' }));
+    } catch { this.registros = []; }
+  }
 
   get registrosFiltrados(): RegistroBitacora[] {
     const texto = this.busqueda.toLowerCase().trim();

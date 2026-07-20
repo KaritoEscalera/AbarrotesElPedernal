@@ -24,6 +24,8 @@
 
     <section class="filters-card">
 
+      <p *ngIf="mensaje">{{ mensaje }}</p>
+
       <div class="filters-grid">
 
         <ion-item lines="none">
@@ -283,6 +285,7 @@
               <th>Método de pago</th>
               <th>Productos</th>
               <th>Total</th>
+              <th>Acciones</th>
             </tr>
           </thead>
 
@@ -308,11 +311,13 @@
                 {{ venta.total | currency:'MXN':'symbol':'1.2-2' }}
               </td>
 
+              <td><ion-button size="small" fill="clear" (click)="imprimirTicket(venta)">Ticket</ion-button><ion-button size="small" fill="clear" color="danger" (click)="cancelarVenta(venta)">Cancelar</ion-button></td>
+
             </tr>
 
             <tr *ngIf="ventasFiltradas.length === 0">
 
-              <td colspan="6" class="empty-state">
+              <td colspan="7" class="empty-state">
                 No existen ventas registradas durante este periodo.
               </td>
 

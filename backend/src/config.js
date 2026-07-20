@@ -9,7 +9,7 @@ if (missing.length) {
 
 export const config = {
   port: Number(process.env.PORT ?? 3000),
-  frontendUrls: (process.env.FRONTEND_URL ?? 'http://localhost:4200,http://localhost:8100').split(',').map((url) => url.trim()),
+  frontendUrls: (process.env.FRONTEND_URL ?? 'http://localhost:4200,http://localhost:8100,http://localhost,https://localhost,capacitor://localhost').split(',').map((url) => url.trim()),
   database: {
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT ?? 3306),
@@ -20,4 +20,9 @@ export const config = {
   },
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '8h',
+  pac: {
+    provider: process.env.PAC_PROVIDER ?? '',
+    apiUrl: process.env.PAC_API_URL ?? '',
+    apiKey: process.env.PAC_API_KEY ?? '',
+  },
 };

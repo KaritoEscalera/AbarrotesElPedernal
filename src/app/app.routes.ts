@@ -17,6 +17,12 @@ export const routes: Routes = [
     canActivate: [guestGuard],
   },
   {
+    path: 'perfil',
+    title: 'Mi cuenta | Abarrotes El Pedernal',
+    loadComponent: () => import('./pages/perfil/perfil.page').then((m) => m.PerfilPage),
+    canActivate: [authGuard],
+  },
+  {
     path: 'dashboard-admin',
     title: 'Administración | Abarrotes El Pedernal',
     loadComponent: () => import('./pages/dashboard-admin/dashboard-admin.page').then((m) => m.DashboardAdminPage),
@@ -74,6 +80,13 @@ export const routes: Routes = [
     path: 'proveedores',
     title: 'Proveedores | Abarrotes El Pedernal',
     loadComponent: () => import('./pages/proveedores/proveedores.page').then((m) => m.ProveedoresPage),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['administrador', 'gerente'] },
+  },
+  {
+    path: 'compras',
+    title: 'Compras | Abarrotes El Pedernal',
+    loadComponent: () => import('./pages/compras/compras.page').then((m) => m.ComprasPage),
     canActivate: [authGuard, roleGuard],
     data: { roles: ['administrador', 'gerente'] },
   },

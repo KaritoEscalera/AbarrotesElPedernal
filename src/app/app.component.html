@@ -1,7 +1,7 @@
 <ion-app>
   <ion-menu *ngIf="mostrarMenu" menuId="menu-principal" contentId="contenido-principal" type="overlay">
     <ion-content class="menu-content">
-      <div class="menu-brand"><span class="store-mark">EP</span><div><strong>Abarrotes</strong><small>El Pedernal</small></div></div>
+      <div class="menu-brand"><img class="menu-logo" src="assets/logo-pedernal.png" alt="Abarrotes Pedernal"><div><strong>Abarrotes</strong><small>El Pedernal</small></div></div>
       <div class="user-card"><span>{{ usuario.charAt(0) || 'U' }}</span><div><strong>{{ usuario }}</strong><small>{{ etiquetaRol() }}</small></div></div>
       <ion-list lines="none">
         <ion-list-header>Navegación</ion-list-header>

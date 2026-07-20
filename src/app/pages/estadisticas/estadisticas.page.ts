@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonButton, IonContent, IonInput, IonItem, IonLabel, IonSelect, IonSelectOption } from '@ionic/angular/standalone';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
+import { BusinessApi } from '../../services/business-api';
 
 Chart.register(...registerables);
 
@@ -21,7 +22,8 @@ interface FiadoAnalisis { cliente: string; saldo: number; vencido: boolean; abon
   standalone: true,
   imports: [CommonModule, FormsModule, IonButton, IonContent, IonInput, IonItem, IonLabel, IonSelect, IonSelectOption],
 })
-export class EstadisticasPage implements AfterViewInit, OnDestroy {
+export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
+  private readonly api = inject(BusinessApi);
   @ViewChild('graficaVentas') graficaVentasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('graficaPagos') graficaPagosRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('graficaCategorias') graficaCategoriasRef!: ElementRef<HTMLCanvasElement>;
@@ -32,21 +34,20 @@ export class EstadisticasPage implements AfterViewInit, OnDestroy {
   fechaFin = '';
   mensajeFechas = '';
   private graficas: Chart[] = [];
-  private ventas: Venta[] = this.cargarVentas();
+  private ventas: Venta[] = [];
 
-  productos: ProductoAnalisis[] = [
-    { producto: 'Coca-Cola 600 ml', categoria: 'Bebidas', stock: 28, minimo: 10, vendidos: 184, precio: 18, costo: 12, diasSinVenta: 0, merma: 2 },
-    { producto: 'Leche Lala 1 L', categoria: 'Lácteos', stock: 7, minimo: 10, vendidos: 112, precio: 30, costo: 23, diasSinVenta: 1, merma: 5 },
-    { producto: 'Sabritas Original', categoria: 'Botanas', stock: 3, minimo: 8, vendidos: 146, precio: 20, costo: 14, diasSinVenta: 0, merma: 1 },
-    { producto: 'Pan Blanco Bimbo', categoria: 'Panadería', stock: 14, minimo: 6, vendidos: 89, precio: 45, costo: 34, diasSinVenta: 2, merma: 4 },
-    { producto: 'Frijol a granel', categoria: 'Granel', stock: 0, minimo: 5, vendidos: 12, precio: 38, costo: 25, diasSinVenta: 18, merma: 3 },
-  ];
+  productos: ProductoAnalisis[] = [];
+  fiados: FiadoAnalisis[] = [];
 
-  fiados: FiadoAnalisis[] = [
-    { cliente: 'Juan Pérez', saldo: 350, vencido: false, abonos: 150 },
-    { cliente: 'María López', saldo: 280, vencido: true, abonos: 0 },
-    { cliente: 'Ana Martínez', saldo: 190, vencido: true, abonos: 230 },
-  ];
+  async ngOnInit(): Promise<void> {
+    try {
+      const datos = await this.api.get<{ sales: Venta[]; products: ProductoAnalisis[]; credits: FiadoAnalisis[] }>('analytics');
+      this.ventas = datos.sales.map((v) => ({ ...v, hora: Number(v.hora), total: Number(v.total), costo: Number(v.costo), unidades: Number(v.unidades) }));
+      this.productos = datos.products.map((p) => ({ ...p, stock: Number(p.stock), minimo: Number(p.minimo), vendidos: Number(p.vendidos), precio: Number(p.precio), costo: Number(p.costo), diasSinVenta: Number(p.diasSinVenta), merma: Number(p.merma) }));
+      this.fiados = datos.credits.map((f) => ({ ...f, saldo: Number(f.saldo), vencido: Boolean(f.vencido), abonos: Number(f.abonos) }));
+      this.actualizarGraficas();
+    } catch { this.mensajeFechas = 'No fue posible cargar las estadísticas desde MySQL.'; }
+  }
 
   ngAfterViewInit(): void { this.actualizarGraficas(); }
 
@@ -168,33 +169,6 @@ export class EstadisticasPage implements AfterViewInit, OnDestroy {
 
   private sumar(ventas: Venta[], campo: 'total' | 'costo'): number { return ventas.reduce((suma, venta) => suma + venta[campo], 0); }
   private variacion(actual: number, anterior: number): number { return anterior ? ((actual - anterior) / anterior) * 100 : actual ? 100 : 0; }
-
-  private cargarVentas(): Venta[] {
-    const hoy = new Date();
-    const productos = [
-      ['Coca-Cola 600 ml', 'Bebidas', 18, 12], ['Sabritas Original', 'Botanas', 20, 14], ['Leche Lala 1 L', 'Lácteos', 30, 23], ['Pan Blanco Bimbo', 'Panadería', 45, 34], ['Frijol a granel', 'Granel', 38, 25],
-    ] as const;
-    const ventas: Venta[] = [];
-    for (let dias = 0; dias < 370; dias += 1) {
-      const fecha = new Date(hoy); fecha.setDate(fecha.getDate() - dias);
-      const cantidad = dias < 40 ? 4 + (dias % 4) : 1;
-      for (let i = 0; i < cantidad; i += 1) {
-        const producto = productos[(dias + i) % productos.length];
-        const unidades = 1 + ((dias + i) % 5);
-        ventas.push({ fecha: this.fechaIsoLocal(fecha), hora: 8 + ((dias * 3 + i * 2) % 13), total: producto[2] * unidades, costo: producto[3] * unidades, metodo: (['Efectivo', 'Tarjeta', 'Transferencia', 'Fiado'] as MetodoPago[])[(dias + i) % 4], categoria: producto[1], producto: producto[0], unidades });
-      }
-    }
-    try {
-      const movimientos = JSON.parse(localStorage.getItem('movimientosCaja') ?? '[]') as Array<{ tipo: string; descripcion: string; monto: number; fecha: string }>;
-      movimientos.filter((m) => ['Efectivo', 'Tarjeta', 'Fiado'].includes(m.tipo)).forEach((m) => ventas.push({ fecha: m.fecha, hora: 12, total: m.monto, costo: m.monto * .65, metodo: m.tipo as MetodoPago, categoria: 'Venta general', producto: m.descripcion, unidades: 1 }));
-    } catch { /* Conserva los datos base si el almacenamiento está dañado. */ }
-    return ventas;
-  }
-
-  private fechaIsoLocal(fecha: Date): string {
-    const anio = fecha.getFullYear(); const mes = String(fecha.getMonth() + 1).padStart(2, '0'); const dia = String(fecha.getDate()).padStart(2, '0');
-    return `${anio}-${mes}-${dia}`;
-  }
 
   ngOnDestroy(): void { this.graficas.forEach((grafica) => grafica.destroy()); }
 }

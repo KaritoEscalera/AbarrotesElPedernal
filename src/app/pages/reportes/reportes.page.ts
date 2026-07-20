@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import {
@@ -13,6 +13,7 @@ import {
 
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
+import { BusinessApi } from '../../services/business-api';
 
 type PeriodoReporte =
   | 'diario'
@@ -71,7 +72,9 @@ interface FiadoReporte {
     IonSelectOption
   ]
 })
-export class ReportesPage {
+export class ReportesPage implements OnInit {
+
+  private readonly api = inject(BusinessApi);
 
   periodoSeleccionado: PeriodoReporte = 'diario';
   tipoReporteSeleccionado: TipoReporte = 'ventas';
@@ -82,8 +85,39 @@ export class ReportesPage {
   inventario: InventarioReporte[] = [];
   fiados: FiadoReporte[] = [];
 
-  constructor() {
-    this.crearDatosPrueba();
+  mensaje = '';
+
+  async ngOnInit(): Promise<void> {
+    await this.cargarDatos();
+  }
+
+  async cancelarVenta(venta: VentaReporte): Promise<void> {
+    const motivo = prompt(`Motivo para cancelar ${venta.folio}:`)?.trim() ?? '';
+    if (!motivo) return;
+    if (!confirm(`Se devolverán los productos al inventario. ¿Cancelar ${venta.folio}?`)) return;
+    try { await this.api.post(`sales/${venta.id}/cancel`, { motivo }); await this.cargarDatos(); this.mensaje = `${venta.folio} fue cancelada correctamente.`; }
+    catch (e: unknown) { const x = e as { error?: { error?: { error?: string } } }; this.mensaje = x.error?.error?.error ?? 'No fue posible cancelar la venta.'; }
+  }
+
+  async imprimirTicket(venta: VentaReporte): Promise<void> {
+    try {
+      const detail = await this.api.get<{ folio: string; fecha: string; usuario: string; cliente: string | null; metodo: string; subtotal: number; impuestos: number; total: number; items: Array<{ nombre: string; cantidad: number; precioUnitario: number; importe: number }> }>(`sales/${venta.id}`);
+      const popup = window.open('', '_blank', 'width=420,height=700');
+      if (!popup) { this.mensaje = 'Permite ventanas emergentes para imprimir el ticket.'; return; }
+      const safe = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c] ?? c));
+      const rows = detail.items.map((i) => `<tr><td>${safe(i.nombre)} × ${Number(i.cantidad)}</td><td>$${Number(i.importe).toFixed(2)}</td></tr>`).join('');
+      popup.document.write(`<html><head><title>${safe(detail.folio)}</title><style>body{font:14px monospace;width:300px;margin:20px auto}h2,p{text-align:center}table{width:100%}td:last-child{text-align:right}.total{font-size:18px;font-weight:bold;border-top:1px dashed;padding-top:8px}</style></head><body><h2>Abarrotes El Pedernal</h2><p>${safe(detail.folio)}<br>${new Date(detail.fecha).toLocaleString('es-MX')}<br>Atendió: ${safe(detail.usuario)}</p><table>${rows}<tr><td>Subtotal</td><td>$${Number(detail.subtotal).toFixed(2)}</td></tr><tr><td>IVA</td><td>$${Number(detail.impuestos).toFixed(2)}</td></tr><tr class="total"><td>Total</td><td>$${Number(detail.total).toFixed(2)}</td></tr></table><p>Pago: ${safe(detail.metodo)}<br>¡Gracias por su compra!</p><script>window.onload=()=>window.print()<\/script></body></html>`);
+      popup.document.close();
+    } catch { this.mensaje = 'No fue posible obtener el ticket.'; }
+  }
+
+  private async cargarDatos(): Promise<void> {
+    try {
+      const datos = await this.api.get<{ sales: Array<Omit<VentaReporte, 'fecha'> & { fecha: string }>; inventory: InventarioReporte[]; credits: Array<Omit<FiadoReporte, 'fecha'> & { fecha: string }> }>('reports');
+      this.ventas = datos.sales.map((v) => ({ ...v, fecha: new Date(v.fecha), productos: Number(v.productos), total: Number(v.total) }));
+      this.inventario = datos.inventory.map((p) => ({ ...p, stock: Number(p.stock), stockMinimo: Number(p.stockMinimo), precioVenta: Number(p.precioVenta) }));
+      this.fiados = datos.credits.map((f) => ({ ...f, fecha: new Date(f.fecha), deudaOriginal: Number(f.deudaOriginal), abonos: Number(f.abonos), saldoPendiente: Number(f.saldoPendiente) }));
+    } catch { this.mensaje = 'No fue posible cargar los reportes desde MySQL.'; }
   }
 
   private crearDatosPrueba(): void {

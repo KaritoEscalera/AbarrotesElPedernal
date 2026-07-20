@@ -5,7 +5,6 @@ import { FormsModule } from '@angular/forms';
 import {
   IonButton,
   IonContent,
-  IonIcon,
   IonInput,
   IonItem,
   IonLabel,
@@ -35,7 +34,6 @@ interface ProductoInventario {
     FormsModule,
     IonContent,
     IonButton,
-    IonIcon,
     IonInput,
     IonItem,
     IonLabel,
