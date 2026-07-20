@@ -15,7 +15,7 @@
 
       <ion-button
         class="primary-button"
-        (click)="nuevoFiado()"
+        (click)="abrirFormularioNuevoFiado()"
       >
         Nuevo fiado
       </ion-button>
@@ -34,6 +34,7 @@
       </div>
 
       <div class="new-fiado-form">
+        <ion-item lines="none"><ion-label position="stacked">Cliente existente (opcional)</ion-label><ion-select [(ngModel)]="nuevoFiadoForm.clienteId" (ionChange)="seleccionarCliente()"><ion-select-option [value]="null">Registrar cliente nuevo</ion-select-option><ion-select-option *ngFor="let cliente of clientes" [value]="cliente.id">{{cliente.nombre}} · {{cliente.telefono}}</ion-select-option></ion-select></ion-item>
         <ion-item lines="none">
           <ion-label position="stacked">Cliente</ion-label>
           <ion-input [(ngModel)]="nuevoFiadoForm.cliente" placeholder="Nombre del cliente"></ion-input>
@@ -59,7 +60,7 @@
           <ion-input [(ngModel)]="nuevoFiadoForm.limite" type="number" min="1" placeholder="Monto máximo"></ion-input>
         </ion-item>
 
-        <p class="message" [class.success-message]="mensaje === 'Fiado registrado correctamente.'" *ngIf="mensaje">
+        <p class="message" [class.success-message]="mensaje === 'Fiado registrado correctamente en MySQL.'" *ngIf="mensaje">
           {{ mensaje }}
         </p>
 
@@ -164,7 +165,7 @@
       <p
         class="message"
         [class.success-message]="
-          mensaje === 'Abono registrado correctamente.'
+          mensaje === 'Abono registrado correctamente en MySQL.'
         "
         *ngIf="mensaje"
       >

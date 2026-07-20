@@ -3,6 +3,8 @@
     <ion-content class="menu-content">
       <div class="menu-brand"><img class="menu-logo" src="assets/logo-pedernal.png" alt="Abarrotes Pedernal"><div><strong>Abarrotes</strong><small>El Pedernal</small></div></div>
       <div class="user-card"><span>{{ usuario.charAt(0) || 'U' }}</span><div><strong>{{ usuario }}</strong><small>{{ etiquetaRol() }}</small></div></div>
+      <div class="notifications-setting"><ion-button expand="block" fill="clear" (click)="activarNotificaciones()">🔔 Activar avisos y sonido</ion-button><small *ngIf="mensajeNotificaciones">{{ mensajeNotificaciones }}</small></div>
+      <div class="theme-setting"><small>Apariencia</small><div><button type="button" [class.active]="tema.modo==='claro'" (click)="seleccionarTema('claro')">☀️ Claro</button><button type="button" [class.active]="tema.modo==='oscuro'" (click)="seleccionarTema('oscuro')">🌙 Oscuro</button><button type="button" [class.active]="tema.modo==='automatico'" (click)="seleccionarTema('automatico')">◐ Auto</button></div></div>
       <ion-list lines="none">
         <ion-list-header>Navegación</ion-list-header>
         <ion-item button [class.selected]="rutaActiva(rutaDashboard)" (click)="navegar(rutaDashboard)"><ion-label>Panel principal</ion-label></ion-item>
@@ -13,6 +15,12 @@
   </ion-menu>
 
   <button *ngIf="mostrarMenu" type="button" class="menu-trigger" aria-label="Abrir menú principal" (click)="abrirMenu()">☰</button>
+  <button *ngIf="mostrarMenu" type="button" class="alerts-trigger" aria-label="Ver alertas de proveedores" (click)="alternarAlertas()">🔔<span *ngIf="alertasService.alertas.length">{{ alertasService.alertas.length }}</span></button>
+  <aside *ngIf="mostrarMenu && mostrarAlertas" class="alerts-panel">
+    <header><div><strong>Próximas entregas</strong><small>Avisos con 2 días de anticipación</small></div><button type="button" (click)="mostrarAlertas=false">×</button></header>
+    <div class="alert-row" *ngFor="let alerta of alertasService.alertas"><span>🔔</span><div><strong>{{ alerta.mensaje }}</strong><small>{{ alerta.fecha | date:'EEEE d MMMM':'':'es-MX' }}</small></div></div>
+    <p *ngIf="!alertasService.alertas.length">No hay proveedores programados para los próximos dos días.</p>
+  </aside>
   <main id="contenido-principal" class="routed-content">
     <router-outlet></router-outlet>
   </main>

@@ -52,3 +52,135 @@ ion-content {
 .pedernal-danger {
   color: #d9534f;
 }
+
+html.theme-dark body {
+  background: #171310;
+  color: #f7ede5;
+}
+
+html.theme-dark ion-content {
+  --background: #171310 !important;
+  --color: #f7ede5;
+}
+
+html.theme-dark .routed-content {
+  background: #171310 !important;
+}
+
+html.theme-dark ion-card,
+html.theme-dark .login-container,
+html.theme-dark .summary-card,
+html.theme-dark .report-card,
+html.theme-dark .fiados-card,
+html.theme-dark .form-card,
+html.theme-dark .table-card,
+html.theme-dark .filters-card,
+html.theme-dark .calendar-card,
+html.theme-dark .tax-card,
+html.theme-dark .reconciliation-card,
+html.theme-dark .new-fiado-panel,
+html.theme-dark .abono-panel,
+html.theme-dark .chart-card,
+html.theme-dark .history,
+html.theme-dark .grid > article,
+html.theme-dark .alerts-panel,
+html.theme-dark .pedernal-card {
+  color: #f7ede5 !important;
+  background: #241d19 !important;
+  border-color: #4b3a31 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .3) !important;
+}
+
+html.theme-dark h1,
+html.theme-dark h2,
+html.theme-dark h3,
+html.theme-dark ion-card-title,
+html.theme-dark .pedernal-title,
+html.theme-dark .summary-card strong,
+html.theme-dark .alerts-panel strong {
+  color: #fff5ed !important;
+}
+
+html.theme-dark p,
+html.theme-dark small,
+html.theme-dark .subtitle,
+html.theme-dark .pedernal-subtitle,
+html.theme-dark .alerts-panel p,
+html.theme-dark .alerts-panel small {
+  color: #cdb8aa;
+}
+
+html.theme-dark ion-item {
+  --background: #2c231e !important;
+  --color: #f7ede5 !important;
+  --border-color: #514037 !important;
+  --placeholder-color: #a99283;
+}
+
+html.theme-dark ion-input,
+html.theme-dark ion-select,
+html.theme-dark ion-searchbar {
+  --color: #f7ede5;
+  --placeholder-color: #a99283;
+  color: #f7ede5;
+}
+
+html.theme-dark ion-searchbar {
+  --background: #2c231e !important;
+  --icon-color: #d4b7a3;
+  --clear-button-color: #d4b7a3;
+}
+
+html.theme-dark table {
+  color: #f4e8df;
+  background: #241d19;
+}
+
+html.theme-dark td {
+  color: #eadbd1;
+  border-color: #49382f !important;
+  background: #241d19;
+}
+
+html.theme-dark tr:nth-child(even) td {
+  background: #2a211d;
+}
+
+html.theme-dark .product,
+html.theme-dark .totals,
+html.theme-dark .cash-payment,
+html.theme-dark .movement-list article,
+html.theme-dark .user-card {
+  color: #f7ede5 !important;
+  background: #2c231e !important;
+  border-color: #574338 !important;
+}
+
+html.theme-dark .cash-total,
+html.theme-dark .product small,
+html.theme-dark .cart-line small {
+  color: #cfb6a5;
+}
+
+html.theme-dark .cash-shortcuts button {
+  color: #ffe7d2;
+  background: #3b2c24;
+  border-color: #73513e;
+}
+
+html.theme-dark .change-box:not(.ready):not(.pending) {
+  color: #f7ede5;
+  background: #352b26;
+}
+
+html.theme-dark input,
+html.theme-dark select,
+html.theme-dark textarea {
+  color: #f7ede5;
+  background: #2c231e;
+  border-color: #574338;
+}
+
+html.theme-dark ::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

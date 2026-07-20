@@ -43,6 +43,11 @@
 
     </section>
 
+    <section class="expiry-card" *ngIf="lotesAlerta.length">
+      <div><p class="eyebrow">Caducidades próximas</p><h2>{{ lotesAlerta.length }} lotes requieren atención</h2></div>
+      <article *ngFor="let lote of lotesAlerta" [class.expired]="lote.dias < 0" [class.urgent]="lote.dias >= 0 && lote.dias <= 7"><div><strong>{{ lote.nombre }}</strong><small>Lote {{ lote.lote }} · {{ lote.cantidad }} disponibles</small></div><span>{{ lote.dias < 0 ? 'Vencido' : lote.dias === 0 ? 'Vence hoy' : 'Vence en ' + lote.dias + ' días' }}</span></article>
+    </section>
+
     <section class="entry-form" *ngIf="entradaVisible" aria-label="Registrar entrada de inventario">
       <ion-item lines="none">
         <ion-label>Producto</ion-label>
@@ -177,6 +182,8 @@
                   >
                     −
                   </button>
+                  <button class="stock-button text" type="button" (click)="registrarMerma(producto)">Merma</button>
+                  <button class="stock-button text" type="button" (click)="conteoFisico(producto)">Conteo</button>
 
                   <button
                     class="stock-button add"

@@ -311,7 +311,7 @@
                 {{ venta.total | currency:'MXN':'symbol':'1.2-2' }}
               </td>
 
-              <td><ion-button size="small" fill="clear" (click)="imprimirTicket(venta)">Ticket</ion-button><ion-button size="small" fill="clear" color="danger" (click)="cancelarVenta(venta)">Cancelar</ion-button></td>
+              <td><ion-button size="small" fill="clear" (click)="imprimirTicket(venta)">Ticket</ion-button><ion-button size="small" fill="clear" color="warning" (click)="devolverVenta(venta)">Devolver</ion-button><ion-button size="small" fill="clear" color="danger" (click)="cancelarVenta(venta)">Cancelar</ion-button></td>
 
             </tr>
 

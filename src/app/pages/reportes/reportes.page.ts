@@ -111,6 +111,10 @@ export class ReportesPage implements OnInit {
     } catch { this.mensaje = 'No fue posible obtener el ticket.'; }
   }
 
+  async devolverVenta(venta:VentaReporte):Promise<void>{
+    try{const detail=await this.api.get<{items:Array<{detalleId:number;nombre:string;cantidad:number;devuelto:number}>}>(`sales/${venta.id}`);const items:Array<{detalleId:number;cantidad:number}>=[];for(const item of detail.items){const disponible=Number(item.cantidad)-Number(item.devuelto);if(disponible<=0)continue;const value=prompt(`${item.nombre}: cantidad a devolver (máximo ${disponible}). Deja vacío para omitir:`);if(value===null||value.trim()==='')continue;const cantidad=Number(value);if(cantidad<=0||cantidad>disponible){this.mensaje=`Cantidad inválida para ${item.nombre}.`;return;}items.push({detalleId:item.detalleId,cantidad});}if(!items.length)return;const motivo=prompt('Motivo de la devolución:')?.trim()??'';if(motivo.length<5){this.mensaje='Escribe un motivo de al menos 5 caracteres.';return;}if(!confirm('Se repondrá inventario y se registrará el reembolso. ¿Continuar?'))return;const result=await this.api.post<{reembolso:number}>(`sales/${venta.id}/returns`,{items,motivo});this.mensaje=`Devolución registrada. Reembolso: $${Number(result.reembolso).toFixed(2)}.`;await this.cargarDatos();}catch(e:unknown){const x=e as{error?:{error?:{error?:string}}};this.mensaje=x.error?.error?.error??'No fue posible registrar la devolución.';}
+  }
+
   private async cargarDatos(): Promise<void> {
     try {
       const datos = await this.api.get<{ sales: Array<Omit<VentaReporte, 'fecha'> & { fecha: string }>; inventory: InventarioReporte[]; credits: Array<Omit<FiadoReporte, 'fecha'> & { fecha: string }> }>('reports');

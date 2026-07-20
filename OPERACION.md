@@ -28,6 +28,23 @@ npm run build
 5. La cajera captura el efectivo contado y cierra el turno. El sistema conserva esperado, contado y diferencia.
 6. El administrador descarga un respaldo SQL al terminar el día.
 
+## Funciones profesionales
+
+- **Código de barras:** en Caja, enfoca “Escanear código”, utiliza el lector y presiona Enter. El lector actúa como teclado.
+- **Venta suspendida:** conserva el carrito sin descontar inventario; puede recuperarse desde la misma Caja.
+- **Pago mixto:** distribuye el total entre efectivo, tarjeta y transferencia. La API rechaza diferencias.
+- **Modo sin conexión:** una venta sin red se guarda con UUID único y se sincroniza al reconectar. Caja no puede cerrarse mientras existan ventas pendientes.
+- **Cortes:** Corte X es informativo y no cierra; Corte Z se imprime al cerrar y contiene diferencia de efectivo.
+- **Tickets:** desde Reportes puede imprimirse o reimprimirse el ticket térmico de una venta.
+- **Devoluciones:** Administrador o Gerente puede devolver partidas parciales desde Reportes; el inventario y reembolso se ajustan dentro de una transacción.
+- **Lotes y caducidad:** se capturan al recibir Compras. Inventario alerta a 30 días y resalta vencidos o próximos a 7 días.
+- **Mermas y conteo:** Inventario permite registrar merma con motivo y ajustar existencias mediante conteo físico auditable.
+- **Pedido sugerido:** Compras propone cantidades para productos iguales o inferiores al stock mínimo.
+- **Promociones:** el módulo Promociones administra porcentaje, precio especial, 2×1 y 3×2; el servidor calcula el descuento.
+- **Fiados:** se seleccionan clientes existentes, se respeta su crédito disponible y los abonos se registran en Caja.
+- **Seguridad:** bloqueo por intentos, cambio de contraseña, sesión vencida y cierre por 30 minutos de inactividad.
+- **Apariencia y accesibilidad:** tema claro, oscuro o automático, contraste adaptado, mensajes de estado y controles táctiles.
+
 ## Respaldos
 
 - El botón **Descargar respaldo MySQL** usa `mysqldump` y protege todas las tablas.

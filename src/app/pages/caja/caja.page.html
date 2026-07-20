@@ -7,6 +7,7 @@
 
     <p class="notice success" *ngIf="mensaje">{{ mensaje }}</p>
     <p class="notice error" *ngIf="error">{{ error }}</p>
+    <p class="notice pending-sync" *ngIf="ventasPendientes.length">📡 {{ventasPendientes.length}} venta(s) pendiente(s) de sincronizar. <button type="button" (click)="sincronizarPendientes()">Reintentar ahora</button></p>
 
     <ion-card *ngIf="!sesion">
       <ion-card-header><ion-card-title>Abrir turno</ion-card-title></ion-card-header>
@@ -22,12 +23,14 @@
         <ion-card><ion-card-content><small>Ventas del turno</small><strong>{{ ventasTurno | currency:'MXN' }}</strong></ion-card-content></ion-card>
         <ion-card><ion-card-content><small>Efectivo esperado</small><strong>{{ efectivoEsperado | currency:'MXN' }}</strong></ion-card-content></ion-card>
       </section>
+      <div class="cut-action"><ion-button fill="outline" (click)="imprimirCorteX()">Imprimir Corte X</ion-button></div>
 
       <div class="pos-grid">
         <ion-card>
           <ion-card-header><ion-card-title>Productos</ion-card-title></ion-card-header>
           <ion-card-content>
-            <ion-item><ion-label position="stacked">Buscar por nombre o código</ion-label><ion-input [(ngModel)]="busqueda"></ion-input></ion-item>
+            <ion-item><ion-label position="stacked">Escanear código o buscar producto</ion-label><ion-input [(ngModel)]="busqueda" (keyup.enter)="procesarCodigo()" placeholder="Escanea y presiona Enter"></ion-input></ion-item>
+            <small class="scanner-help">El lector de códigos funciona como teclado: apunta, escanea y el producto se agrega automáticamente.</small>
             <div class="product-list">
               <button type="button" class="product" *ngFor="let producto of productosFiltrados" (click)="agregar(producto)">
                 <span>{{ producto.nombre }}</span><small>Stock {{ producto.stock }}</small><strong>{{ producto.precioVenta | currency:'MXN' }}</strong>
@@ -43,19 +46,37 @@
             <div class="cart-line" *ngFor="let linea of carrito">
               <div><strong>{{ linea.nombre }}</strong><small>{{ linea.precioVenta | currency:'MXN' }} c/u</small></div>
               <ion-input type="number" min="0" [max]="linea.stock" [ngModel]="linea.cantidad" (ngModelChange)="cambiarCantidad(linea, $event)"></ion-input>
-              <strong>{{ linea.precioVenta * linea.cantidad | currency:'MXN' }}</strong>
+              <strong>{{ totalLinea(linea) | currency:'MXN' }}</strong>
               <ion-button fill="clear" color="danger" (click)="quitar(linea.id)">Quitar</ion-button>
             </div>
-            <div class="totals"><span>Subtotal <b>{{ subtotal | currency:'MXN' }}</b></span><span>IVA <b>{{ impuestos | currency:'MXN' }}</b></span><span class="grand">Total <b>{{ total | currency:'MXN' }}</b></span></div>
-            <ion-item><ion-label position="stacked">Forma de pago</ion-label><ion-select [(ngModel)]="metodo"><ion-select-option value="EFECTIVO">Efectivo</ion-select-option><ion-select-option value="TARJETA">Tarjeta</ion-select-option><ion-select-option value="TRANSFERENCIA">Transferencia</ion-select-option><ion-select-option value="FIADO">Fiado</ion-select-option></ion-select></ion-item>
-            <ion-item *ngIf="metodo === 'EFECTIVO'"><ion-label position="stacked">Efectivo recibido</ion-label><ion-input type="number" min="0" [(ngModel)]="efectivoRecibido"></ion-input></ion-item>
-            <p class="change" *ngIf="cambio">Cambio: <strong>{{ cambio | currency:'MXN' }}</strong></p>
+            <div class="totals"><span>Subtotal <b>{{ subtotal | currency:'MXN' }}</b></span><span *ngIf="descuento">Promociones <b>-{{ descuento | currency:'MXN' }}</b></span><span>IVA <b>{{ impuestos | currency:'MXN' }}</b></span><span class="grand">Total <b>{{ total | currency:'MXN' }}</b></span></div>
+            <ion-button expand="block" fill="outline" [disabled]="!carrito.length" (click)="suspenderVenta()">Suspender venta</ion-button>
+            <ion-item><ion-label position="stacked">Forma de pago</ion-label><ion-select [(ngModel)]="metodo"><ion-select-option value="EFECTIVO">Efectivo</ion-select-option><ion-select-option value="TARJETA">Tarjeta</ion-select-option><ion-select-option value="TRANSFERENCIA">Transferencia</ion-select-option><ion-select-option value="FIADO">Fiado</ion-select-option><ion-select-option value="MIXTO">Pago mixto</ion-select-option></ion-select></ion-item>
+            <section class="cash-payment" *ngIf="metodo === 'EFECTIVO'">
+              <div class="cash-total"><span>Total a cobrar</span><strong>{{ total | currency:'MXN' }}</strong></div>
+              <ion-item><ion-label position="stacked">El cliente pagó con</ion-label><ion-input type="number" min="0" inputmode="decimal" placeholder="0.00" [(ngModel)]="efectivoRecibido"></ion-input></ion-item>
+              <div class="cash-shortcuts"><button type="button" (click)="usarMontoExacto()">Exacto</button><button type="button" *ngFor="let monto of [50,100,200,500,1000]" (click)="usarEfectivo(monto)">{{ monto | currency:'MXN':'symbol':'1.0-0' }}</button></div>
+              <div class="change-box" [class.pending]="efectivoFaltante > 0" [class.ready]="efectivoRecibido !== null && efectivoFaltante === 0">
+                <span>{{ efectivoFaltante > 0 ? 'Falta por recibir' : 'Cambio a entregar' }}</span>
+                <strong>{{ (efectivoFaltante > 0 ? efectivoFaltante : cambio) | currency:'MXN' }}</strong>
+                <small *ngIf="efectivoRecibido !== null && efectivoFaltante === 0">Pago recibido: {{ efectivoRecibido | currency:'MXN' }}</small>
+              </div>
+            </section>
+            <section class="cash-payment" *ngIf="metodo === 'MIXTO'">
+              <div class="cash-total"><span>Total a distribuir</span><strong>{{ total | currency:'MXN' }}</strong></div>
+              <ion-item><ion-label position="stacked">Parte en efectivo</ion-label><ion-input type="number" min="0" [(ngModel)]="pagoMixtoEfectivo"></ion-input></ion-item>
+              <ion-item><ion-label position="stacked">Parte en tarjeta</ion-label><ion-input type="number" min="0" [(ngModel)]="pagoMixtoTarjeta"></ion-input></ion-item>
+              <ion-item><ion-label position="stacked">Parte en transferencia</ion-label><ion-input type="number" min="0" [(ngModel)]="pagoMixtoTransferencia"></ion-input></ion-item>
+              <div class="change-box" [class.pending]="diferenciaPagoMixto !== 0" [class.ready]="diferenciaPagoMixto === 0"><span>{{ diferenciaPagoMixto >= 0 ? 'Falta distribuir' : 'Monto excedido' }}</span><strong>{{ (diferenciaPagoMixto < 0 ? -diferenciaPagoMixto : diferenciaPagoMixto) | currency:'MXN' }}</strong><small>Capturado: {{ totalPagoMixto | currency:'MXN' }}</small></div>
+            </section>
             <ion-item *ngIf="metodo === 'FIADO'"><ion-label position="stacked">Cliente</ion-label><ion-select [(ngModel)]="clienteId"><ion-select-option *ngFor="let cliente of clientes" [value]="cliente.id">{{ cliente.nombre }} · {{ cliente.telefono }}</ion-select-option></ion-select></ion-item>
-            <ion-item *ngIf="metodo === 'TARJETA' || metodo === 'TRANSFERENCIA'"><ion-label position="stacked">Referencia</ion-label><ion-input [(ngModel)]="referencia"></ion-input></ion-item>
-            <ion-button expand="block" [disabled]="procesando || !carrito.length" (click)="cobrar()">Cobrar {{ total | currency:'MXN' }}</ion-button>
+            <ion-item *ngIf="metodo === 'TARJETA' || metodo === 'TRANSFERENCIA' || metodo === 'MIXTO'"><ion-label position="stacked">Referencia de tarjeta/transferencia</ion-label><ion-input [(ngModel)]="referencia"></ion-input></ion-item>
+            <ion-button expand="block" [disabled]="procesando || !carrito.length || (metodo === 'EFECTIVO' && efectivoFaltante > 0) || (metodo === 'MIXTO' && diferenciaPagoMixto !== 0)" (click)="cobrar()">Confirmar cobro de {{ total | currency:'MXN' }}</ion-button>
           </ion-card-content>
         </ion-card>
       </div>
+
+      <ion-card *ngIf="ventasSuspendidas.length"><ion-card-header><ion-card-title>Ventas suspendidas</ion-card-title></ion-card-header><ion-card-content><div class="suspended" *ngFor="let venta of ventasSuspendidas"><div><strong>{{ venta.carrito.length }} productos · {{ totalSuspendida(venta) | currency:'MXN' }}</strong><small>{{ venta.fecha | date:'short' }}</small></div><ion-button fill="outline" (click)="recuperarVenta(venta.id)">Recuperar</ion-button></div></ion-card-content></ion-card>
 
       <div class="bottom-grid">
         <ion-card><ion-card-header><ion-card-title>Entrada o salida</ion-card-title></ion-card-header><ion-card-content>

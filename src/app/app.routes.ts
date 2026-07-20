@@ -90,6 +90,7 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { roles: ['administrador', 'gerente'] },
   },
+  { path:'promociones',title:'Promociones | Abarrotes El Pedernal',loadComponent:()=>import('./pages/promociones/promociones.page').then(m=>m.PromocionesPage),canActivate:[authGuard,roleGuard],data:{roles:['administrador','gerente']} },
   {
     path: 'fiados',
     title: 'Fiados | Abarrotes El Pedernal',

@@ -15,6 +15,8 @@ import {
 } from '@ionic/angular/standalone';
 import { filter } from 'rxjs';
 import { Auth, RolUsuario } from './services/auth';
+import { AlertasProveedores } from './services/alertas-proveedores';
+import { ModoTema, TemaService } from './services/tema';
 
 interface OpcionMenu {
   etiqueta: string;
@@ -33,10 +35,15 @@ export class AppComponent {
   private readonly auth = inject(Auth);
   private readonly menu = inject(MenuController);
   private readonly destroyRef = inject(DestroyRef);
+  readonly alertasService = inject(AlertasProveedores);
+  readonly tema = inject(TemaService);
 
   mostrarMenu = false;
   rol: RolUsuario | null = null;
   usuario = '';
+  mostrarAlertas = false;
+  mensajeNotificaciones = '';
+  private temporizadorInactividad?: number;
 
   private readonly opciones: OpcionMenu[] = [
     { etiqueta: 'Mi cuenta', ruta: '/perfil', roles: ['administrador', 'gerente', 'cajera'] },
@@ -44,6 +51,7 @@ export class AppComponent {
     { etiqueta: 'Inventario', ruta: '/inventario', roles: ['administrador', 'gerente'] },
     { etiqueta: 'Proveedores', ruta: '/proveedores', roles: ['administrador', 'gerente'] },
     { etiqueta: 'Compras', ruta: '/compras', roles: ['administrador', 'gerente'] },
+    { etiqueta: 'Promociones', ruta: '/promociones', roles: ['administrador', 'gerente'] },
     { etiqueta: 'Clientes', ruta: '/clientes', roles: ['administrador', 'gerente', 'cajera'] },
     { etiqueta: 'Fiados', ruta: '/fiados', roles: ['administrador', 'gerente', 'cajera'] },
     { etiqueta: 'Caja', ruta: '/caja', roles: ['administrador', 'gerente', 'cajera'] },
@@ -58,6 +66,14 @@ export class AppComponent {
   constructor() {
     this.router.events.pipe(filter((evento): evento is NavigationEnd => evento instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef)).subscribe((evento) => this.actualizarSesion(evento.urlAfterRedirects));
     this.actualizarSesion(this.router.url);
+    const revisionAlertas = window.setInterval(() => {
+      if (this.auth.estaAutenticado()) void this.alertasService.actualizar(true);
+    }, 30 * 60 * 1000);
+    this.destroyRef.onDestroy(() => window.clearInterval(revisionAlertas));
+    const actividad=()=>this.reiniciarInactividad();
+    ['pointerdown','keydown','touchstart'].forEach(evento=>window.addEventListener(evento,actividad,{passive:true}));
+    this.destroyRef.onDestroy(()=>['pointerdown','keydown','touchstart'].forEach(evento=>window.removeEventListener(evento,actividad)));
+    this.reiniciarInactividad();
   }
 
   get opcionesVisibles(): OpcionMenu[] {
@@ -89,6 +105,18 @@ export class AppComponent {
     await this.router.navigateByUrl('/login');
   }
 
+  async alternarAlertas(): Promise<void> {
+    this.mostrarAlertas = !this.mostrarAlertas;
+    if (this.mostrarAlertas) await this.alertasService.actualizar(false);
+  }
+
+  async activarNotificaciones(): Promise<void> {
+    const resultado = await this.alertasService.solicitarPermiso();
+    this.mensajeNotificaciones = resultado === 'granted' ? 'Notificaciones y campanitas activadas.' : resultado === 'denied' ? 'El navegador no autorizó las notificaciones.' : 'Este navegador no admite notificaciones.';
+  }
+
+  seleccionarTema(modo: ModoTema): void { this.tema.seleccionar(modo); }
+
   etiquetaRol(): string {
     const etiquetas: Record<RolUsuario, string> = { administrador: 'Administrador', gerente: 'Gerente', cajera: 'Cajera' };
     return this.rol ? etiquetas[this.rol] : '';
@@ -98,5 +126,8 @@ export class AppComponent {
     this.rol = this.auth.obtenerRol();
     this.usuario = localStorage.getItem('usuario') ?? '';
     this.mostrarMenu = !url.startsWith('/login') && this.auth.estaAutenticado();
+    if (this.mostrarMenu) void this.alertasService.actualizar(true);
   }
+
+  private reiniciarInactividad():void{if(this.temporizadorInactividad)window.clearTimeout(this.temporizadorInactividad);if(!this.auth.estaAutenticado())return;this.temporizadorInactividad=window.setTimeout(()=>{this.auth.cerrarSesion();void this.router.navigateByUrl('/login');},30*60*1000);}
 }

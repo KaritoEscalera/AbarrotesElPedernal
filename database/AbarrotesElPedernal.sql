@@ -396,6 +396,86 @@ CREATE TABLE IF NOT EXISTS respaldos (
   INDEX idx_respaldos_estado_fecha (estado, creado_en)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS producto_lotes (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  producto_id BIGINT UNSIGNED NOT NULL,
+  compra_id BIGINT UNSIGNED NULL,
+  lote VARCHAR(80) NOT NULL,
+  fecha_caducidad DATE NULL,
+  cantidad_inicial DECIMAL(12,3) NOT NULL,
+  cantidad_disponible DECIMAL(12,3) NOT NULL,
+  costo_unitario DECIMAL(12,2) NOT NULL DEFAULT 0,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_lotes_cantidades CHECK (cantidad_inicial > 0 AND cantidad_disponible >= 0 AND cantidad_disponible <= cantidad_inicial),
+  CONSTRAINT fk_lote_producto FOREIGN KEY (producto_id) REFERENCES productos(id),
+  CONSTRAINT fk_lote_compra FOREIGN KEY (compra_id) REFERENCES compras(id) ON DELETE SET NULL,
+  UNIQUE KEY uq_producto_lote (producto_id,lote),
+  INDEX idx_lotes_caducidad (fecha_caducidad,cantidad_disponible)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS venta_detalle_lotes (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  venta_detalle_id BIGINT UNSIGNED NOT NULL,
+  lote_id BIGINT UNSIGNED NOT NULL,
+  cantidad DECIMAL(12,3) NOT NULL,
+  CONSTRAINT chk_venta_detalle_lote_cantidad CHECK (cantidad > 0),
+  CONSTRAINT fk_vdl_venta_detalle FOREIGN KEY (venta_detalle_id) REFERENCES venta_detalles(id) ON DELETE CASCADE,
+  CONSTRAINT fk_vdl_lote FOREIGN KEY (lote_id) REFERENCES producto_lotes(id),
+  UNIQUE KEY uq_venta_detalle_lote (venta_detalle_id,lote_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS devoluciones_venta (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  venta_id BIGINT UNSIGNED NOT NULL,
+  usuario_id BIGINT UNSIGNED NOT NULL,
+  motivo VARCHAR(255) NOT NULL,
+  total_reembolso DECIMAL(14,2) NOT NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_devolucion_venta FOREIGN KEY (venta_id) REFERENCES ventas(id),
+  CONSTRAINT fk_devolucion_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  INDEX idx_devolucion_venta (venta_id,creado_en)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS devolucion_venta_detalles (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  devolucion_id BIGINT UNSIGNED NOT NULL,
+  venta_detalle_id BIGINT UNSIGNED NOT NULL,
+  cantidad DECIMAL(12,3) NOT NULL,
+  importe DECIMAL(14,2) NOT NULL,
+  CONSTRAINT chk_devolucion_cantidad CHECK (cantidad > 0 AND importe >= 0),
+  CONSTRAINT fk_dev_det_devolucion FOREIGN KEY (devolucion_id) REFERENCES devoluciones_venta(id) ON DELETE CASCADE,
+  CONSTRAINT fk_dev_det_venta_detalle FOREIGN KEY (venta_detalle_id) REFERENCES venta_detalles(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS promociones (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(150) NOT NULL,
+  tipo ENUM('PORCENTAJE','PRECIO_ESPECIAL','DOS_POR_UNO','TRES_POR_DOS') NOT NULL,
+  valor DECIMAL(12,2) NOT NULL DEFAULT 0,
+  producto_id BIGINT UNSIGNED NULL,
+  categoria_id BIGINT UNSIGNED NULL,
+  fecha_inicio DATETIME NOT NULL,
+  fecha_fin DATETIME NOT NULL,
+  activa BOOLEAN NOT NULL DEFAULT TRUE,
+  creado_por BIGINT UNSIGNED NOT NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_promocion_fechas CHECK (fecha_fin > fecha_inicio),
+  CONSTRAINT fk_promo_producto FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE CASCADE,
+  CONSTRAINT fk_promo_categoria FOREIGN KEY (categoria_id) REFERENCES categorias(id) ON DELETE CASCADE,
+  CONSTRAINT fk_promo_usuario FOREIGN KEY (creado_por) REFERENCES usuarios(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS operaciones_sincronizacion (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  operacion_uuid CHAR(36) NOT NULL UNIQUE,
+  usuario_id BIGINT UNSIGNED NOT NULL,
+  tipo VARCHAR(40) NOT NULL,
+  entidad_id BIGINT UNSIGNED NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_sync_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  INDEX idx_sync_fecha (creado_en)
+) ENGINE=InnoDB;
+
 -- Datos de catálogo seguros. Los usuarios deben crearse desde un backend usando bcrypt o Argon2.
 INSERT INTO roles (nombre, descripcion) VALUES
   ('Administrador', 'Acceso completo al sistema'),

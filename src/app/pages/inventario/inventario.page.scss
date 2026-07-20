@@ -324,3 +324,12 @@ tbody tr:hover {
     font-size: 28px;
   }
 }
+
+.expiry-card { margin: 18px 0; padding: 20px; background: #fff; border: 1px solid #f0d5bc; border-radius: 18px; box-shadow: 0 8px 25px rgba(74,44,29,.08); }
+.expiry-card h2 { margin: 3px 0 12px; color: #4a2c1d; }
+.expiry-card article { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px; margin-top:7px; color:#6b4d3a; background:#fff5dc; border-left:5px solid #e6a329; border-radius:10px; }
+.expiry-card article div,.expiry-card article small { display:block; }
+.expiry-card article span { font-weight:800; }
+.expiry-card article.urgent { color:#8a3e16; background:#ffe2ca; border-color:#e66b29; }
+.expiry-card article.expired { color:#8a2525; background:#fde1e1; border-color:#c93737; }
+.stock-button.text{width:auto;padding:0 9px;font-size:11px}

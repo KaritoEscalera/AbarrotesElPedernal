@@ -23,8 +23,12 @@ const purchases = await fetch(`${api}/purchases`, { headers: { Authorization: `B
 if (!purchases.ok || !Array.isArray(await purchases.json())) throw new Error(`Compras falló con HTTP ${purchases.status}`);
 const backups = await fetch(`${api}/backups`, { headers: { Authorization: `Bearer ${session.token}` } });
 if (!backups.ok || !Array.isArray(await backups.json())) throw new Error(`Respaldos falló con HTTP ${backups.status}`);
+for (const endpoint of ['purchase-suggestions','lots/alerts','promotions']) {
+  const response = await fetch(`${api}/${endpoint}`, { headers: { Authorization: `Bearer ${session.token}` } });
+  if (!response.ok || !Array.isArray(await response.json())) throw new Error(`${endpoint} falló con HTTP ${response.status}`);
+}
 if (process.env.TEST_BACKUP === '1') {
   const backup = await fetch(`${api}/backups/export`, { headers: { Authorization: `Bearer ${session.token}` } });
   if (!backup.ok || (await backup.arrayBuffer()).byteLength < 1000) throw new Error(`Exportación de respaldo falló con HTTP ${backup.status}`);
 }
-console.log(`Prueba completa correcta: login, ${rows.length} clientes, caja, compras, reportes, estadísticas, respaldos y bitácora conectados con MySQL.`);
+console.log(`Prueba completa correcta: login, ${rows.length} clientes, caja, compras, promociones, lotes, sugerencias, reportes, estadísticas, respaldos y bitácora conectados con MySQL.`);

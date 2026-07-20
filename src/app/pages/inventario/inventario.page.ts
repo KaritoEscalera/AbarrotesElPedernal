@@ -23,6 +23,7 @@ interface ProductoInventario {
   stockMinimo: number;
   precioVenta: number;
 }
+interface LoteAlerta { id:number; nombre:string; lote:string; fechaCaducidad:string; cantidad:number; dias:number; }
 
 @Component({
   selector: 'app-inventario',
@@ -53,8 +54,9 @@ export class InventarioPage implements OnInit {
   mensajeEntrada = '';
 
   productos: ProductoInventario[] = [];
+  lotesAlerta: LoteAlerta[] = [];
 
-  async ngOnInit(): Promise<void> { await this.cargarProductos(); }
+  async ngOnInit(): Promise<void> { await Promise.all([this.cargarProductos(),this.cargarLotes()]); }
 
   get productosFiltrados(): ProductoInventario[] {
     const texto = this.busqueda.toLowerCase().trim();
@@ -117,6 +119,8 @@ export class InventarioPage implements OnInit {
       await this.ajustarStock(producto, -1);
     }
   }
+  async registrarMerma(producto:ProductoInventario):Promise<void>{const cantidad=Number(prompt(`Cantidad de merma para ${producto.nombre}:`)??0);if(!cantidad)return;const motivo=prompt('Motivo (caducidad, daño, robo, etc.):')?.trim()??'';if(!motivo)return;try{const r=await this.api.post<{stock:number}>(`products/${producto.id}/waste`,{cantidad,motivo});producto.stock=Number(r.stock);this.mensajeEntrada='Merma registrada con trazabilidad.';}catch{this.mensajeEntrada='No fue posible registrar la merma.';}}
+  async conteoFisico(producto:ProductoInventario):Promise<void>{const valor=prompt(`Existencia física contada de ${producto.nombre}:`,String(producto.stock));if(valor===null)return;const stockContado=Number(valor);if(!Number.isFinite(stockContado)||stockContado<0)return;try{const r=await this.api.post<{stock:number;diferencia:number}>(`products/${producto.id}/count`,{stockContado,motivo:'Conteo físico desde inventario'});producto.stock=Number(r.stock);this.mensajeEntrada=`Conteo guardado. Diferencia: ${Number(r.diferencia)}.`;}catch{this.mensajeEntrada='No fue posible guardar el conteo.';}}
 
   registrarEntrada(): void {
     this.entradaVisible = !this.entradaVisible;
@@ -140,4 +144,5 @@ export class InventarioPage implements OnInit {
 
   private async ajustarStock(producto: ProductoInventario, cantidad: number): Promise<void> { const r = await this.api.patch<{ stock: number }>(`products/${producto.id}/stock`, { cantidad }); producto.stock = Number(r.stock); }
   private async cargarProductos(): Promise<void> { try { const datos = await this.api.get<Array<ProductoInventario & { codigo: string | null; categoria: string | null }>>('products'); this.productos = datos.map((p) => ({ ...p, codigo: p.codigo ?? '', categoria: p.categoria ?? 'Sin categoría', stock: Number(p.stock), stockMinimo: Number(p.stockMinimo), precioVenta: Number(p.precioVenta) })); } catch { this.mensajeEntrada = 'No fue posible consultar el inventario en MySQL.'; } }
+  private async cargarLotes():Promise<void>{try{const datos=await this.api.get<LoteAlerta[]>('lots/alerts');this.lotesAlerta=datos.map(l=>({...l,cantidad:Number(l.cantidad),dias:Number(l.dias)}));}catch{this.lotesAlerta=[];}}
 }

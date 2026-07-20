@@ -26,6 +26,7 @@ interface Fiado {
   fechaRegistro: string;
   fechaLimite: string;
 }
+interface ClienteCredito { id:number; nombre:string; telefono:string; activo:boolean; }
 
 @Component({
   selector: 'app-fiados',
@@ -59,6 +60,7 @@ export class FiadosPage implements OnInit {
 
   rolActual = this.auth.obtenerRol() ?? 'cajera';
   nuevoFiadoForm = {
+    clienteId: null as number | null,
     cliente: '',
     telefono: '',
     deudaOriginal: null as number | null,
@@ -67,8 +69,10 @@ export class FiadosPage implements OnInit {
   };
 
   fiados: Fiado[] = [];
+  clientes: ClienteCredito[] = [];
 
-  async ngOnInit(): Promise<void> { await this.cargarFiados(); }
+  async ngOnInit(): Promise<void> { await Promise.all([this.cargarFiados(),this.cargarClientes()]); }
+  seleccionarCliente():void{const c=this.clientes.find(x=>x.id===Number(this.nuevoFiadoForm.clienteId));if(c){this.nuevoFiadoForm.cliente=c.nombre;this.nuevoFiadoForm.telefono=c.telefono;}}
 
   get fiadosFiltrados(): Fiado[] {
     const texto = this.busqueda.toLowerCase().trim();
@@ -119,6 +123,7 @@ export class FiadosPage implements OnInit {
   cancelarNuevoFiado(): void {
     this.nuevoFiadoVisible = false;
     this.nuevoFiadoForm = {
+      clienteId: null,
       cliente: '',
       telefono: '',
       deudaOriginal: null,
@@ -145,14 +150,25 @@ export class FiadosPage implements OnInit {
       return;
     }
 
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    if (new Date(`${fechaLimite}T00:00:00`) < hoy) {
+      this.mensaje = 'La fecha límite no puede estar en el pasado.';
+      return;
+    }
+
     if (this.puedeConfigurarLimite) {
       if (!limite || limite <= 0) {
         this.mensaje = 'El límite debe ser mayor a cero.';
         return;
       }
+      if (deudaOriginal > limite) {
+        this.mensaje = 'La deuda no puede superar el límite autorizado.';
+        return;
+      }
     }
 
-    try { await this.api.post('credits', { cliente, telefono, deudaOriginal, limite: this.puedeConfigurarLimite ? limite : 0, fechaLimite }); await this.cargarFiados(); this.cancelarNuevoFiado(); this.mensaje = 'Fiado registrado correctamente en MySQL.'; } catch { this.mensaje = 'No fue posible registrar el fiado.'; }
+    try { await this.api.post('credits', { clienteId:this.nuevoFiadoForm.clienteId, cliente, telefono, deudaOriginal, limite: this.puedeConfigurarLimite ? limite : 0, fechaLimite }); await this.cargarFiados(); this.cancelarNuevoFiado(); this.mensaje = 'Fiado registrado correctamente en MySQL.'; }
+    catch (error: unknown) { const response = error as { error?: { error?: { error?: string } } }; this.mensaje = response.error?.error?.error ?? 'No fue posible registrar el fiado.'; }
   }
 
   obtenerEstado(fiado: Fiado): 'pendiente' | 'vencido' | 'liquidado' {
@@ -200,11 +216,6 @@ export class FiadosPage implements OnInit {
     this.mensaje = '';
   }
 
-  nuevoFiado(): void {
-    alert(
-      'Después conectaremos este botón con el formulario para registrar un nuevo fiado.'
-    );
-  }
-
   private async cargarFiados(): Promise<void> { try { const datos = await this.api.get<Fiado[]>('credits'); this.fiados = datos.map((f) => ({ ...f, deudaOriginal: Number(f.deudaOriginal), saldoPendiente: Number(f.saldoPendiente), ultimoAbono: Number(f.ultimoAbono), limite: Number(f.limite) })); } catch { this.mensaje = 'No fue posible consultar fiados en MySQL.'; } }
+  private async cargarClientes():Promise<void>{try{this.clientes=(await this.api.get<ClienteCredito[]>('clients')).filter(c=>c.activo);}catch{this.clientes=[];}}
 }

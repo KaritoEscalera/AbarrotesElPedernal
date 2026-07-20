@@ -1,6 +1,7 @@
 <ion-content class="ion-padding"><main>
   <header><p>Abastecimiento</p><h1>Compras y recepción</h1><span>Al recibir una compra, las existencias y costos se actualizan en MySQL.</span></header>
   <p class="success" *ngIf="mensaje">{{ mensaje }}</p><p class="error" *ngIf="error">{{ error }}</p>
+  <ion-card *ngIf="sugerencias.length"><ion-card-header><ion-card-title>Pedido sugerido por stock bajo</ion-card-title></ion-card-header><ion-card-content><div class="suggestion" *ngFor="let s of sugerencias"><div><strong>{{s.nombre}}</strong><small>Stock {{s.stock}} · mínimo {{s.minimo}} · {{s.proveedor||'Proveedor sin asignar'}}</small></div><span>Sugerido: {{s.cantidadSugerida}}</span><ion-button size="small" fill="outline" (click)="usarSugerencia(s)">Agregar</ion-button></div></ion-card-content></ion-card>
   <ion-card><ion-card-header><ion-card-title>Nueva compra recibida</ion-card-title></ion-card-header><ion-card-content>
     <div class="form-grid">
       <ion-item><ion-label position="stacked">Proveedor</ion-label><ion-select [(ngModel)]="proveedorId"><ion-select-option *ngFor="let p of proveedores" [value]="p.id">{{ p.empresa }}</ion-select-option></ion-select></ion-item>
@@ -11,6 +12,8 @@
       <ion-item><ion-label position="stacked">Producto</ion-label><ion-select [(ngModel)]="partida.productoId" (ionChange)="seleccionarProducto(partida)"><ion-select-option *ngFor="let p of productos" [value]="p.id">{{ p.nombre }}</ion-select-option></ion-select></ion-item>
       <ion-item><ion-label position="stacked">Cantidad</ion-label><ion-input type="number" min="0.001" [(ngModel)]="partida.cantidad"></ion-input></ion-item>
       <ion-item><ion-label position="stacked">Costo unitario</ion-label><ion-input type="number" min="0" [(ngModel)]="partida.costoUnitario"></ion-input></ion-item>
+      <ion-item><ion-label position="stacked">Lote (opcional)</ion-label><ion-input [(ngModel)]="partida.lote"></ion-input></ion-item>
+      <ion-item><ion-label position="stacked">Caducidad</ion-label><ion-input type="date" [(ngModel)]="partida.fechaCaducidad"></ion-input></ion-item>
       <ion-button fill="clear" color="danger" (click)="quitarPartida(i)">Quitar</ion-button>
     </div>
     <ion-button fill="outline" (click)="agregarPartida()">Agregar producto</ion-button>
