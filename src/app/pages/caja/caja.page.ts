@@ -36,7 +36,7 @@ interface EstadoCaja {
 interface CorteCaja { sesionId?:number; fondoInicial:number; efectivoEsperado:number; efectivoContado?:number; diferencia?:number; ventasEfectivo:number; ventasTarjeta:number; ventasTransferencia:number; ventasFiado:number; fechaCierre?:string; }
 interface VentaPendiente { operacionUuid:string; payload:Record<string,unknown>; creada:string; }
 interface VentaResumen { id:number; folio:string; fecha:string; estado:'COMPLETADA'|'CANCELADA'|'DEVUELTA'; total:number; usuario:string; cliente:string; metodo:string; }
-interface VentaDetalle extends VentaResumen { subtotal:number; descuento:number; impuestos:number; items:Array<{nombre:string;cantidad:number;precioUnitario:number;importe:number}>; pagos:Array<{metodo:string;monto:number;referencia:string|null}>; }
+interface VentaDetalle extends VentaResumen { subtotal:number; descuento:number; impuestos:number; items:Array<{nombre:string;cantidad:number;precioUnitario:number;importe:number}>; pagos:Array<{metodo:string;monto:number;referencia:string|null}>; fiado:{monto:number;saldoPendiente:number;fechaLimite:string}|null; }
 interface Denominacion { valor:number; etiqueta:string; cantidad:number|null; }
 interface Recarga {id:number;compania:string;telefono:string;monto:number;comision:number;estado:'PENDIENTE'|'EXITOSA'|'RECHAZADA'|'CANCELADA';folioProveedor:string|null;motivo:string|null;fecha:string;usuario:string;folioCaptura?:string;motivoCaptura?:string;}
 interface ConciliacionRecargas {total:number;comisiones:number;pendientes:number;exitosas:number;rechazadas:number;canceladas:number;porCompania:Array<{compania:string;operaciones:number;monto:number;comision:number}>;}
@@ -81,6 +81,7 @@ export class CajaPage implements OnInit, OnDestroy {
   conciliacionRecargas:ConciliacionRecargas={total:0,comisiones:0,pendientes:0,exitosas:0,rechazadas:0,canceladas:0,porCompania:[]};
   cambioClienteId: number | null = null;
   cambioPendienteMonto: number | null = null;
+  cambioClienteGenerico = '';
   cambiosPendientes: CambioPendiente[] = [];
   efectivoContado: number | null = null;
   observacionesCierre = '';
@@ -123,6 +124,15 @@ export class CajaPage implements OnInit, OnDestroy {
   get clienteSeleccionado():ClienteCaja|undefined{return this.clientes.find(c=>c.id===Number(this.clienteId));}
   get totalArqueo():number{return Math.round(this.denominaciones.reduce((s,d)=>s+d.valor*Number(d.cantidad||0),0)*100)/100;}
   get diferenciaArqueo():number{return Math.round((this.totalArqueo-this.efectivoEsperado)*100)/100;}
+  get errorTelefonoRecarga():string{
+    const telefono=this.recargaTelefono.trim();
+    if(!telefono)return '';
+    if(!/^\d+$/.test(telefono))return 'El número solo puede contener dígitos.';
+    if(telefono.length<10){const faltan=10-telefono.length;return `Número incompleto: ${faltan===1?'falta 1 dígito':`faltan ${faltan} dígitos`}.`;}
+    if(telefono.length>10){const sobran=telefono.length-10;return `Número demasiado largo: ${sobran===1?'sobra 1 dígito':`sobran ${sobran} dígitos`}.`;}
+    return '';
+  }
+  get telefonoRecargaValido():boolean{return /^\d{10}$/.test(this.recargaTelefono.trim());}
 
   usarEfectivo(monto: number): void { this.efectivoRecibido = monto; }
   usarMontoExacto(): void { this.efectivoRecibido = this.total; }
@@ -248,6 +258,12 @@ export class CajaPage implements OnInit, OnDestroy {
     await this.ejecutar(async()=>{await this.api.post('customer-balances',{clienteId:this.cambioClienteId,monto});this.cambioClienteId=null;this.cambioPendienteMonto=null;await this.cargarCambios();this.mensaje='Cambio guardado a favor del cliente.';});
   }
 
+  async crearClienteGenericoCambio():Promise<void>{
+    const referencia=this.cambioClienteGenerico.trim();
+    if(!referencia)return this.fallar('Escribe una referencia para distinguir al cliente genérico.');
+    await this.ejecutar(async()=>{const creado=await this.api.post<{id:number}>('clients',{nombre:`Cliente genérico - ${referencia}`,telefono:'',direccion:''});this.cambioClienteGenerico='';await this.cargarCatalogos();this.cambioClienteId=Number(creado.id);this.mensaje='Cliente genérico creado y seleccionado.';});
+  }
+
   async entregarCambio(item:CambioPendiente):Promise<void>{await this.ejecutar(async()=>{await this.api.patch(`customer-balances/${item.id}/settle`,{});await this.cargarCambios();await this.cargarEstado();this.mensaje='Cambio entregado y saldo liquidado.';});}
 
   async cerrarCaja(): Promise<void> {
@@ -271,7 +287,16 @@ export class CajaPage implements OnInit, OnDestroy {
   async verVenta(id:number):Promise<void>{await this.ejecutar(async()=>{this.ventaSeleccionada=await this.obtenerVenta(id);});}
   cerrarDetalleVenta():void{this.ventaSeleccionada=null;this.motivoCancelacion='';}
   async cancelarVenta():Promise<void>{if(!this.ventaSeleccionada)return;const motivo=this.motivoCancelacion.trim();if(motivo.length<5)return this.fallar('Escribe un motivo de cancelación de al menos 5 caracteres.');await this.ejecutar(async()=>{await this.api.post(`sales/${this.ventaSeleccionada!.id}/cancel`,{motivo});this.cerrarDetalleVenta();await Promise.all([this.cargarHistorial(),this.cargarTodo()]);this.mensaje='Venta cancelada, inventario y caja actualizados.';});}
-  async imprimirTicket(id:number,cambio=0):Promise<void>{const venta=await this.obtenerVenta(id);const w=window.open('','_blank','width=420,height=720');if(!w){this.error='Permite ventanas emergentes para imprimir el ticket.';return;}const dinero=(n:number)=>`$${Number(n).toFixed(2)}`;const filas=venta.items.map(i=>`<tr><td>${i.cantidad} × ${this.escapar(i.nombre)}</td><td>${dinero(i.importe)}</td></tr>`).join('');const pagos=venta.pagos.map(p=>`<tr><td>${this.escapar(p.metodo)}</td><td>${dinero(p.monto)}</td></tr>`).join('');w.document.write(`<html><head><title>${this.escapar(venta.folio)}</title><style>body{font:13px monospace;width:300px;margin:18px auto;color:#111}h2,p{text-align:center;margin:6px}table{width:100%;border-collapse:collapse;margin:10px 0}td{padding:5px 0;border-bottom:1px dashed #bbb}td:last-child{text-align:right}.total{font-size:17px;font-weight:bold}small{display:block;text-align:center;margin-top:16px}</style></head><body><h2>Abarrotes El Pedernal</h2><p>${this.escapar(venta.folio)}<br>${new Date(venta.fecha).toLocaleString('es-MX')}<br>Atendió: ${this.escapar(venta.usuario)}</p><table>${filas}</table><table><tr><td>Subtotal</td><td>${dinero(venta.subtotal)}</td></tr>${venta.descuento?`<tr><td>Descuento</td><td>-${dinero(venta.descuento)}</td></tr>`:''}<tr><td>IVA</td><td>${dinero(venta.impuestos)}</td></tr><tr class="total"><td>Total</td><td>${dinero(venta.total)}</td></tr>${pagos}${cambio?`<tr><td>Cambio</td><td>${dinero(cambio)}</td></tr>`:''}</table><small>Gracias por su compra</small><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();}
+  async imprimirTicket(id:number,cambio=0):Promise<void>{
+    const venta=await this.obtenerVenta(id);const w=window.open('','_blank','width=420,height=720');
+    if(!w){this.error='Permite ventanas emergentes para imprimir el ticket.';return;}
+    const dinero=(n:number)=>`$${Number(n).toFixed(2)}`;
+    const logo=`${window.location.origin}/assets/logo-pedernal.png`;
+    const filas=venta.items.map(i=>`<tr><td>${i.cantidad} × ${this.escapar(i.nombre)}</td><td>${dinero(i.importe)}</td></tr>`).join('');
+    const pagos=venta.pagos.map(p=>`<tr><td>${this.escapar(p.metodo==='TARJETA'?'TERMINAL / TARJETA':p.metodo)}</td><td>${dinero(p.monto)}</td></tr>`).join('');
+    const credito=venta.fiado?`<section class="credit"><b>VENTA A FIADO</b><div>Cliente: ${this.escapar(venta.cliente)}</div><div>Monto fiado: ${dinero(venta.fiado.monto)}</div><div>Total que debe: ${dinero(venta.fiado.saldoPendiente)}</div><div>Vence: ${new Date(`${venta.fiado.fechaLimite}T00:00:00`).toLocaleDateString('es-MX')}</div></section>`:'';
+    w.document.write(`<html><head><title>${this.escapar(venta.folio)}</title><style>body{font:13px monospace;width:300px;margin:18px auto;color:#111}h2,p{text-align:center;margin:6px}table{width:100%;border-collapse:collapse;margin:10px 0}td{padding:5px 0;border-bottom:1px dashed #bbb}td:last-child{text-align:right}.total{font-size:17px;font-weight:bold}.credit{border:2px solid #111;padding:10px;margin-top:12px}.credit b{display:block;text-align:center;margin-bottom:8px}.credit div{padding:3px 0}small{display:block;text-align:center;margin-top:16px}.ticket-logo{display:block;max-width:130px;max-height:90px;object-fit:contain;margin:14px auto 0;filter:grayscale(1) contrast(1.35)}@media print{.ticket-logo{filter:grayscale(1) contrast(1.5)}}</style></head><body><h2>Abarrotes El Pedernal</h2><p>${this.escapar(venta.folio)}<br>${new Date(venta.fecha).toLocaleString('es-MX')}<br>Atendió: ${this.escapar(venta.usuario)}</p><table>${filas}</table><table><tr><td>Subtotal</td><td>${dinero(venta.subtotal)}</td></tr>${venta.descuento?`<tr><td>Descuento</td><td>-${dinero(venta.descuento)}</td></tr>`:''}<tr><td>IVA</td><td>${dinero(venta.impuestos)}</td></tr><tr class="total"><td>Total</td><td>${dinero(venta.total)}</td></tr>${pagos}${cambio?`<tr><td>Cambio</td><td>${dinero(cambio)}</td></tr>`:''}</table>${credito}<small>Gracias por su compra</small><img class="ticket-logo" src="${this.escapar(logo)}" alt="Abarrotes El Pedernal"><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();
+  }
 
   imprimirCorteX(): void {
     if (!this.sesion) return;
@@ -298,7 +323,7 @@ export class CajaPage implements OnInit, OnDestroy {
   }
   private async cargarCambios():Promise<void>{try{const datos=await this.api.get<CambioPendiente[]>('customer-balances');this.cambiosPendientes=datos.map(x=>({...x,monto:Number(x.monto)}));}catch{this.cambiosPendientes=[];}}
   private async cargarRecargas():Promise<void>{try{const [datos,resumen]=await Promise.all([this.api.get<Recarga[]>('recharges'),this.api.get<ConciliacionRecargas>('recharges/reconciliation')]);this.recargas=datos.map(x=>({...x,monto:Number(x.monto),comision:Number(x.comision)}));this.conciliacionRecargas={...resumen,total:Number(resumen.total),comisiones:Number(resumen.comisiones),pendientes:Number(resumen.pendientes),exitosas:Number(resumen.exitosas),rechazadas:Number(resumen.rechazadas),canceladas:Number(resumen.canceladas),porCompania:resumen.porCompania.map(x=>({...x,operaciones:Number(x.operaciones),monto:Number(x.monto),comision:Number(x.comision)}))};}catch{this.recargas=[];}}
-  private async obtenerVenta(id:number):Promise<VentaDetalle>{const v=await this.api.get<VentaDetalle>(`sales/${id}`);return {...v,subtotal:Number(v.subtotal),descuento:Number(v.descuento),impuestos:Number(v.impuestos),total:Number(v.total),items:v.items.map(i=>({...i,cantidad:Number(i.cantidad),precioUnitario:Number(i.precioUnitario),importe:Number(i.importe)})),pagos:v.pagos.map(p=>({...p,monto:Number(p.monto)}))};}
+  private async obtenerVenta(id:number):Promise<VentaDetalle>{const v=await this.api.get<VentaDetalle>(`sales/${id}`);return {...v,subtotal:Number(v.subtotal),descuento:Number(v.descuento),impuestos:Number(v.impuestos),total:Number(v.total),items:v.items.map(i=>({...i,cantidad:Number(i.cantidad),precioUnitario:Number(i.precioUnitario),importe:Number(i.importe)})),pagos:v.pagos.map(p=>({...p,monto:Number(p.monto)})),fiado:v.fiado?{...v.fiado,monto:Number(v.fiado.monto),saldoPendiente:Number(v.fiado.saldoPendiente)}:null};}
   private escapar(valor:unknown):string{return String(valor??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]??c));}
 
   private async cargarEstado(): Promise<void> {

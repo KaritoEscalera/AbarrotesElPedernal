@@ -10,6 +10,7 @@
       <ion-button type="button" (click)="alternarFormulario()">
         {{ formularioVisible ? 'Cancelar' : 'Agregar cliente' }}
       </ion-button>
+      <ion-button type="button" fill="outline" (click)="prepararGenerico()">Agregar cliente genérico</ion-button>
     </header>
 
     <section class="summary-grid" aria-label="Resumen de clientes">
@@ -20,8 +21,8 @@
 
     <section class="client-form" *ngIf="formularioVisible" aria-label="Registrar cliente">
       <ion-item lines="none"><ion-label position="stacked">Nombre</ion-label><ion-input [(ngModel)]="nuevoCliente.nombre"></ion-input></ion-item>
-      <ion-item lines="none"><ion-label position="stacked">Teléfono</ion-label><ion-input [(ngModel)]="nuevoCliente.telefono" inputmode="tel" type="tel"></ion-input></ion-item>
-      <ion-item lines="none"><ion-label position="stacked">Dirección</ion-label><ion-input [(ngModel)]="nuevoCliente.direccion"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Teléfono (opcional)</ion-label><ion-input [(ngModel)]="nuevoCliente.telefono" inputmode="tel" type="tel"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Dirección (opcional)</ion-label><ion-input [(ngModel)]="nuevoCliente.direccion"></ion-input></ion-item>
       <ion-button type="button" (click)="guardarCliente()">Guardar cliente</ion-button>
       <p aria-live="polite" *ngIf="mensajeFormulario">{{ mensajeFormulario }}</p>
     </section>

@@ -35,8 +35,12 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
   fechaInicio = '';
   fechaFin = '';
   mensajeFechas = '';
+  errorCarga = '';
+  cargando = true;
   private graficas: Chart[] = [];
   private ventas: Venta[] = [];
+  private temporizadorGraficas?: number;
+  private vistaLista = false;
 
   productos: ProductoAnalisis[] = [];
   fiados: FiadoAnalisis[] = [];
@@ -51,11 +55,11 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
       this.fiados = datos.credits.map((f) => ({ ...f, saldo: Number(f.saldo), vencido: Boolean(f.vencido), abonos: Number(f.abonos) }));
       this.cierresCaja = datos.cashClosures.map((c) => ({ ...c, esperado: Number(c.esperado), contado: Number(c.contado), diferencia: Number(c.diferencia) }));
       this.recordatorios = datos.reminders;
-      this.actualizarGraficas();
-    } catch { this.mensajeFechas = 'No fue posible cargar las estadísticas desde MySQL.'; }
+    } catch { this.errorCarga = 'No fue posible cargar las estadísticas desde MySQL.'; }
+    finally { this.cargando = false; if(this.vistaLista)this.actualizarGraficas(); }
   }
 
-  ngAfterViewInit(): void { this.actualizarGraficas(); }
+  ngAfterViewInit(): void { this.vistaLista=true;if(!this.cargando)this.actualizarGraficas(); }
 
   get ventasFiltradas(): Venta[] {
     const [inicio, fin] = this.rangoActual();
@@ -100,6 +104,7 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
   }
   get cierresConDiferencia(): CierreCaja[] { return this.cierresCaja.filter((c) => Math.abs(c.diferencia) >= 0.01); }
   get diferenciaAcumulada(): number { return this.cierresCaja.reduce((s, c) => s + c.diferencia, 0); }
+  get sinVentasPeriodo():boolean{return !this.cargando&&!this.errorCarga&&this.ventasFiltradas.length===0;}
 
   cambiarPeriodo(): void {
     this.mensajeFechas = '';
@@ -139,13 +144,14 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
   moneda(valor: number): string { return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(valor); }
 
   private actualizarGraficas(): void {
+    if(this.temporizadorGraficas!==undefined)window.clearTimeout(this.temporizadorGraficas);
     this.graficas.forEach((grafica) => grafica.destroy());
     this.graficas = [];
-    setTimeout(() => this.crearGraficas());
+    this.temporizadorGraficas=window.setTimeout(()=>{this.temporizadorGraficas=undefined;this.crearGraficas();});
   }
 
   private crearGraficas(): void {
-    if (!this.graficaVentasRef) return;
+    if (!this.graficaVentasRef||this.cargando||this.errorCarga||this.sinVentasPeriodo) return;
     const agrupadas = new Map<string, { ventas: number; costos: number }>();
     this.ventasFiltradas.forEach((venta) => {
       const actual = agrupadas.get(venta.fecha) ?? { ventas: 0, costos: 0 };
@@ -183,5 +189,5 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
   private sumar(ventas: Venta[], campo: 'total' | 'costo'): number { return ventas.reduce((suma, venta) => suma + venta[campo], 0); }
   private variacion(actual: number, anterior: number): number { return anterior ? ((actual - anterior) / anterior) * 100 : actual ? 100 : 0; }
 
-  ngOnDestroy(): void { this.graficas.forEach((grafica) => grafica.destroy()); }
+  ngOnDestroy(): void { if(this.temporizadorGraficas!==undefined)window.clearTimeout(this.temporizadorGraficas);this.graficas.forEach((grafica) => grafica.destroy()); }
 }

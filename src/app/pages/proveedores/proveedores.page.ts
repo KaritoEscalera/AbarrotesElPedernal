@@ -133,7 +133,7 @@ export class ProveedoresPage implements OnInit {
     const errores: ErroresFormulario = {};
     if (!this.formulario.nombre.trim()) errores.nombre = 'Escribe el nombre del contacto.';
     if (!this.formulario.empresa.trim()) errores.empresa = 'Escribe el nombre de la empresa.';
-    if (!/^\d{10}$/.test(this.formulario.telefono.trim())) errores.telefono = 'El teléfono debe tener 10 dígitos.';
+    if (this.formulario.telefono.trim() && !/^\d{10}$/.test(this.formulario.telefono.trim())) errores.telefono = 'Si capturas teléfono, debe tener 10 dígitos.';
     if (this.formulario.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.formulario.correo.trim())) errores.correo = 'Escribe un correo válido.';
     if (!this.formulario.productoPrincipal.trim()) errores.productoPrincipal = 'Indica qué productos suministra.';
     if (!this.formulario.diaEntrega.trim()) errores.diaEntrega = 'Indica el día habitual de entrega.';

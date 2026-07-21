@@ -10,6 +10,7 @@
       <ng-container *ngIf="periodoSeleccionado === 'personalizado'"><ion-item lines="none"><ion-label position="stacked">Desde</ion-label><ion-input type="date" [(ngModel)]="fechaInicio"></ion-input></ion-item><ion-item lines="none"><ion-label position="stacked">Hasta</ion-label><ion-input type="date" [(ngModel)]="fechaFin"></ion-input></ion-item><ion-button (click)="aplicarFechas()">Aplicar</ion-button></ng-container>
       <p class="filter-error" *ngIf="mensajeFechas">{{ mensajeFechas }}</p>
     </section>
+    <p class="load-error" role="alert" *ngIf="errorCarga">{{errorCarga}} Actualiza la página o comprueba que el servidor esté encendido.</p>
 
     <section class="summary-grid" aria-label="Indicadores principales">
       <article class="summary-card"><span>Ventas</span><strong>{{ totalVentas | currency:'MXN' }}</strong><small [class]="claseVariacion(variacionVentas)">{{ variacionVentas >= 0 ? '+' : '' }}{{ variacionVentas | number:'1.1-1' }}% vs. periodo anterior</small></article>
@@ -18,12 +19,12 @@
       <article class="summary-card success-card"><span>Utilidad bruta</span><strong>{{ utilidad | currency:'MXN' }}</strong><small>Margen {{ margen | number:'1.1-1' }}% · venta menos costo real</small></article>
     </section>
 
-    <section class="main-chart-card"><div class="chart-header"><div><h2>Ventas y costo de mercancía</h2><p>Evolución diaria dentro del periodo.</p></div></div><div class="large-chart"><canvas #graficaVentas></canvas></div></section>
+    <section class="main-chart-card"><div class="chart-header"><div><h2>Ventas y costo de mercancía</h2><p>Evolución diaria dentro del periodo.</p></div></div><div class="large-chart"><p class="chart-empty" *ngIf="cargando">Cargando estadísticas…</p><p class="chart-empty" *ngIf="sinVentasPeriodo">No hay ventas registradas en el periodo seleccionado. Prueba con “Este año”.</p><p class="chart-empty error" *ngIf="errorCarga">No se pudo generar la gráfica.</p><canvas #graficaVentas [class.hidden]="cargando || sinVentasPeriodo || errorCarga"></canvas></div></section>
 
     <section class="charts-grid">
-      <article class="chart-card"><div class="chart-header"><div><h2>Métodos de pago</h2><p>Importes reales por forma de cobro.</p></div></div><div class="small-chart"><canvas #graficaPagos></canvas></div></article>
-      <article class="chart-card"><div class="chart-header"><div><h2>Ventas por categoría</h2><p>Categorías con mayores ingresos.</p></div></div><div class="small-chart"><canvas #graficaCategorias></canvas></div></article>
-      <article class="chart-card full-chart"><div class="chart-header"><div><h2>Horarios con más ventas</h2><p>Ayuda a planear personal y reposición.</p></div></div><div class="small-chart"><canvas #graficaHoras></canvas></div></article>
+      <article class="chart-card"><div class="chart-header"><div><h2>Métodos de pago</h2><p>Importes reales por forma de cobro.</p></div></div><div class="small-chart"><p class="chart-empty" *ngIf="cargando">Cargando…</p><p class="chart-empty" *ngIf="sinVentasPeriodo">Sin cobros en este periodo.</p><p class="chart-empty error" *ngIf="errorCarga">Información no disponible.</p><canvas #graficaPagos [class.hidden]="cargando || sinVentasPeriodo || errorCarga"></canvas></div></article>
+      <article class="chart-card"><div class="chart-header"><div><h2>Ventas por categoría</h2><p>Categorías con mayores ingresos.</p></div></div><div class="small-chart"><p class="chart-empty" *ngIf="cargando">Cargando…</p><p class="chart-empty" *ngIf="sinVentasPeriodo">Sin ventas por categoría en este periodo.</p><p class="chart-empty error" *ngIf="errorCarga">Información no disponible.</p><canvas #graficaCategorias [class.hidden]="cargando || sinVentasPeriodo || errorCarga"></canvas></div></article>
+      <article class="chart-card full-chart"><div class="chart-header"><div><h2>Horarios con más ventas</h2><p>Ayuda a planear personal y reposición.</p></div></div><div class="small-chart"><p class="chart-empty" *ngIf="cargando">Cargando…</p><p class="chart-empty" *ngIf="sinVentasPeriodo">Sin horarios de venta en este periodo.</p><p class="chart-empty error" *ngIf="errorCarga">Información no disponible.</p><canvas #graficaHoras [class.hidden]="cargando || sinVentasPeriodo || errorCarga"></canvas></div></article>
     </section>
 
     <section class="business-grid">

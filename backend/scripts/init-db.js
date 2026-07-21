@@ -26,6 +26,7 @@ try {
   if (Number(sessionColumns[0].total) === 0) {
     await connection.query('ALTER TABLE AbarrotesElPedernal.usuarios ADD COLUMN sesion_version INT UNSIGNED NOT NULL DEFAULT 0 AFTER password_hash');
   }
+  await connection.query("ALTER TABLE AbarrotesElPedernal.compras MODIFY COLUMN metodo_pago ENUM('EFECTIVO','TARJETA','TRANSFERENCIA','CREDITO','MIXTO','OTRO') NOT NULL DEFAULT 'CREDITO'");
   const [tables] = await connection.query(
     "SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema = 'AbarrotesElPedernal' AND table_type = 'BASE TABLE'",
   );

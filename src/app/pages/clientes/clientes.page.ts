@@ -79,8 +79,8 @@ export class ClientesPage implements OnInit {
   async guardarCliente(): Promise<void> {
     const { nombre, telefono, direccion } = this.nuevoCliente;
 
-    if (!nombre.trim() || !telefono.trim() || !direccion.trim()) {
-      this.mensajeFormulario = 'Completa nombre, teléfono y dirección.';
+    if (!nombre.trim()) {
+      this.mensajeFormulario = 'Escribe el nombre o una referencia para identificar al cliente.';
       return;
     }
 
@@ -90,6 +90,12 @@ export class ClientesPage implements OnInit {
       this.nuevoCliente = { nombre: '', telefono: '', direccion: '' };
       this.mensajeFormulario = 'Cliente registrado correctamente en MySQL.';
     } catch { this.mensajeFormulario = 'No fue posible guardar el cliente. Revisa la API.'; }
+  }
+
+  prepararGenerico(): void {
+    this.nuevoCliente = { nombre: `Cliente genérico ${this.clientes.length + 1}`, telefono: '', direccion: '' };
+    this.formularioVisible = true;
+    this.mensajeFormulario = 'Puedes cambiar el nombre de referencia; teléfono y dirección son opcionales.';
   }
 
   private async cargarClientes(): Promise<void> {

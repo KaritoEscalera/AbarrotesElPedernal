@@ -47,6 +47,7 @@ export class AppComponent {
 
   private readonly opciones: OpcionMenu[] = [
     { etiqueta: 'Mi cuenta', ruta: '/perfil', roles: ['administrador', 'gerente', 'cajera'] },
+    { etiqueta: 'Caja', ruta: '/caja', roles: ['administrador', 'gerente', 'cajera'] },
     { etiqueta: 'Productos', ruta: '/productos', roles: ['administrador', 'gerente'] },
     { etiqueta: 'Inventario', ruta: '/inventario', roles: ['administrador', 'gerente'] },
     { etiqueta: 'Proveedores', ruta: '/proveedores', roles: ['administrador', 'gerente'] },
@@ -54,7 +55,6 @@ export class AppComponent {
     { etiqueta: 'Promociones', ruta: '/promociones', roles: ['administrador', 'gerente'] },
     { etiqueta: 'Clientes', ruta: '/clientes', roles: ['administrador', 'gerente', 'cajera'] },
     { etiqueta: 'Fiados', ruta: '/fiados', roles: ['administrador', 'gerente', 'cajera'] },
-    { etiqueta: 'Caja', ruta: '/caja', roles: ['administrador', 'gerente', 'cajera'] },
     { etiqueta: 'Estadísticas', ruta: '/estadisticas', roles: ['administrador', 'gerente'] },
     { etiqueta: 'Reportes', ruta: '/reportes', roles: ['administrador'] },
     { etiqueta: 'Usuarios', ruta: '/usuarios', roles: ['administrador'] },

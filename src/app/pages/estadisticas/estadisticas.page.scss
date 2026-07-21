@@ -62,6 +62,10 @@ h2 {
 .filters-card ion-item { --background: #f9f4ef; --border-radius: 10px; min-width: 190px; border-radius: 10px; }
 .filters-card ion-button { --border-radius: 10px; margin: 0; }
 .filter-error { margin: 0; color: #b13a30; font-weight: 700; }
+.load-error { margin: 0 0 20px; padding: 14px 18px; color: #8f2823; background: #fde4e2; border: 1px solid #efb7b2; border-radius: 12px; font-weight: 700; }
+.chart-empty { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; margin: 0; padding: 24px; color: #876f5d; background: #fffaf6; border: 1px dashed #dfcdbf; border-radius: 12px; text-align: center; }
+.chart-empty.error { color: #b13a30; }
+canvas.hidden { visibility: hidden; }
 
 .summary-grid {
   display: grid;

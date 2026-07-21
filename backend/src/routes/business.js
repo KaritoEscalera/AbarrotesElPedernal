@@ -53,7 +53,7 @@ businessRouter.get('/clients', async (_req, res, next) => {
 });
 businessRouter.get('/clients/:id/account',async(req,res,next)=>{try{const [[client]]=await pool.execute(`SELECT c.id,c.nombre,c.telefono,c.limite_credito AS limiteCredito,COALESCE((SELECT SUM(f.saldo_pendiente) FROM fiados f WHERE f.cliente_id=c.id AND f.estado NOT IN('LIQUIDADO','CANCELADO')),0) AS adeudo,COALESCE((SELECT SUM(s.monto-s.monto_usado) FROM saldos_clientes s WHERE s.cliente_id=c.id AND s.estado='PENDIENTE'),0) AS saldoFavor FROM clientes c WHERE c.id=?`,[req.params.id]);if(!client)return res.status(404).json({error:'Cliente no encontrado.'});const [credits]=await pool.execute(`SELECT f.id,f.fecha_registro AS fechaRegistro,f.fecha_limite AS fechaLimite,f.deuda_original AS deudaOriginal,f.saldo_pendiente AS saldoPendiente,f.estado,v.folio FROM fiados f LEFT JOIN ventas v ON v.id=f.venta_id WHERE f.cliente_id=? ORDER BY f.fecha_registro DESC`,[req.params.id]);const [payments]=await pool.execute(`SELECT a.id,a.fiado_id AS fiadoId,a.monto,a.metodo,a.referencia,a.creado_en AS fecha,u.nombre AS usuario FROM fiado_abonos a JOIN fiados f ON f.id=a.fiado_id JOIN usuarios u ON u.id=a.usuario_id WHERE f.cliente_id=? ORDER BY a.creado_en DESC`,[req.params.id]);const [balances]=await pool.execute(`SELECT id,monto,IF(estado='PENDIENTE',monto_usado,monto) AS montoUsado,IF(estado='PENDIENTE',monto-monto_usado,0) AS disponible,estado,creado_en AS fecha,liquidado_en AS liquidadoEn FROM saldos_clientes WHERE cliente_id=? ORDER BY creado_en DESC`,[req.params.id]);return res.json({client,credits,payments,balances});}catch(error){return next(error);}});
 businessRouter.post('/clients', async (req, res, next) => {
-  try { const { nombre, telefono, correo = null, direccion = null } = req.body; if (!nombre?.trim() || !telefono?.trim()) return res.status(400).json({ error: 'Nombre y teléfono son obligatorios.' }); const [result] = await pool.execute('INSERT INTO clientes (nombre,telefono,correo,direccion) VALUES (?,?,?,?)',[nombre.trim(),telefono.trim(),correo?.trim()||null,direccion?.trim()||null]); res.status(201).json({ id: result.insertId }); } catch(e){ next(e); }
+  try { const { nombre, telefono = '', correo = null, direccion = null } = req.body; if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre o referencia del cliente es obligatorio.' }); const [result] = await pool.execute('INSERT INTO clientes (nombre,telefono,correo,direccion) VALUES (?,?,?,?)',[nombre.trim(),String(telefono).trim(),correo?.trim()||null,direccion?.trim()||null]); res.status(201).json({ id: result.insertId }); } catch(e){ next(e); }
 });
 businessRouter.put('/clients/:id/fiscal',requireRole('Administrador'),async(req,res,next)=>{try{const rfc=String(req.body?.rfc??'').trim().toUpperCase(),nombre=String(req.body?.nombre??'').trim(),cp=String(req.body?.codigoPostalFiscal??'').trim(),regimen=String(req.body?.regimenFiscal??'').trim(),uso=String(req.body?.usoCfdi??'').trim().toUpperCase();if(!/^([A-ZÑ&]{3,4})\d{6}[A-Z0-9]{3}$/.test(rfc)||!nombre||!/^\d{5}$/.test(cp)||!/^\d{3}$/.test(regimen)||!uso)return res.status(400).json({error:'RFC, nombre, código postal, régimen y uso CFDI son obligatorios.'});await pool.execute('UPDATE clientes SET nombre=?,rfc=?,codigo_postal_fiscal=?,regimen_fiscal=?,uso_cfdi=? WHERE id=?',[nombre,rfc,cp,regimen,uso,req.params.id]);await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Fiscal','DATOS_RECEPTOR',?,'CLIENTE',?)`,[req.user.sub,`Datos fiscales actualizados para ${rfc}`,req.params.id]);return res.status(204).end();}catch(error){return next(error);}});
 
@@ -541,7 +541,8 @@ businessRouter.get('/sales/:id', async (req, res, next) => {
       [req.params.id],
     );
     const [pagos]=await pool.execute(`SELECT CASE WHEN metodo='OTRO' AND referencia='SALDO A FAVOR' THEN 'SALDO A FAVOR' ELSE metodo END AS metodo,monto,referencia FROM venta_pagos WHERE venta_id=? ORDER BY id`,[req.params.id]);
-    return res.json({ ...sale, items, pagos });
+    const [[fiado]]=await pool.execute(`SELECT deuda_original AS monto,saldo_pendiente AS saldoPendiente,DATE_FORMAT(fecha_limite,'%Y-%m-%d') AS fechaLimite FROM fiados WHERE venta_id=? AND estado<>'CANCELADO' LIMIT 1`,[req.params.id]);
+    return res.json({ ...sale, items, pagos, fiado:fiado??null });
   } catch (error) { return next(error); }
 });
 
@@ -618,7 +619,7 @@ businessRouter.post('/purchases', requireRole('Administrador','Gerente'), async 
     const proveedorId = Number(req.body?.proveedorId);
     const items = Array.isArray(req.body?.items) ? req.body.items : [];
     const metodoPago = String(req.body?.metodoPago ?? 'CREDITO').toUpperCase();
-    if (!Number.isInteger(proveedorId) || !items.length || !['EFECTIVO','TARJETA','TRANSFERENCIA','CREDITO','OTRO'].includes(metodoPago)) return res.status(400).json({ error: 'La compra no es válida.' });
+    if (!Number.isInteger(proveedorId) || !items.length || !['EFECTIVO','TARJETA','TRANSFERENCIA','CREDITO','MIXTO','OTRO'].includes(metodoPago)) return res.status(400).json({ error: 'La compra no es válida.' });
     await connection.beginTransaction();
     const [[provider]] = await connection.execute("SELECT id FROM proveedores WHERE id=? AND estado<>'ARCHIVADO'", [proveedorId]);
     if (!provider) { await connection.rollback(); return res.status(400).json({ error: 'Proveedor no válido.' }); }
@@ -634,6 +635,8 @@ businessRouter.post('/purchases', requireRole('Administrador','Gerente'), async 
       subtotal += base; taxes += tax; details.push({ product, productoId, cantidad, costo, importe: base + tax, lote:String(item?.lote??'').trim(), fechaCaducidad:String(item?.fechaCaducidad??'').trim()||null });
     }
     const total = Math.round((subtotal + taxes) * 100) / 100;
+    const pagosCompra=metodoPago==='MIXTO'?(Array.isArray(req.body?.pagos)?req.body.pagos:[]).map(p=>({metodo:String(p?.metodo??'').toUpperCase(),monto:Math.round(Number(p?.monto)*100)/100})).filter(p=>p.monto>0):(['EFECTIVO','TARJETA','TRANSFERENCIA'].includes(metodoPago)?[{metodo:metodoPago,monto:total}]:[]);
+    if(pagosCompra.some(p=>!['EFECTIVO','TARJETA','TRANSFERENCIA'].includes(p.metodo)||!Number.isFinite(p.monto))||metodoPago==='MIXTO'&&Math.abs(pagosCompra.reduce((s,p)=>s+p.monto,0)-total)>.009){await connection.rollback();return res.status(400).json({error:`El pago mixto debe sumar exactamente $${total.toFixed(2)}.`});}
     const folio = String(req.body?.folio ?? '').trim() || `C-${Date.now()}`;
     const balance = metodoPago === 'CREDITO' ? total : 0;
     const [purchase] = await connection.execute(
@@ -654,6 +657,13 @@ businessRouter.post('/purchases', requireRole('Administrador','Gerente'), async 
         [detail.productoId, req.user.sub, detail.cantidad, detail.product.stock_actual, nuevoStock, detail.costo, 'COMPRA', purchase.insertId],
       );
       if (detail.lote) await connection.execute(`INSERT INTO producto_lotes(producto_id,compra_id,lote,fecha_caducidad,cantidad_inicial,cantidad_disponible,costo_unitario) VALUES(?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE cantidad_inicial=cantidad_inicial+VALUES(cantidad_inicial),cantidad_disponible=cantidad_disponible+VALUES(cantidad_disponible),fecha_caducidad=COALESCE(VALUES(fecha_caducidad),fecha_caducidad),costo_unitario=VALUES(costo_unitario)`,[detail.productoId,purchase.insertId,detail.lote,detail.fechaCaducidad,detail.cantidad,detail.cantidad,detail.costo]);
+    }
+    const efectivoDesdeCaja=Boolean(req.body?.efectivoDesdeCaja);
+    if(pagosCompra.length){
+      const [[cashSession]]=await connection.execute("SELECT id FROM sesiones_caja WHERE usuario_apertura_id=? AND estado='ABIERTA' LIMIT 1",[req.user.sub]);
+      const pagosARegistrar=pagosCompra.filter(p=>p.metodo!=='EFECTIVO'||efectivoDesdeCaja);
+      if(pagosARegistrar.length&&!cashSession){await connection.rollback();return res.status(409).json({error:'Abre la caja para registrar el pago al proveedor, o indica que el efectivo no salió de caja.'});}
+      for(const pago of pagosARegistrar)await connection.execute(`INSERT INTO movimientos_caja(sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto,referencia) VALUES(?,?,'SALIDA','COMPRA',?,?,?,?)`,[cashSession.id,req.user.sub,`Pago a proveedor ${provider.id} · compra ${folio}`,pago.metodo,pago.monto,folio]);
     }
     await connection.execute(
       `INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Compras','RECIBIR',?,'COMPRA',?)`,
