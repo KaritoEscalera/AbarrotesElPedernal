@@ -107,7 +107,7 @@ h1 {
 
 .entry-form {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(160px, .5fr) auto;
+  grid-template-columns: repeat(3,minmax(180px,1fr));
   gap: 14px;
   align-items: end;
   margin-bottom: 24px;
@@ -129,6 +129,7 @@ h1 {
   --background: #4a2c1d;
   --border-radius: 10px;
   margin: 0;
+  align-self: end;
 }
 
 .entry-message {
@@ -333,3 +334,5 @@ tbody tr:hover {
 .expiry-card article.urgent { color:#8a3e16; background:#ffe2ca; border-color:#e66b29; }
 .expiry-card article.expired { color:#8a2525; background:#fde1e1; border-color:#c93737; }
 .stock-button.text{width:auto;padding:0 9px;font-size:11px}
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:15px}.section-title h2{margin:3px 0;color:#4a2c1d}.section-title>span{padding:7px 10px;background:#fff0df;color:#8d4313;border-radius:999px;font-weight:700}.suggestions-card,.movements-card{margin-top:22px;padding:20px;background:#fff;border:1px solid #eee2d7;border-radius:18px;box-shadow:0 8px 25px rgba(74,44,29,.07)}.suggestions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.suggestions-grid article{display:grid;gap:5px;padding:13px;background:#fff8f1;border:1px solid #f0d5bc;border-radius:12px}.suggestions-grid article div,.suggestions-grid article small{display:block}.suggestions-grid article small{color:#806a59}.movements-card table{min-width:1050px}.operation-overlay{position:fixed;z-index:1200;inset:0;display:grid;place-items:center;padding:20px;background:rgba(28,18,13,.62)}.operation-panel{width:min(560px,100%);padding:22px;background:#fff;border-radius:18px;box-shadow:0 22px 65px rgba(0,0,0,.35)}.operation-panel header{display:flex;justify-content:space-between;gap:15px}.operation-panel ion-item{margin-top:12px;--background:#f9f4ef;--border-radius:10px}.operation-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.close-button{width:38px;height:38px;border:0;border-radius:50%;background:#f7eee7;color:#7a614f;font-size:25px;cursor:pointer}
+@media(max-width:900px){.suggestions-grid{grid-template-columns:1fr}}

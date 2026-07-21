@@ -294,6 +294,7 @@ CREATE TABLE IF NOT EXISTS saldos_clientes (
   cliente_id BIGINT UNSIGNED NOT NULL,
   usuario_id BIGINT UNSIGNED NOT NULL,
   monto DECIMAL(12,2) NOT NULL,
+  monto_usado DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   estado ENUM('PENDIENTE','ENTREGADO','CANCELADO') NOT NULL DEFAULT 'PENDIENTE',
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   liquidado_por BIGINT UNSIGNED NULL,
@@ -304,6 +305,7 @@ CREATE TABLE IF NOT EXISTS saldos_clientes (
   CONSTRAINT fk_saldo_liquidado FOREIGN KEY (liquidado_por) REFERENCES usuarios(id),
   INDEX idx_saldos_cliente_estado (cliente_id, estado)
 ) ENGINE=InnoDB;
+
 
 CREATE TABLE IF NOT EXISTS configuracion_fiscal (
   id TINYINT UNSIGNED PRIMARY KEY DEFAULT 1,

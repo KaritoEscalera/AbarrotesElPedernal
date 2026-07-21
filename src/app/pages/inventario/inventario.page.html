@@ -59,9 +59,14 @@
       </ion-item>
 
       <ion-item lines="none">
-        <ion-label position="stacked">Unidades recibidas</ion-label>
-        <ion-input [(ngModel)]="cantidadEntrada" min="1" type="number"></ion-input>
+        <ion-label position="stacked">Cantidad recibida</ion-label>
+        <ion-input [(ngModel)]="cantidadEntrada" min="0.001" step="0.001" type="number"></ion-input>
       </ion-item>
+
+      <ion-item lines="none"><ion-label position="stacked">Costo unitario</ion-label><ion-input [(ngModel)]="costoEntrada" min="0" step="0.01" type="number"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Número de lote (opcional)</ion-label><ion-input [(ngModel)]="loteEntrada"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Fecha de caducidad</ion-label><ion-input [(ngModel)]="caducidadEntrada" type="date"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Motivo o referencia</ion-label><ion-input [(ngModel)]="motivoEntrada"></ion-input></ion-item>
 
       <ion-button class="save-entry" type="button" (click)="guardarEntrada()">
         Guardar entrada
@@ -120,6 +125,7 @@
               <th>Precio</th>
               <th>Stock mínimo</th>
               <th>Existencia</th>
+              <th>Unidad</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -141,13 +147,15 @@
                 {{ producto.precioVenta | currency:'MXN':'symbol':'1.2-2' }}
               </td>
 
-              <td>{{ producto.stockMinimo }}</td>
+              <td>{{ producto.stockMinimo }} {{etiquetaUnidad(producto)}}</td>
 
               <td>
                 <span class="stock-number">
-                  {{ producto.stock }}
+                  {{ producto.stock | number:'1.0-3' }} {{etiquetaUnidad(producto)}}
                 </span>
               </td>
+
+              <td>{{producto.unidadMedida}}</td>
 
               <td>
 
@@ -184,6 +192,7 @@
                   </button>
                   <button class="stock-button text" type="button" (click)="registrarMerma(producto)">Merma</button>
                   <button class="stock-button text" type="button" (click)="conteoFisico(producto)">Conteo</button>
+                  <button class="stock-button text" type="button" (click)="configurarProducto(producto)">Unidad</button>
 
                   <button
                     class="stock-button add"
@@ -200,7 +209,7 @@
             </tr>
 
             <tr *ngIf="productosFiltrados.length === 0">
-              <td colspan="8" class="empty-state">
+              <td colspan="9" class="empty-state">
                 No se encontraron productos con esos filtros.
               </td>
             </tr>
@@ -212,6 +221,12 @@
       </div>
 
     </section>
+
+    <section class="suggestions-card"><div class="section-title"><div><p class="eyebrow">Reposición sugerida</p><h2>Productos por surtir</h2></div><span>{{sugerencias.length}} pendientes</span></div><div class="suggestions-grid"><article *ngFor="let item of sugerencias"><div><strong>{{item.nombre}}</strong><small>{{item.proveedor || 'Sin proveedor principal'}}</small></div><span>Existencia {{item.stock | number:'1.0-3'}} / mín. {{item.minimo | number:'1.0-3'}}</span><b>Sugerido: {{item.cantidadSugerida | number:'1.0-3'}}</b><small>Costo estimado: {{item.cantidadSugerida * item.costo | currency:'MXN'}}</small></article><p *ngIf="!sugerencias.length">No hay productos por debajo del mínimo.</p></div></section>
+
+    <section class="movements-card"><div class="section-title"><div><p class="eyebrow">Trazabilidad</p><h2>Últimos movimientos</h2></div><span>{{movimientos.length}} registros</span></div><div class="table-wrapper"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Antes</th><th>Después</th><th>Motivo</th><th>Usuario</th></tr></thead><tbody><tr *ngFor="let m of movimientos"><td>{{m.fecha | date:'short'}}</td><td>{{m.nombre}}</td><td>{{m.tipo}}</td><td>{{m.cantidad | number:'1.0-3'}} {{m.unidadMedida}}</td><td>{{m.stockAnterior | number:'1.0-3'}}</td><td>{{m.stockNuevo | number:'1.0-3'}}</td><td>{{m.motivo || '—'}}</td><td>{{m.usuario}}</td></tr></tbody></table></div></section>
+
+    <section class="operation-overlay" *ngIf="operacionVisible && productoOperacion"><article class="operation-panel"><header><div><p class="eyebrow">Operación de inventario</p><h2>{{productoOperacion.nombre}}</h2></div><button type="button" class="close-button" (click)="cerrarOperacion()">×</button></header><ng-container *ngIf="operacionVisible==='merma'"><ion-item><ion-label position="stacked">Cantidad de merma ({{etiquetaUnidad(productoOperacion)}})</ion-label><ion-input type="number" min="0.001" step="0.001" [(ngModel)]="cantidadOperacion"></ion-input></ion-item><ion-item><ion-label position="stacked">Motivo: caducidad, daño, robo, etc.</ion-label><ion-input [(ngModel)]="motivoOperacion"></ion-input></ion-item></ng-container><ng-container *ngIf="operacionVisible==='conteo'"><ion-item><ion-label position="stacked">Existencia física contada ({{etiquetaUnidad(productoOperacion)}})</ion-label><ion-input type="number" min="0" step="0.001" [(ngModel)]="cantidadOperacion"></ion-input></ion-item><ion-item><ion-label position="stacked">Observación del conteo</ion-label><ion-input [(ngModel)]="motivoOperacion"></ion-input></ion-item></ng-container><ng-container *ngIf="operacionVisible==='config'"><ion-item><ion-label position="stacked">Unidad de medida</ion-label><ion-select [(ngModel)]="unidadOperacion"><ion-select-option value="Pieza">Pieza</ion-select-option><ion-select-option value="Kilogramo">Kilogramo</ion-select-option><ion-select-option value="Gramo">Gramo</ion-select-option><ion-select-option value="Litro">Litro</ion-select-option></ion-select></ion-item><ion-item><ion-label position="stacked">Existencia mínima</ion-label><ion-input type="number" min="0" step="0.001" [(ngModel)]="minimoOperacion"></ion-input></ion-item></ng-container><div class="operation-actions"><ion-button fill="outline" (click)="cerrarOperacion()">Cancelar</ion-button><ion-button (click)="guardarOperacion()">Guardar operación</ion-button></div></article></section>
 
   </div>
 

@@ -22,8 +22,12 @@ interface ProductoInventario {
   stock: number;
   stockMinimo: number;
   precioVenta: number;
+  costo:number;
+  unidadMedida:'Pieza'|'Kilogramo'|'Gramo'|'Litro';
 }
 interface LoteAlerta { id:number; nombre:string; lote:string; fechaCaducidad:string; cantidad:number; dias:number; }
+interface SugerenciaCompra { productoId:number;nombre:string;stock:number;minimo:number;cantidadSugerida:number;costo:number;proveedor:string|null; }
+interface MovimientoInventario {id:number;productoId:number;nombre:string;unidadMedida:string;tipo:string;cantidad:number;stockAnterior:number;stockNuevo:number;costoUnitario:number|null;motivo:string;fecha:string;usuario:string;}
 
 @Component({
   selector: 'app-inventario',
@@ -51,12 +55,24 @@ export class InventarioPage implements OnInit {
   entradaVisible = false;
   productoEntradaId = 1;
   cantidadEntrada: number | null = null;
+  costoEntrada:number|null=null;
+  loteEntrada='';
+  caducidadEntrada='';
+  motivoEntrada='Recepción de mercancía';
   mensajeEntrada = '';
+  operacionVisible:false|'merma'|'conteo'|'config'=false;
+  productoOperacion:ProductoInventario|null=null;
+  cantidadOperacion:number|null=null;
+  motivoOperacion='';
+  unidadOperacion:'Pieza'|'Kilogramo'|'Gramo'|'Litro'='Pieza';
+  minimoOperacion:number|null=null;
 
   productos: ProductoInventario[] = [];
   lotesAlerta: LoteAlerta[] = [];
+  sugerencias:SugerenciaCompra[]=[];
+  movimientos:MovimientoInventario[]=[];
 
-  async ngOnInit(): Promise<void> { await Promise.all([this.cargarProductos(),this.cargarLotes()]); }
+  async ngOnInit(): Promise<void> { await Promise.all([this.cargarProductos(),this.cargarLotes(),this.cargarSugerencias(),this.cargarMovimientos()]); }
 
   get productosFiltrados(): ProductoInventario[] {
     const texto = this.busqueda.toLowerCase().trim();
@@ -110,17 +126,19 @@ export class InventarioPage implements OnInit {
     return 'disponible';
   }
 
-  async aumentarStock(producto: ProductoInventario): Promise<void> {
-    await this.ajustarStock(producto, 1);
-  }
+  async aumentarStock(producto: ProductoInventario): Promise<void> { await this.ajustarStock(producto,this.esGranel(producto) ? .1 : 1); }
 
   async disminuirStock(producto: ProductoInventario): Promise<void> {
     if (producto.stock > 0) {
-      await this.ajustarStock(producto, -1);
+      await this.ajustarStock(producto, this.esGranel(producto)?-.1:-1);
     }
   }
-  async registrarMerma(producto:ProductoInventario):Promise<void>{const cantidad=Number(prompt(`Cantidad de merma para ${producto.nombre}:`)??0);if(!cantidad)return;const motivo=prompt('Motivo (caducidad, daño, robo, etc.):')?.trim()??'';if(!motivo)return;try{const r=await this.api.post<{stock:number}>(`products/${producto.id}/waste`,{cantidad,motivo});producto.stock=Number(r.stock);this.mensajeEntrada='Merma registrada con trazabilidad.';}catch{this.mensajeEntrada='No fue posible registrar la merma.';}}
-  async conteoFisico(producto:ProductoInventario):Promise<void>{const valor=prompt(`Existencia física contada de ${producto.nombre}:`,String(producto.stock));if(valor===null)return;const stockContado=Number(valor);if(!Number.isFinite(stockContado)||stockContado<0)return;try{const r=await this.api.post<{stock:number;diferencia:number}>(`products/${producto.id}/count`,{stockContado,motivo:'Conteo físico desde inventario'});producto.stock=Number(r.stock);this.mensajeEntrada=`Conteo guardado. Diferencia: ${Number(r.diferencia)}.`;}catch{this.mensajeEntrada='No fue posible guardar el conteo.';}}
+  registrarMerma(producto:ProductoInventario):void{this.abrirOperacion('merma',producto);}
+  conteoFisico(producto:ProductoInventario):void{this.abrirOperacion('conteo',producto);this.cantidadOperacion=producto.stock;}
+  configurarProducto(producto:ProductoInventario):void{this.abrirOperacion('config',producto);this.unidadOperacion=producto.unidadMedida;this.minimoOperacion=producto.stockMinimo;}
+  abrirOperacion(tipo:'merma'|'conteo'|'config',producto:ProductoInventario):void{this.operacionVisible=tipo;this.productoOperacion=producto;this.cantidadOperacion=null;this.motivoOperacion='';}
+  cerrarOperacion():void{this.operacionVisible=false;this.productoOperacion=null;}
+  async guardarOperacion():Promise<void>{const p=this.productoOperacion;if(!p||!this.operacionVisible)return;try{if(this.operacionVisible==='merma'){const cantidad=Number(this.cantidadOperacion);if(!Number.isFinite(cantidad)||cantidad<=0||this.motivoOperacion.trim().length<4){this.mensajeEntrada='Captura cantidad y motivo de la merma.';return;}const r=await this.api.post<{stock:number}>(`products/${p.id}/waste`,{cantidad,motivo:this.motivoOperacion});p.stock=Number(r.stock);this.mensajeEntrada='Merma registrada con trazabilidad.';}else if(this.operacionVisible==='conteo'){const stockContado=Number(this.cantidadOperacion);if(!Number.isFinite(stockContado)||stockContado<0){this.mensajeEntrada='Captura una existencia física válida.';return;}const r=await this.api.post<{stock:number;diferencia:number}>(`products/${p.id}/count`,{stockContado,motivo:this.motivoOperacion.trim()||'Conteo físico'});p.stock=Number(r.stock);this.mensajeEntrada=`Conteo guardado. Diferencia: ${Number(r.diferencia).toFixed(3)}.`;}else{const minimo=Number(this.minimoOperacion);await this.api.patch(`products/${p.id}/inventory-settings`,{unidadMedida:this.unidadOperacion,stockMinimo:minimo});p.unidadMedida=this.unidadOperacion;p.stockMinimo=minimo;this.mensajeEntrada='Unidad y existencia mínima actualizadas.';}this.cerrarOperacion();await Promise.all([this.cargarMovimientos(),this.cargarSugerencias(),this.cargarLotes()]);}catch{this.mensajeEntrada='No fue posible guardar la operación de inventario.';}}
 
   registrarEntrada(): void {
     this.entradaVisible = !this.entradaVisible;
@@ -133,16 +151,21 @@ export class InventarioPage implements OnInit {
     );
     const cantidad = Number(this.cantidadEntrada);
 
-    if (!producto || !Number.isInteger(cantidad) || cantidad <= 0) {
+    const costo=Number(this.costoEntrada);
+    if (!producto || !Number.isFinite(cantidad) || cantidad <= 0 || !Number.isFinite(costo)||costo<0) {
       this.mensajeEntrada = 'Ingresa una cantidad válida mayor a cero.';
       return;
     }
 
-    try { await this.ajustarStock(producto, cantidad); this.mensajeEntrada = `Se agregaron ${cantidad} unidades de ${producto.nombre} en MySQL.`; this.cantidadEntrada = null; }
+    try { const r=await this.api.post<{stock:number}>('inventory/receipts',{productoId:producto.id,cantidad,costo,lote:this.loteEntrada.trim(),fechaCaducidad:this.caducidadEntrada||null,motivo:this.motivoEntrada});producto.stock=Number(r.stock);producto.costo=costo;this.mensajeEntrada = `Se recibieron ${cantidad} ${this.etiquetaUnidad(producto)} de ${producto.nombre}.`; this.cantidadEntrada = null;this.costoEntrada=null;this.loteEntrada='';this.caducidadEntrada='';await Promise.all([this.cargarMovimientos(),this.cargarSugerencias(),this.cargarLotes()]); }
     catch { this.mensajeEntrada = 'No fue posible actualizar el inventario.'; }
   }
 
-  private async ajustarStock(producto: ProductoInventario, cantidad: number): Promise<void> { const r = await this.api.patch<{ stock: number }>(`products/${producto.id}/stock`, { cantidad }); producto.stock = Number(r.stock); }
-  private async cargarProductos(): Promise<void> { try { const datos = await this.api.get<Array<ProductoInventario & { codigo: string | null; categoria: string | null }>>('products'); this.productos = datos.map((p) => ({ ...p, codigo: p.codigo ?? '', categoria: p.categoria ?? 'Sin categoría', stock: Number(p.stock), stockMinimo: Number(p.stockMinimo), precioVenta: Number(p.precioVenta) })); } catch { this.mensajeEntrada = 'No fue posible consultar el inventario en MySQL.'; } }
+  private async ajustarStock(producto: ProductoInventario, cantidad: number): Promise<void> { const r = await this.api.patch<{ stock: number }>(`products/${producto.id}/stock`, { cantidad,motivo:'Ajuste rápido desde inventario' }); producto.stock = Number(r.stock);await Promise.all([this.cargarMovimientos(),this.cargarSugerencias()]); }
+  esGranel(p:ProductoInventario):boolean{return ['Kilogramo','Gramo','Litro'].includes(p.unidadMedida);}
+  etiquetaUnidad(p:ProductoInventario):string{return p.unidadMedida==='Kilogramo'?'kg':p.unidadMedida==='Gramo'?'g':p.unidadMedida==='Litro'?'L':'pzas.';}
+  private async cargarProductos(): Promise<void> { try { const datos = await this.api.get<Array<ProductoInventario & { codigo: string | null; categoria: string | null }>>('products'); this.productos = datos.map((p) => ({ ...p, codigo: p.codigo ?? '', categoria: p.categoria ?? 'Sin categoría',unidadMedida:p.unidadMedida||'Pieza', stock: Number(p.stock), stockMinimo: Number(p.stockMinimo),costo:Number(p.costo), precioVenta: Number(p.precioVenta) }));if(this.productos.length&&!this.productos.some(p=>p.id===Number(this.productoEntradaId)))this.productoEntradaId=this.productos[0].id; } catch { this.mensajeEntrada = 'No fue posible consultar el inventario en MySQL.'; } }
   private async cargarLotes():Promise<void>{try{const datos=await this.api.get<LoteAlerta[]>('lots/alerts');this.lotesAlerta=datos.map(l=>({...l,cantidad:Number(l.cantidad),dias:Number(l.dias)}));}catch{this.lotesAlerta=[];}}
+  private async cargarSugerencias():Promise<void>{try{const datos=await this.api.get<SugerenciaCompra[]>('purchase-suggestions');this.sugerencias=datos.map(x=>({...x,stock:Number(x.stock),minimo:Number(x.minimo),cantidadSugerida:Number(x.cantidadSugerida),costo:Number(x.costo)}));}catch{this.sugerencias=[];}}
+  private async cargarMovimientos():Promise<void>{try{const datos=await this.api.get<MovimientoInventario[]>('inventory/movements');this.movimientos=datos.map(x=>({...x,cantidad:Number(x.cantidad),stockAnterior:Number(x.stockAnterior),stockNuevo:Number(x.stockNuevo),costoUnitario:x.costoUnitario===null?null:Number(x.costoUnitario)}));}catch{this.movimientos=[];}}
 }

@@ -343,6 +343,8 @@
                 >
                   Registrar abono
                 </ion-button>
+                <ion-button size="small" fill="outline" (click)="verEstadoCuenta(fiado)">Estado de cuenta</ion-button>
+                <ion-button size="small" fill="clear" color="success" [disabled]="fiado.saldoPendiente === 0" (click)="recordarPorWhatsApp(fiado)">WhatsApp</ion-button>
 
               </td>
 
@@ -363,6 +365,8 @@
       </div>
 
     </section>
+
+    <section class="account-overlay" *ngIf="cuentaSeleccionada"><article class="account-panel"><header><div><p class="eyebrow">Estado de cuenta</p><h2>{{cuentaSeleccionada.client.nombre}}</h2><span>{{cuentaSeleccionada.client.telefono}}</span></div><button type="button" class="close-button" (click)="cerrarEstadoCuenta()">×</button></header><div class="account-summary"><div><span>Adeudo total</span><strong>{{cuentaSeleccionada.client.adeudo | currency:'MXN'}}</strong></div><div><span>Saldo a favor</span><strong>{{cuentaSeleccionada.client.saldoFavor | currency:'MXN'}}</strong></div><div><span>Límite</span><strong>{{cuentaSeleccionada.client.limiteCredito | currency:'MXN'}}</strong></div></div><div class="account-actions"><ion-button fill="outline" (click)="imprimirEstadoCuenta()">Imprimir estado de cuenta</ion-button></div><h3>Créditos</h3><div class="account-table"><table><thead><tr><th>Fecha</th><th>Folio</th><th>Original</th><th>Pendiente</th><th>Vence</th><th>Estado</th></tr></thead><tbody><tr *ngFor="let credito of cuentaSeleccionada.credits"><td>{{credito.fechaRegistro | date:'shortDate'}}</td><td>{{credito.folio || ('Fiado #'+credito.id)}}</td><td>{{credito.deudaOriginal | currency:'MXN'}}</td><td>{{credito.saldoPendiente | currency:'MXN'}}</td><td>{{credito.fechaLimite | date:'shortDate'}}</td><td>{{credito.estado}}</td></tr></tbody></table></div><h3>Historial de abonos</h3><div class="account-table"><table><thead><tr><th>Fecha</th><th>Fiado</th><th>Método</th><th>Referencia</th><th>Monto</th><th>Registró</th></tr></thead><tbody><tr *ngFor="let pago of cuentaSeleccionada.payments"><td>{{pago.fecha | date:'short'}}</td><td>#{{pago.fiadoId}}</td><td>{{pago.metodo}}</td><td>{{pago.referencia || '—'}}</td><td>{{pago.monto | currency:'MXN'}}</td><td>{{pago.usuario}}</td></tr><tr *ngIf="!cuentaSeleccionada.payments.length"><td colspan="6">Sin abonos registrados.</td></tr></tbody></table></div></article></section>
 
   </div>
 

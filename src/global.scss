@@ -66,6 +66,7 @@ html.theme-dark ion-content {
 }
 
 html.theme-dark .routed-content {
+  color: #f7ede5 !important;
   background: #171310 !important;
 }
 
@@ -110,6 +111,38 @@ html.theme-dark .pedernal-subtitle,
 html.theme-dark .alerts-panel p,
 html.theme-dark .alerts-panel small {
   color: #cdb8aa;
+}
+
+html.theme-dark .welcome,
+html.theme-dark .subtitle,
+html.theme-dark .table-heading,
+html.theme-dark .product-name small,
+html.theme-dark .client p,
+html.theme-dark .user p,
+html.theme-dark .scanner-help,
+html.theme-dark .helper,
+html.theme-dark .empty,
+html.theme-dark .empty-state,
+html.theme-dark header > span,
+html.theme-dark .summary-grid span,
+html.theme-dark .summary-grid small {
+  color: #cdb8aa !important;
+}
+
+html.theme-dark .product-row,
+html.theme-dark .product-name strong,
+html.theme-dark .price,
+html.theme-dark .client h2,
+html.theme-dark .user h2,
+html.theme-dark ion-card-content,
+html.theme-dark .summary-grid article,
+html.theme-dark .insight-card dd,
+html.theme-dark .reconciliation-card strong {
+  color: #f7ede5 !important;
+}
+
+html.theme-dark .product-row {
+  border-color: #514037 !important;
 }
 
 html.theme-dark ion-item {

@@ -6,6 +6,7 @@ import {
   IonInput, IonItem, IonLabel, IonSelect, IonSelectOption,
 } from '@ionic/angular/standalone';
 import { BusinessApi } from '../../services/business-api';
+import { Auth } from '../../services/auth';
 
 interface ProductoCaja {
   id: number;
@@ -21,7 +22,7 @@ interface ProductoCaja {
   promoValor?: number|null;
 }
 
-interface ClienteCaja { id: number; nombre: string; telefono: string; activo: boolean; }
+interface ClienteCaja { id: number; nombre: string; telefono: string; activo: boolean; saldoFavor:number; }
 interface CambioPendiente { id:number; clienteId:number; cliente:string; telefono:string; monto:number; estado:'PENDIENTE'|'ENTREGADO'; fecha:string; }
 interface LineaCarrito extends ProductoCaja { cantidad: number; }
 interface SesionCaja { id: number; estado: 'ABIERTA'; fondoInicial: number; fechaApertura: string; }
@@ -34,6 +35,9 @@ interface EstadoCaja {
 }
 interface CorteCaja { sesionId?:number; fondoInicial:number; efectivoEsperado:number; efectivoContado?:number; diferencia?:number; ventasEfectivo:number; ventasTarjeta:number; ventasTransferencia:number; ventasFiado:number; fechaCierre?:string; }
 interface VentaPendiente { operacionUuid:string; payload:Record<string,unknown>; creada:string; }
+interface VentaResumen { id:number; folio:string; fecha:string; estado:'COMPLETADA'|'CANCELADA'|'DEVUELTA'; total:number; usuario:string; cliente:string; metodo:string; }
+interface VentaDetalle extends VentaResumen { subtotal:number; descuento:number; impuestos:number; items:Array<{nombre:string;cantidad:number;precioUnitario:number;importe:number}>; pagos:Array<{metodo:string;monto:number;referencia:string|null}>; }
+interface Denominacion { valor:number; etiqueta:string; cantidad:number|null; }
 
 @Component({
   selector: 'app-caja',
@@ -45,6 +49,7 @@ interface VentaPendiente { operacionUuid:string; payload:Record<string,unknown>;
 })
 export class CajaPage implements OnInit, OnDestroy {
   private readonly api = inject(BusinessApi);
+  private readonly auth = inject(Auth);
 
   productos: ProductoCaja[] = [];
   clientes: ClienteCaja[] = [];
@@ -56,7 +61,7 @@ export class CajaPage implements OnInit, OnDestroy {
   ventasPorMetodo = { EFECTIVO:0, TARJETA:0, TRANSFERENCIA:0, FIADO:0 };
   busqueda = '';
   fondoInicial: number | null = 1000;
-  metodo: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'FIADO' | 'MIXTO' = 'EFECTIVO';
+  metodo: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'FIADO' | 'SALDO_FAVOR' | 'MIXTO' = 'EFECTIVO';
   clienteId: number | null = null;
   referencia = '';
   efectivoRecibido: number | null = null;
@@ -64,6 +69,7 @@ export class CajaPage implements OnInit, OnDestroy {
   pagoMixtoTarjeta: number | null = null;
   pagoMixtoTransferencia: number | null = null;
   pagoMixtoFiado: number | null = null;
+  pagoMixtoSaldoFavor: number | null = null;
   plazoCredito = 30;
   recargaCompania = 'TELCEL';
   recargaTelefono = '';
@@ -72,6 +78,7 @@ export class CajaPage implements OnInit, OnDestroy {
   cambioPendienteMonto: number | null = null;
   cambiosPendientes: CambioPendiente[] = [];
   efectivoContado: number | null = null;
+  observacionesCierre = '';
   movimientoTipo: 'INGRESO' | 'SALIDA' = 'SALIDA';
   movimientoMonto: number | null = null;
   movimientoDescripcion = '';
@@ -80,6 +87,12 @@ export class CajaPage implements OnInit, OnDestroy {
   procesando = false;
   ventasSuspendidas: Array<{ id: number; fecha: string; carrito: LineaCarrito[] }> = this.cargarSuspendidas();
   ventasPendientes:VentaPendiente[]=this.cargarPendientes();
+  historialVentas:VentaResumen[]=[];
+  busquedaVentas='';
+  ventaSeleccionada:VentaDetalle|null=null;
+  motivoCancelacion='';
+  readonly puedeCancelar=this.auth.obtenerRol()==='administrador'||this.auth.obtenerRol()==='gerente';
+  denominaciones:Denominacion[]=[1000,500,200,100,50,20,10,5,2,1,.5].map(valor=>({valor,etiqueta:valor>=20?`Billetes de $${valor}`:`Monedas de $${valor}`,cantidad:null}));
 
   private readonly alVolverConexion = ():void => { void this.sincronizarPendientes(); };
 
@@ -99,8 +112,11 @@ export class CajaPage implements OnInit, OnDestroy {
   totalLinea(p:LineaCarrito):number{return p.precioVenta*p.cantidad-this.descuentoLinea(p);}
   get cambio(): number { return this.metodo === 'EFECTIVO' && Number(this.efectivoRecibido) > this.total ? Number(this.efectivoRecibido) - this.total : 0; }
   get efectivoFaltante(): number { return this.metodo === 'EFECTIVO' ? Math.max(0, this.total - Number(this.efectivoRecibido || 0)) : 0; }
-  get totalPagoMixto(): number { return Number(this.pagoMixtoEfectivo || 0) + Number(this.pagoMixtoTarjeta || 0) + Number(this.pagoMixtoTransferencia || 0) + Number(this.pagoMixtoFiado || 0); }
+  get totalPagoMixto(): number { return Number(this.pagoMixtoEfectivo || 0) + Number(this.pagoMixtoTarjeta || 0) + Number(this.pagoMixtoTransferencia || 0) + Number(this.pagoMixtoFiado || 0) + Number(this.pagoMixtoSaldoFavor || 0); }
   get diferenciaPagoMixto(): number { return Math.round((this.total - this.totalPagoMixto) * 100) / 100; }
+  get clienteSeleccionado():ClienteCaja|undefined{return this.clientes.find(c=>c.id===Number(this.clienteId));}
+  get totalArqueo():number{return Math.round(this.denominaciones.reduce((s,d)=>s+d.valor*Number(d.cantidad||0),0)*100)/100;}
+  get diferenciaArqueo():number{return Math.round((this.totalArqueo-this.efectivoEsperado)*100)/100;}
 
   usarEfectivo(monto: number): void { this.efectivoRecibido = monto; }
   usarMontoExacto(): void { this.efectivoRecibido = this.total; }
@@ -163,7 +179,10 @@ export class CajaPage implements OnInit, OnDestroy {
     if (!this.sesion) return this.fallar('Abre la caja antes de cobrar.');
     if (!this.carrito.length) return this.fallar('Agrega al menos un producto.');
     if (this.metodo === 'FIADO' && !this.clienteId) return this.fallar('Selecciona un cliente para el fiado.');
+    if (this.metodo === 'SALDO_FAVOR' && !this.clienteId) return this.fallar('Selecciona el cliente que utilizará su saldo a favor.');
+    if (this.metodo === 'SALDO_FAVOR' && Number(this.clienteSeleccionado?.saldoFavor||0) < this.total) return this.fallar('El saldo a favor del cliente no alcanza para cubrir la venta completa; usa pago mixto.');
     if (this.metodo === 'MIXTO' && Number(this.pagoMixtoFiado || 0) > 0 && !this.clienteId) return this.fallar('Selecciona un cliente para la parte a fiado.');
+    if (this.metodo === 'MIXTO' && Number(this.pagoMixtoSaldoFavor || 0) > 0 && !this.clienteId) return this.fallar('Selecciona el cliente para utilizar saldo a favor.');
     if (['TARJETA', 'TRANSFERENCIA'].includes(this.metodo) && !this.referencia.trim()) return this.fallar('Captura la referencia del pago.');
     if (this.metodo === 'EFECTIVO' && Number(this.efectivoRecibido) < this.total) return this.fallar('El efectivo recibido es menor al total.');
     if (this.metodo === 'MIXTO' && Math.abs(this.diferenciaPagoMixto) > .009) return this.fallar('La suma del pago mixto debe coincidir con el total.');
@@ -179,18 +198,21 @@ export class CajaPage implements OnInit, OnDestroy {
           { metodo: 'TARJETA', monto: Number(this.pagoMixtoTarjeta || 0), referencia: this.referencia },
           { metodo: 'TRANSFERENCIA', monto: Number(this.pagoMixtoTransferencia || 0), referencia: this.referencia },
           { metodo: 'FIADO', monto: Number(this.pagoMixtoFiado || 0) },
+          { metodo: 'SALDO_FAVOR', monto: Number(this.pagoMixtoSaldoFavor || 0) },
         ] : undefined,
         plazoDias: (this.metodo === 'FIADO' || Number(this.pagoMixtoFiado || 0) > 0) ? this.plazoCredito : undefined };
-      let venta:{folio:string;total:number};
-      try{venta=await this.api.post<{folio:string;total:number}>('sales',payload);}catch(e:unknown){const x=e as{status?:number};if(x.status===0||!navigator.onLine){this.ventasPendientes=[...this.ventasPendientes,{operacionUuid,payload,creada:new Date().toISOString()}];localStorage.setItem('ventasPendientesSync',JSON.stringify(this.ventasPendientes));this.carrito=[];this.mensaje='Venta guardada sin conexión. Se sincronizará automáticamente; no cierres la caja todavía.';return;}throw e;}
+      let venta:{id:number;folio:string;total:number};
+      try{venta=await this.api.post<{id:number;folio:string;total:number}>('sales',payload);}catch(e:unknown){const x=e as{status?:number};if(x.status===0||!navigator.onLine){this.ventasPendientes=[...this.ventasPendientes,{operacionUuid,payload,creada:new Date().toISOString()}];localStorage.setItem('ventasPendientesSync',JSON.stringify(this.ventasPendientes));this.carrito=[];this.mensaje='Venta guardada sin conexión. Se sincronizará automáticamente; no cierres la caja todavía.';return;}throw e;}
       const cambio = this.cambio;
       this.carrito = [];
       this.referencia = '';
       this.clienteId = null;
       this.efectivoRecibido = null;
-      this.pagoMixtoEfectivo = null; this.pagoMixtoTarjeta = null; this.pagoMixtoTransferencia = null; this.pagoMixtoFiado = null;
+      this.pagoMixtoEfectivo = null; this.pagoMixtoTarjeta = null; this.pagoMixtoTransferencia = null; this.pagoMixtoFiado = null; this.pagoMixtoSaldoFavor=null;
       await this.cargarTodo();
       this.mensaje = `Venta ${venta.folio} registrada por $${Number(venta.total).toFixed(2)}${cambio ? `; cambio $${cambio.toFixed(2)}` : ''}.`;
+      await this.cargarHistorial();
+      await this.imprimirTicket(venta.id,cambio);
     });
   }
 
@@ -222,16 +244,26 @@ export class CajaPage implements OnInit, OnDestroy {
 
   async cerrarCaja(): Promise<void> {
     if(this.ventasPendientes.length)return this.fallar('Hay ventas sin conexión pendientes. Conecta la red y sincronízalas antes de cerrar caja.');
-    const contado = Number(this.efectivoContado);
+    if(!this.denominaciones.some(d=>d.cantidad!==null))return this.fallar('Captura las cantidades de billetes y monedas para realizar el arqueo.');
+    const contado = this.totalArqueo;
     if (!Number.isFinite(contado) || contado < 0) return this.fallar('Captura el efectivo contado.');
     await this.ejecutar(async () => {
-      const corte = await this.api.post<CorteCaja>('cash/close', { efectivoContado: contado });
+      const desglose=this.denominaciones.filter(d=>Number(d.cantidad)>0).map(d=>`${d.cantidad} × $${d.valor}`).join(', ');
+      const notas=[this.observacionesCierre.trim(),`Arqueo: ${desglose||'sin efectivo'}`].filter(Boolean).join(' | ');
+      const corte = await this.api.post<CorteCaja>('cash/close', { efectivoContado: contado,observaciones:notas,denominaciones:this.denominaciones });
       this.efectivoContado = null;
+      this.observacionesCierre='';this.denominaciones.forEach(d=>d.cantidad=null);
       await this.cargarEstado();
       this.mensaje = `Caja cerrada. Diferencia: $${Number(corte.diferencia).toFixed(2)}.`;
       this.imprimirCorte(corte, 'Z');
     });
   }
+
+  async cargarHistorial():Promise<void>{try{const datos=await this.api.get<VentaResumen[]>(`sales?q=${encodeURIComponent(this.busquedaVentas.trim())}`);this.historialVentas=datos.map(v=>({...v,total:Number(v.total)}));}catch{this.historialVentas=[];}}
+  async verVenta(id:number):Promise<void>{await this.ejecutar(async()=>{this.ventaSeleccionada=await this.obtenerVenta(id);});}
+  cerrarDetalleVenta():void{this.ventaSeleccionada=null;this.motivoCancelacion='';}
+  async cancelarVenta():Promise<void>{if(!this.ventaSeleccionada)return;const motivo=this.motivoCancelacion.trim();if(motivo.length<5)return this.fallar('Escribe un motivo de cancelación de al menos 5 caracteres.');await this.ejecutar(async()=>{await this.api.post(`sales/${this.ventaSeleccionada!.id}/cancel`,{motivo});this.cerrarDetalleVenta();await Promise.all([this.cargarHistorial(),this.cargarTodo()]);this.mensaje='Venta cancelada, inventario y caja actualizados.';});}
+  async imprimirTicket(id:number,cambio=0):Promise<void>{const venta=await this.obtenerVenta(id);const w=window.open('','_blank','width=420,height=720');if(!w){this.error='Permite ventanas emergentes para imprimir el ticket.';return;}const dinero=(n:number)=>`$${Number(n).toFixed(2)}`;const filas=venta.items.map(i=>`<tr><td>${i.cantidad} × ${this.escapar(i.nombre)}</td><td>${dinero(i.importe)}</td></tr>`).join('');const pagos=venta.pagos.map(p=>`<tr><td>${this.escapar(p.metodo)}</td><td>${dinero(p.monto)}</td></tr>`).join('');w.document.write(`<html><head><title>${this.escapar(venta.folio)}</title><style>body{font:13px monospace;width:300px;margin:18px auto;color:#111}h2,p{text-align:center;margin:6px}table{width:100%;border-collapse:collapse;margin:10px 0}td{padding:5px 0;border-bottom:1px dashed #bbb}td:last-child{text-align:right}.total{font-size:17px;font-weight:bold}small{display:block;text-align:center;margin-top:16px}</style></head><body><h2>Abarrotes El Pedernal</h2><p>${this.escapar(venta.folio)}<br>${new Date(venta.fecha).toLocaleString('es-MX')}<br>Atendió: ${this.escapar(venta.usuario)}</p><table>${filas}</table><table><tr><td>Subtotal</td><td>${dinero(venta.subtotal)}</td></tr>${venta.descuento?`<tr><td>Descuento</td><td>-${dinero(venta.descuento)}</td></tr>`:''}<tr><td>IVA</td><td>${dinero(venta.impuestos)}</td></tr><tr class="total"><td>Total</td><td>${dinero(venta.total)}</td></tr>${pagos}${cambio?`<tr><td>Cambio</td><td>${dinero(cambio)}</td></tr>`:''}</table><small>Gracias por su compra</small><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();}
 
   imprimirCorteX(): void {
     if (!this.sesion) return;
@@ -245,7 +277,7 @@ export class CajaPage implements OnInit, OnDestroy {
   }
 
   private async cargarTodo(): Promise<void> {
-    await Promise.all([this.cargarEstado(), this.cargarCatalogos(),this.cargarCambios()]);
+    await Promise.all([this.cargarEstado(), this.cargarCatalogos(),this.cargarCambios(),this.cargarHistorial()]);
   }
 
   private async cargarCatalogos(): Promise<void> {
@@ -254,9 +286,11 @@ export class CajaPage implements OnInit, OnDestroy {
       this.api.get<ClienteCaja[]>('clients'),
     ]);
     this.productos = productos.map((p) => ({ ...p, stock: Number(p.stock), precioVenta: Number(p.precioVenta), tasaIva: Number(p.tasaIva),promoValor:p.promoValor===null?null:Number(p.promoValor) }));
-    this.clientes = clientes.filter((c) => c.activo);
+    this.clientes = clientes.filter((c) => c.activo).map(c=>({...c,saldoFavor:Number(c.saldoFavor||0)}));
   }
   private async cargarCambios():Promise<void>{try{const datos=await this.api.get<CambioPendiente[]>('customer-balances');this.cambiosPendientes=datos.map(x=>({...x,monto:Number(x.monto)}));}catch{this.cambiosPendientes=[];}}
+  private async obtenerVenta(id:number):Promise<VentaDetalle>{const v=await this.api.get<VentaDetalle>(`sales/${id}`);return {...v,subtotal:Number(v.subtotal),descuento:Number(v.descuento),impuestos:Number(v.impuestos),total:Number(v.total),items:v.items.map(i=>({...i,cantidad:Number(i.cantidad),precioUnitario:Number(i.precioUnitario),importe:Number(i.importe)})),pagos:v.pagos.map(p=>({...p,monto:Number(p.monto)}))};}
+  private escapar(valor:unknown):string{return String(valor??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]??c));}
 
   private async cargarEstado(): Promise<void> {
     const estado = await this.api.get<EstadoCaja>('cash/current');

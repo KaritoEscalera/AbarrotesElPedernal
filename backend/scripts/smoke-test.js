@@ -5,6 +5,11 @@ const session = await login.json();
 const clients = await fetch(`${api}/clients`, { headers: { Authorization: `Bearer ${session.token}` } });
 if (!clients.ok) throw new Error(`Clientes falló con HTTP ${clients.status}`);
 const rows = await clients.json();
+if (rows.length) {
+  const account = await fetch(`${api}/clients/${rows[0].id}/account`, { headers: { Authorization: `Bearer ${session.token}` } });
+  const accountData = await account.json();
+  if (!account.ok || !accountData.client || !Array.isArray(accountData.credits) || !Array.isArray(accountData.payments) || !Array.isArray(accountData.balances)) throw new Error(`Estado de cuenta falló con HTTP ${account.status}`);
+}
 const cash = await fetch(`${api}/cash/current`, { headers: { Authorization: `Bearer ${session.token}` } });
 if (!cash.ok) throw new Error(`Caja falló con HTTP ${cash.status}`);
 const cashState = await cash.json();
@@ -23,7 +28,7 @@ const purchases = await fetch(`${api}/purchases`, { headers: { Authorization: `B
 if (!purchases.ok || !Array.isArray(await purchases.json())) throw new Error(`Compras falló con HTTP ${purchases.status}`);
 const backups = await fetch(`${api}/backups`, { headers: { Authorization: `Bearer ${session.token}` } });
 if (!backups.ok || !Array.isArray(await backups.json())) throw new Error(`Respaldos falló con HTTP ${backups.status}`);
-for (const endpoint of ['purchase-suggestions','lots/alerts','promotions']) {
+for (const endpoint of ['purchase-suggestions','lots/alerts','inventory/movements','promotions']) {
   const response = await fetch(`${api}/${endpoint}`, { headers: { Authorization: `Bearer ${session.token}` } });
   if (!response.ok || !Array.isArray(await response.json())) throw new Error(`${endpoint} falló con HTTP ${response.status}`);
 }
