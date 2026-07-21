@@ -33,6 +33,7 @@ log.txt
 /node_modules
 backend/node_modules
 backend/.env
+backend/backups/
 .env
 npm-debug.log
 yarn-error.log

@@ -263,6 +263,7 @@ h2 {
   gap: 12px;
   margin-top: 22px;
 }
+.billing-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:16px}.billing-grid .form-card{margin-bottom:18px}.form-grid.compact{gap:9px;margin-top:10px}.pac-status{padding:7px 10px;color:#8a2525;background:#fde4e2;border-radius:999px;font-size:11px;font-weight:800}.pac-status.ready{color:#287a37;background:#e6f5e8}.invoice-preview{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin-top:14px;padding:14px;background:#fff6ee;border:1px solid #edcbaa;border-radius:12px}.invoice-preview strong{color:#8d4313;font-size:23px}.invoice-preview small{grid-column:1/-1;color:#806a59}
 
 .cancel-button {
   --border-color: #d6bca7;
@@ -424,6 +425,7 @@ tbody tr:hover {
   }
 
   .reconciliation-grid, .calendar-list { grid-template-columns: repeat(2, 1fr); }
+  .billing-grid{grid-template-columns:1fr}
 }
 
 @media (max-width: 700px) {

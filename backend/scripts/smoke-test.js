@@ -23,15 +23,18 @@ if (!audit.ok) throw new Error(`Bitácora falló con HTTP ${audit.status}`);
 const analytics = await fetch(`${api}/analytics`, { headers: { Authorization: `Bearer ${session.token}` } });
 if (!analytics.ok) throw new Error(`Estadísticas falló con HTTP ${analytics.status}`);
 const analyticsData = await analytics.json();
-if (!Array.isArray(analyticsData.sales) || !Array.isArray(analyticsData.products) || !Array.isArray(analyticsData.credits)) throw new Error('Las estadísticas no tienen el formato esperado.');
+if (!Array.isArray(analyticsData.sales) || !Array.isArray(analyticsData.products) || !Array.isArray(analyticsData.credits) || !Array.isArray(analyticsData.cashClosures) || !Array.isArray(analyticsData.reminders)) throw new Error('Las estadísticas no tienen el formato esperado.');
 const purchases = await fetch(`${api}/purchases`, { headers: { Authorization: `Bearer ${session.token}` } });
 if (!purchases.ok || !Array.isArray(await purchases.json())) throw new Error(`Compras falló con HTTP ${purchases.status}`);
 const backups = await fetch(`${api}/backups`, { headers: { Authorization: `Bearer ${session.token}` } });
 if (!backups.ok || !Array.isArray(await backups.json())) throw new Error(`Respaldos falló con HTTP ${backups.status}`);
-for (const endpoint of ['purchase-suggestions','lots/alerts','inventory/movements','promotions']) {
+for (const endpoint of ['purchase-suggestions','lots/alerts','inventory/movements','recharges','invoices','promotions']) {
   const response = await fetch(`${api}/${endpoint}`, { headers: { Authorization: `Bearer ${session.token}` } });
   if (!response.ok || !Array.isArray(await response.json())) throw new Error(`${endpoint} falló con HTTP ${response.status}`);
 }
+const rechargeSummary = await fetch(`${api}/recharges/reconciliation`, { headers: { Authorization: `Bearer ${session.token}` } });
+const rechargeData = await rechargeSummary.json();
+if (!rechargeSummary.ok || !('total' in rechargeData) || !Array.isArray(rechargeData.porCompania)) throw new Error(`Conciliación de recargas falló con HTTP ${rechargeSummary.status}`);
 if (process.env.TEST_BACKUP === '1') {
   const backup = await fetch(`${api}/backups/export`, { headers: { Authorization: `Bearer ${session.token}` } });
   if (!backup.ok || (await backup.arrayBuffer()).byteLength < 1000) throw new Error(`Exportación de respaldo falló con HTTP ${backup.status}`);

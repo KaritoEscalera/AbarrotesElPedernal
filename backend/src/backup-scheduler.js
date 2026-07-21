@@ -1,0 +1,17 @@
+import { createHash } from 'node:crypto';
+import { mkdir, readdir, stat, unlink, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { spawn } from 'node:child_process';
+import { config } from './config.js';
+import { pool } from './database.js';
+
+const directory=resolve(process.cwd(),config.backups.directory);
+let running=false;
+
+function dumpDatabase(){return new Promise((resolveDump,reject)=>{const args=['-h',config.database.host,'-P',String(config.database.port),'-u',config.database.user,'--single-transaction','--routines','--triggers','--set-gtid-purged=OFF','--default-character-set=utf8mb4',config.database.database];const child=spawn('mysqldump',args,{env:{...process.env,MYSQL_PWD:config.database.password}});const chunks=[];const errors=[];let size=0;child.stdout.on('data',chunk=>{size+=chunk.length;if(size>100*1024*1024)child.kill();else chunks.push(chunk);});child.stderr.on('data',chunk=>errors.push(chunk));child.on('error',reject);child.on('close',code=>code===0?resolveDump(Buffer.concat(chunks)):reject(new Error(Buffer.concat(errors).toString()||`mysqldump terminó con código ${code}`)));});}
+
+export async function createAutomaticBackup(){if(running)return null;running=true;let id;try{await mkdir(directory,{recursive:true});const name=`auto-${new Date().toISOString().replace(/[:.]/g,'-')}.sql`;const location=resolve(directory,name);const [record]=await pool.execute(`INSERT INTO respaldos(usuario_id,nombre_archivo,tipo,ubicacion,version_esquema,estado) VALUES(NULL,?,'AUTOMATICO',?,'1','CREANDO')`,[name,location]);id=record.insertId;const dump=await dumpDatabase();const checksum=createHash('sha256').update(dump).digest('hex');await writeFile(location,dump,{mode:0o600});await pool.execute("UPDATE respaldos SET tamanio_bytes=?,checksum=?,estado='COMPLETADO' WHERE id=?",[dump.length,checksum,id]);await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(NULL,'Respaldos','AUTOMATICO',?,'RESPALDO',?)`,[`${name} · SHA-256 ${checksum.slice(0,12)}`,id]);await pruneBackups();return {id,name,location,size:dump.length,checksum};}catch(error){if(id)await pool.execute("UPDATE respaldos SET estado='FALLIDO',mensaje_error=? WHERE id=?",[String(error.message).slice(0,500),id]).catch(()=>undefined);throw error;}finally{running=false;}}
+
+async function pruneBackups(){const limit=Date.now()-config.backups.retentionDays*86400000;for(const name of await readdir(directory)){if(!name.startsWith('auto-')||!name.endsWith('.sql'))continue;const path=resolve(directory,name);const info=await stat(path);if(info.mtimeMs<limit){await unlink(path);await pool.execute("UPDATE respaldos SET estado='ELIMINADO' WHERE nombre_archivo=? AND tipo='AUTOMATICO'",[name]);}}}
+
+export function startBackupScheduler(){const interval=config.backups.intervalHours*3600000;const timer=setInterval(()=>{void createAutomaticBackup().catch(error=>console.error('Respaldo automático falló:',error.message));},interval);timer.unref();setTimeout(async()=>{try{const [[last]]=await pool.query("SELECT MAX(creado_en) fecha FROM respaldos WHERE tipo='AUTOMATICO' AND estado='COMPLETADO'");if(!last.fecha||Date.now()-new Date(last.fecha).getTime()>=interval)await createAutomaticBackup();}catch(error){console.error('No fue posible iniciar respaldos automáticos:',error.message);}},5000).unref();}

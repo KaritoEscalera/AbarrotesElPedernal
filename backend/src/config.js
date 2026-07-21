@@ -20,6 +20,11 @@ export const config = {
   },
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '8h',
+  backups: {
+    directory: process.env.BACKUP_DIR ?? 'backups',
+    intervalHours: Math.max(1, Number(process.env.BACKUP_INTERVAL_HOURS ?? 24)),
+    retentionDays: Math.max(1, Number(process.env.BACKUP_RETENTION_DAYS ?? 14)),
+  },
   pac: {
     provider: process.env.PAC_PROVIDER ?? '',
     apiUrl: process.env.PAC_API_URL ?? '',

@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   nombre VARCHAR(120) NOT NULL,
   correo VARCHAR(190) NOT NULL,
   password_hash VARCHAR(255) NOT NULL COMMENT 'Hash bcrypt o Argon2; nunca contraseña en texto plano',
+  sesion_version INT UNSIGNED NOT NULL DEFAULT 0,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   ultimo_acceso DATETIME NULL,
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -256,6 +257,28 @@ CREATE TABLE IF NOT EXISTS movimientos_caja (
   INDEX idx_mov_caja_sesion_fecha (sesion_caja_id, creado_en)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS recargas (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  sesion_caja_id BIGINT UNSIGNED NOT NULL,
+  usuario_id BIGINT UNSIGNED NOT NULL,
+  compania VARCHAR(30) NOT NULL,
+  telefono VARCHAR(10) NOT NULL,
+  monto DECIMAL(12,2) NOT NULL,
+  comision DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  estado ENUM('PENDIENTE','EXITOSA','RECHAZADA','CANCELADA') NOT NULL DEFAULT 'PENDIENTE',
+  folio_proveedor VARCHAR(120) NULL,
+  motivo VARCHAR(255) NULL,
+  resuelta_por BIGINT UNSIGNED NULL,
+  creada_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  resuelta_en DATETIME NULL,
+  CONSTRAINT chk_recarga_importes CHECK (monto > 0 AND comision >= 0 AND comision <= monto),
+  CONSTRAINT fk_recarga_sesion FOREIGN KEY (sesion_caja_id) REFERENCES sesiones_caja(id),
+  CONSTRAINT fk_recarga_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  CONSTRAINT fk_recarga_resuelta FOREIGN KEY (resuelta_por) REFERENCES usuarios(id),
+  INDEX idx_recargas_estado_fecha (estado, creada_en),
+  INDEX idx_recargas_telefono (telefono)
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS fiados (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   cliente_id BIGINT UNSIGNED NOT NULL,
@@ -355,6 +378,46 @@ CREATE TABLE IF NOT EXISTS documentos_cfdi (
   INDEX idx_cfdi_fecha_tipo (fecha_emision, tipo_comprobante),
   INDEX idx_cfdi_emisor (rfc_emisor),
   INDEX idx_cfdi_receptor (rfc_receptor)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS facturas_borrador (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  tipo ENUM('INDIVIDUAL','GLOBAL') NOT NULL,
+  cliente_id BIGINT UNSIGNED NULL,
+  fecha_inicio DATE NOT NULL,
+  fecha_fin DATE NOT NULL,
+  periodicidad VARCHAR(5) NULL,
+  meses VARCHAR(5) NULL,
+  anio SMALLINT UNSIGNED NULL,
+  rfc_receptor VARCHAR(13) NOT NULL,
+  nombre_receptor VARCHAR(200) NOT NULL,
+  regimen_receptor VARCHAR(10) NOT NULL,
+  codigo_postal_receptor VARCHAR(5) NOT NULL,
+  uso_cfdi VARCHAR(10) NOT NULL,
+  subtotal DECIMAL(14,2) NOT NULL,
+  descuento DECIMAL(14,2) NOT NULL DEFAULT 0,
+  impuestos DECIMAL(14,2) NOT NULL DEFAULT 0,
+  total DECIMAL(14,2) NOT NULL,
+  estado ENUM('BORRADOR','PENDIENTE_TIMBRADO','TIMBRADA','CANCELADA','ERROR') NOT NULL DEFAULT 'BORRADOR',
+  proveedor_pac VARCHAR(80) NULL,
+  uuid CHAR(36) NULL,
+  mensaje_error VARCHAR(500) NULL,
+  creado_por BIGINT UNSIGNED NOT NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_factura_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL,
+  CONSTRAINT fk_factura_usuario FOREIGN KEY (creado_por) REFERENCES usuarios(id),
+  INDEX idx_facturas_periodo (tipo,fecha_inicio,fecha_fin),
+  INDEX idx_facturas_estado (estado,creado_en)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS factura_borrador_ventas (
+  factura_id BIGINT UNSIGNED NOT NULL,
+  venta_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (factura_id,venta_id),
+  CONSTRAINT fk_factura_venta_factura FOREIGN KEY (factura_id) REFERENCES facturas_borrador(id) ON DELETE CASCADE,
+  CONSTRAINT fk_factura_venta_venta FOREIGN KEY (venta_id) REFERENCES ventas(id),
+  INDEX idx_factura_venta (venta_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS movimientos_contables (

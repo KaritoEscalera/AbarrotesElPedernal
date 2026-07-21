@@ -195,6 +195,19 @@ h2 {
 }
 
 .business-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+.operations-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 24px; }
+.reminder-list a { display: flex; align-items: center; gap: 12px; padding: 14px 18px; color: #604a3b; border-bottom: 1px solid #f1e7df; text-decoration: none; }
+.reminder-list a:hover { background: #fff9f4; }
+.reminder-list a > span { display: grid; place-items: center; width: 28px; height: 28px; color: #9a6414; background: #fff0d8; border-radius: 50%; font-weight: 900; }
+.reminder-list a.urgent > span { color: #a92e2a; background: #fde4e2; }
+.reminder-list a div { min-width: 0; flex: 1; }
+.reminder-list strong,.reminder-list small { display: block; }
+.reminder-list small { margin-top: 3px; color: #876f5d; }
+.reminder-list b { color: #9a887a; font-size: 11px; }
+.cash-card table { min-width: 620px; }
+.negative-money { color: #b13a30; font-weight: 800; }
+.positive-money { color: #287a37; font-weight: 800; }
+.empty { padding: 28px; color: #9a887a; text-align: center; }
 .insight-card { padding: 22px; background: #fff; border: 1px solid #eee2d7; border-radius: 20px; box-shadow: 0 10px 30px rgba(74,44,29,.07); }
 .insight-card dl { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0 0; }
 .insight-card dl div { padding: 12px; background: #f9f4ef; border-radius: 10px; }
@@ -278,6 +291,7 @@ tbody tr:hover {
   }
 
   .business-grid { grid-template-columns: 1fr; }
+  .operations-grid { grid-template-columns: 1fr; }
 
   .full-chart { grid-column: auto; }
 }

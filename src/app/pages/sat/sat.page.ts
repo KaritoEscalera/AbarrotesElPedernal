@@ -13,6 +13,9 @@ interface ConfiguracionFiscal { rfc: string; nombre: string; codigoPostal: strin
 interface MovimientoFiscal { id: number; fecha: string; tipo: TipoMovimiento; concepto: string; categoria: string; metodoPago: string; referencia: string; subtotal: number; iva: number; retenciones: number; total: number; origen: 'Caja' | 'Manual'; }
 interface DocumentoFiscal { id: number; fecha: string; tipo: string; uuid: string; folio: string; rfcEmisor: string; emisor: string; rfcReceptor: string; subtotal: number; iva: number; retenciones: number; total: number; metodoPago: string; formaPago: string; usoCfdi: string; regimenReceptor: string; estado: EstadoDocumento; xml: string; }
 interface AlertaFiscal { fecha: string; titulo: string; detalle: string; nivel: 'normal' | 'urgente'; }
+interface ClienteFiscal {id:number;nombre:string;telefono:string;rfc:string|null;codigoPostalFiscal:string|null;regimenFiscal:string|null;usoCfdi:string|null;}
+interface VistaFactura {tipo:string;inicio:string;fin:string;ventas:Array<{id:number;folio:string;fecha:string;total:number}>;totals:{subtotal:number;descuento:number;impuestos:number;total:number};}
+interface BorradorFactura {id:number;tipo:string;fechaInicio:string;fechaFin:string;rfcReceptor:string;receptor:string;subtotal:number;descuento:number;impuestos:number;total:number;estado:string;uuid:string|null;proveedorPac:string|null;fecha:string;ventas:number;}
 
 @Component({
   selector: 'app-sat', templateUrl: './sat.page.html', styleUrls: ['./sat.page.scss'], standalone: true,
@@ -34,15 +37,35 @@ export class SatPage implements OnInit {
   movimientos: MovimientoFiscal[] = [];
   documentos: DocumentoFiscal[] = this.cargarDocumentos();
   nuevoMovimiento: MovimientoFiscal = this.movimientoVacio();
+  pacConfigurado=false;
+  clientesFiscales:ClienteFiscal[]=[];
+  clienteFiscalId:number|null=null;
+  facturaTipo:'GLOBAL'|'INDIVIDUAL'='GLOBAL';
+  facturaInicio=this.fechaLocal(new Date(new Date().getFullYear(),new Date().getMonth(),1));
+  facturaFin=this.fechaLocal(new Date());
+  facturaClienteId:number|null=null;
+  periodicidad='04';
+  meses=String(new Date().getMonth()+1).padStart(2,'0');
+  anio=new Date().getFullYear();
+  vistaFactura:VistaFactura|null=null;
+  borradores:BorradorFactura[]=[];
 
   async ngOnInit(): Promise<void> {
     try {
       const data = await this.api.get<{ settings: null | { rfc:string; nombre:string; codigoPostal:string; tipoPersona:'FISICA'|'MORAL'; regimen:string; tasaIsr:number }; ledger: MovimientoFiscal[]; pac:{configured:boolean;provider:string|null} }>('fiscal');
       if (data.settings) this.configuracion = { ...data.settings, tipoPersona: data.settings.tipoPersona === 'MORAL' ? 'Moral' : 'Física', tasaIsrEstimada: Number(data.settings.tasaIsr) };
       this.movimientos = data.ledger.map(m => ({ ...m, subtotal:Number(m.subtotal), iva:Number(m.iva), retenciones:Number(m.retenciones), total:Number(m.total) }));
+      this.pacConfigurado=data.pac.configured;
+      await this.cargarFacturacion();
       if (!data.pac.configured) this.notificar('Control fiscal conectado a MySQL. La emisión CFDI permanece bloqueada hasta configurar un PAC.', false);
     } catch { this.notificar('No fue posible cargar el control fiscal desde MySQL.', true); }
   }
+  get clienteFiscalSeleccionado():ClienteFiscal|undefined{return this.clientesFiscales.find(c=>c.id===Number(this.clienteFiscalId));}
+  async guardarClienteFiscal():Promise<void>{const c=this.clienteFiscalSeleccionado;if(!c)return this.notificar('Selecciona un cliente.',true);try{await this.api.put(`clients/${c.id}/fiscal`,{nombre:c.nombre,rfc:c.rfc,codigoPostalFiscal:c.codigoPostalFiscal,regimenFiscal:c.regimenFiscal,usoCfdi:c.usoCfdi});this.notificar('Datos fiscales del receptor guardados.',false);}catch(e:unknown){const x=e as{error?:{error?:{error?:string}}};this.notificar(x.error?.error?.error??'Revisa los datos fiscales del cliente.',true);}}
+  async previsualizarFactura():Promise<void>{try{const cliente=this.facturaTipo==='INDIVIDUAL'?`&clienteId=${this.facturaClienteId??''}`:'';const v=await this.api.get<VistaFactura>(`invoices/preview?tipo=${this.facturaTipo}&inicio=${this.facturaInicio}&fin=${this.facturaFin}${cliente}`);this.vistaFactura={...v,ventas:v.ventas.map(x=>({...x,total:Number(x.total)})),totals:{subtotal:Number(v.totals.subtotal),descuento:Number(v.totals.descuento),impuestos:Number(v.totals.impuestos),total:Number(v.totals.total)}};this.notificar(`${v.ventas.length} ventas disponibles para facturar.`,false);}catch{this.vistaFactura=null;this.notificar('No fue posible preparar la vista previa. Revisa periodo y cliente.',true);}}
+  async crearBorradorFactura():Promise<void>{if(!this.vistaFactura?.ventas.length)return this.notificar('Primero genera una vista previa con ventas disponibles.',true);try{await this.api.post('invoices',{tipo:this.facturaTipo,inicio:this.facturaInicio,fin:this.facturaFin,clienteId:this.facturaClienteId,periodicidad:this.periodicidad,meses:this.meses,anio:this.anio});this.vistaFactura=null;await this.cargarFacturacion();this.notificar('Borrador fiscal creado y ventas relacionadas.',false);}catch(e:unknown){const x=e as{error?:{error?:{error?:string}}};this.notificar(x.error?.error?.error??'No fue posible crear el borrador.',true);}}
+  async timbrarBorrador(f:BorradorFactura):Promise<void>{try{await this.api.post(`invoices/${f.id}/stamp`,{});this.notificar('Documento enviado al PAC.',false);}catch(e:unknown){const x=e as{error?:{error?:{error?:string}}};this.notificar(x.error?.error?.error??'El timbrado permanece bloqueado hasta configurar el PAC.',true);}}
+  private async cargarFacturacion():Promise<void>{const [clientes,borradores]=await Promise.all([this.api.get<ClienteFiscal[]>('clients'),this.api.get<BorradorFactura[]>('invoices')]);this.clientesFiscales=clientes;this.borradores=borradores.map(f=>({...f,subtotal:Number(f.subtotal),descuento:Number(f.descuento),impuestos:Number(f.impuestos),total:Number(f.total),ventas:Number(f.ventas)}));}
 
   get movimientosFiltrados(): MovimientoFiscal[] { const [inicio, fin] = this.rango(); return this.movimientos.filter((m) => m.fecha >= inicio && m.fecha <= fin); }
   get documentosFiltrados(): DocumentoFiscal[] { const [inicio, fin] = this.rango(); return this.documentos.filter((d) => d.fecha >= inicio && d.fecha <= fin); }

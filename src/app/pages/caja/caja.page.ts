@@ -38,6 +38,8 @@ interface VentaPendiente { operacionUuid:string; payload:Record<string,unknown>;
 interface VentaResumen { id:number; folio:string; fecha:string; estado:'COMPLETADA'|'CANCELADA'|'DEVUELTA'; total:number; usuario:string; cliente:string; metodo:string; }
 interface VentaDetalle extends VentaResumen { subtotal:number; descuento:number; impuestos:number; items:Array<{nombre:string;cantidad:number;precioUnitario:number;importe:number}>; pagos:Array<{metodo:string;monto:number;referencia:string|null}>; }
 interface Denominacion { valor:number; etiqueta:string; cantidad:number|null; }
+interface Recarga {id:number;compania:string;telefono:string;monto:number;comision:number;estado:'PENDIENTE'|'EXITOSA'|'RECHAZADA'|'CANCELADA';folioProveedor:string|null;motivo:string|null;fecha:string;usuario:string;folioCaptura?:string;motivoCaptura?:string;}
+interface ConciliacionRecargas {total:number;comisiones:number;pendientes:number;exitosas:number;rechazadas:number;canceladas:number;porCompania:Array<{compania:string;operaciones:number;monto:number;comision:number}>;}
 
 @Component({
   selector: 'app-caja',
@@ -74,6 +76,9 @@ export class CajaPage implements OnInit, OnDestroy {
   recargaCompania = 'TELCEL';
   recargaTelefono = '';
   recargaMonto: number | null = null;
+  recargaComision:number|null=0;
+  recargas:Recarga[]=[];
+  conciliacionRecargas:ConciliacionRecargas={total:0,comisiones:0,pendientes:0,exitosas:0,rechazadas:0,canceladas:0,porCompania:[]};
   cambioClienteId: number | null = null;
   cambioPendienteMonto: number | null = null;
   cambiosPendientes: CambioPendiente[] = [];
@@ -92,6 +97,7 @@ export class CajaPage implements OnInit, OnDestroy {
   ventaSeleccionada:VentaDetalle|null=null;
   motivoCancelacion='';
   readonly puedeCancelar=this.auth.obtenerRol()==='administrador'||this.auth.obtenerRol()==='gerente';
+  readonly puedeAdministrarRecargas=this.puedeCancelar;
   denominaciones:Denominacion[]=[1000,500,200,100,50,20,10,5,2,1,.5].map(valor=>({valor,etiqueta:valor>=20?`Billetes de $${valor}`:`Monedas de $${valor}`,cantidad:null}));
 
   private readonly alVolverConexion = ():void => { void this.sincronizarPendientes(); };
@@ -229,10 +235,12 @@ export class CajaPage implements OnInit, OnDestroy {
   }
 
   async registrarRecarga():Promise<void>{
-    const monto=Number(this.recargaMonto); const telefono=this.recargaTelefono.trim();
-    if(!/^\d{10}$/.test(telefono)||!Number.isFinite(monto)||monto<=0)return this.fallar('Captura un teléfono de 10 dígitos y un monto válido.');
-    await this.ejecutar(async()=>{await this.api.post('cash/services',{tipo:'RECARGA',compania:this.recargaCompania,telefono,monto});this.recargaTelefono='';this.recargaMonto=null;await this.cargarEstado();this.mensaje=`Recarga ${this.recargaCompania} registrada correctamente.`;});
+    const monto=Number(this.recargaMonto),comision=Number(this.recargaComision||0); const telefono=this.recargaTelefono.trim();
+    if(!/^\d{10}$/.test(telefono)||!Number.isFinite(monto)||monto<=0||comision<0||comision>monto)return this.fallar('Captura teléfono, monto y comisión válidos.');
+    await this.ejecutar(async()=>{await this.api.post('cash/services',{tipo:'RECARGA',compania:this.recargaCompania,telefono,monto,comision});this.recargaTelefono='';this.recargaMonto=null;this.recargaComision=0;await this.cargarRecargas();this.mensaje=`Recarga ${this.recargaCompania} creada como pendiente. Confirma el resultado del proveedor.`;});
   }
+  async resolverRecarga(item:Recarga,estado:'EXITOSA'|'RECHAZADA'):Promise<void>{const folio=String(item.folioCaptura||'').trim(),motivo=String(item.motivoCaptura||'').trim();if(estado==='EXITOSA'&&!folio)return this.fallar('Captura el folio entregado por el proveedor.');if(estado==='RECHAZADA'&&motivo.length<4)return this.fallar('Indica por qué fue rechazada.');await this.ejecutar(async()=>{await this.api.patch(`recharges/${item.id}/resolve`,{estado,folioProveedor:folio,motivo});await Promise.all([this.cargarRecargas(),this.cargarEstado()]);this.mensaje=`Recarga marcada como ${estado.toLowerCase()}.`;});}
+  async cancelarRecarga(item:Recarga):Promise<void>{const motivo=prompt('Motivo de la cancelación y reembolso:')?.trim()||'';if(motivo.length<5)return this.fallar('El motivo debe tener al menos 5 caracteres.');await this.ejecutar(async()=>{await this.api.post(`recharges/${item.id}/cancel`,{motivo});await Promise.all([this.cargarRecargas(),this.cargarEstado()]);this.mensaje='Recarga cancelada y reembolso registrado en caja.';});}
 
   async guardarCambioPendiente():Promise<void>{
     const monto=Number(this.cambioPendienteMonto);
@@ -277,7 +285,7 @@ export class CajaPage implements OnInit, OnDestroy {
   }
 
   private async cargarTodo(): Promise<void> {
-    await Promise.all([this.cargarEstado(), this.cargarCatalogos(),this.cargarCambios(),this.cargarHistorial()]);
+    await Promise.all([this.cargarEstado(), this.cargarCatalogos(),this.cargarCambios(),this.cargarHistorial(),this.cargarRecargas()]);
   }
 
   private async cargarCatalogos(): Promise<void> {
@@ -289,6 +297,7 @@ export class CajaPage implements OnInit, OnDestroy {
     this.clientes = clientes.filter((c) => c.activo).map(c=>({...c,saldoFavor:Number(c.saldoFavor||0)}));
   }
   private async cargarCambios():Promise<void>{try{const datos=await this.api.get<CambioPendiente[]>('customer-balances');this.cambiosPendientes=datos.map(x=>({...x,monto:Number(x.monto)}));}catch{this.cambiosPendientes=[];}}
+  private async cargarRecargas():Promise<void>{try{const [datos,resumen]=await Promise.all([this.api.get<Recarga[]>('recharges'),this.api.get<ConciliacionRecargas>('recharges/reconciliation')]);this.recargas=datos.map(x=>({...x,monto:Number(x.monto),comision:Number(x.comision)}));this.conciliacionRecargas={...resumen,total:Number(resumen.total),comisiones:Number(resumen.comisiones),pendientes:Number(resumen.pendientes),exitosas:Number(resumen.exitosas),rechazadas:Number(resumen.rechazadas),canceladas:Number(resumen.canceladas),porCompania:resumen.porCompania.map(x=>({...x,operaciones:Number(x.operaciones),monto:Number(x.monto),comision:Number(x.comision)}))};}catch{this.recargas=[];}}
   private async obtenerVenta(id:number):Promise<VentaDetalle>{const v=await this.api.get<VentaDetalle>(`sales/${id}`);return {...v,subtotal:Number(v.subtotal),descuento:Number(v.descuento),impuestos:Number(v.impuestos),total:Number(v.total),items:v.items.map(i=>({...i,cantidad:Number(i.cantidad),precioUnitario:Number(i.precioUnitario),importe:Number(i.importe)})),pagos:v.pagos.map(p=>({...p,monto:Number(p.monto)}))};}
   private escapar(valor:unknown):string{return String(valor??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]??c));}
 

@@ -5,7 +5,7 @@ import { IonButton, IonContent, IonInput, IonItem, IonLabel } from '@ionic/angul
 import { environment } from '../../../environments/environment';
 import { BusinessApi } from '../../services/business-api';
 
-interface Respaldo { id:number; nombre:string; tipo:string; tamanio:number; estado:string; fecha:string; error:string|null; }
+interface Respaldo { id:number; nombre:string; tipo:string; ubicacion:string|null;tamanio:number;checksum:string|null; estado:string; fecha:string; error:string|null; verificado?:boolean; }
 
 @Component({selector:'app-respaldos',templateUrl:'./respaldos.page.html',styleUrls:['./respaldos.page.scss'],standalone:true,
   imports:[CommonModule,FormsModule,IonButton,IonContent,IonInput,IonItem,IonLabel]})
@@ -17,6 +17,8 @@ export class RespaldosPage implements OnInit {
     this.iniciar();
     try{const response=await fetch(`${environment.apiUrl}/backups/export`,{headers:{Authorization:`Bearer ${localStorage.getItem('token')??''}`}});if(!response.ok)throw new Error(await this.errorApi(response));const blob=await response.blob();const disposition=response.headers.get('Content-Disposition')??'';const name=/filename="([^"]+)"/.exec(disposition)?.[1]??'abarrotes-pedernal.sql';const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);this.mensaje='Respaldo completo de MySQL creado y descargado.';await this.cargar();}catch(e){this.error=e instanceof Error?e.message:'No fue posible crear el respaldo.';}finally{this.procesando=false;}
   }
+  async crearAutomatico():Promise<void>{this.iniciar();try{await this.api.post('backups/automatic',{});this.mensaje='Respaldo automático cifrado por permisos del sistema y guardado localmente.';await this.cargar();}catch{this.error='No fue posible crear el respaldo automático.';}finally{this.procesando=false;}}
+  async verificar(r:Respaldo):Promise<void>{this.iniciar();try{const resultado=await this.api.post<{valido:boolean}>(`backups/${r.id}/verify`,{});r.verificado=resultado.valido;this.mensaje=resultado.valido?'La integridad SHA-256 del respaldo es correcta.':'El archivo fue alterado o está dañado.';}catch{this.error='No fue posible verificar este respaldo.';}finally{this.procesando=false;}}
   seleccionar(event:Event):void{const input=event.target as HTMLInputElement;this.archivo=input.files?.[0]??null;this.error='';if(this.archivo&&!this.archivo.name.toLowerCase().endsWith('.sql')){this.error='Selecciona un archivo .sql.';this.archivo=null;input.value='';}}
   async restaurar():Promise<void>{
     if(!this.archivo||this.confirmacion!=='RESTAURAR'){this.error='Selecciona el SQL y escribe RESTAURAR para confirmar.';return;}

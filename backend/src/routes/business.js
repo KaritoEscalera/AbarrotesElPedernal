@@ -1,9 +1,11 @@
 import express, { Router } from 'express';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import { pool } from '../database.js';
 import { config } from '../config.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { createAutomaticBackup } from '../backup-scheduler.js';
 
 export const businessRouter = Router();
 businessRouter.use(requireAuth);
@@ -47,12 +49,13 @@ businessRouter.get('/dashboard', async (req, res, next) => {
 });
 
 businessRouter.get('/clients', async (_req, res, next) => {
-  try { const [rows] = await pool.query(`SELECT c.id, c.nombre, c.telefono, c.correo, c.direccion, c.activo, COALESCE(SUM(f.saldo_pendiente),0) AS adeudo,(SELECT COALESCE(SUM(s.monto-s.monto_usado),0) FROM saldos_clientes s WHERE s.cliente_id=c.id AND s.estado='PENDIENTE') AS saldoFavor FROM clientes c LEFT JOIN fiados f ON f.cliente_id=c.id AND f.estado NOT IN ('LIQUIDADO','CANCELADO') GROUP BY c.id ORDER BY c.nombre`); res.json(rows); } catch (e) { next(e); }
+  try { const [rows] = await pool.query(`SELECT c.id,c.nombre,c.telefono,c.correo,c.direccion,c.rfc,c.codigo_postal_fiscal AS codigoPostalFiscal,c.regimen_fiscal AS regimenFiscal,c.uso_cfdi AS usoCfdi,c.activo,COALESCE(SUM(f.saldo_pendiente),0) AS adeudo,(SELECT COALESCE(SUM(s.monto-s.monto_usado),0) FROM saldos_clientes s WHERE s.cliente_id=c.id AND s.estado='PENDIENTE') AS saldoFavor FROM clientes c LEFT JOIN fiados f ON f.cliente_id=c.id AND f.estado NOT IN ('LIQUIDADO','CANCELADO') GROUP BY c.id ORDER BY c.nombre`); res.json(rows); } catch (e) { next(e); }
 });
 businessRouter.get('/clients/:id/account',async(req,res,next)=>{try{const [[client]]=await pool.execute(`SELECT c.id,c.nombre,c.telefono,c.limite_credito AS limiteCredito,COALESCE((SELECT SUM(f.saldo_pendiente) FROM fiados f WHERE f.cliente_id=c.id AND f.estado NOT IN('LIQUIDADO','CANCELADO')),0) AS adeudo,COALESCE((SELECT SUM(s.monto-s.monto_usado) FROM saldos_clientes s WHERE s.cliente_id=c.id AND s.estado='PENDIENTE'),0) AS saldoFavor FROM clientes c WHERE c.id=?`,[req.params.id]);if(!client)return res.status(404).json({error:'Cliente no encontrado.'});const [credits]=await pool.execute(`SELECT f.id,f.fecha_registro AS fechaRegistro,f.fecha_limite AS fechaLimite,f.deuda_original AS deudaOriginal,f.saldo_pendiente AS saldoPendiente,f.estado,v.folio FROM fiados f LEFT JOIN ventas v ON v.id=f.venta_id WHERE f.cliente_id=? ORDER BY f.fecha_registro DESC`,[req.params.id]);const [payments]=await pool.execute(`SELECT a.id,a.fiado_id AS fiadoId,a.monto,a.metodo,a.referencia,a.creado_en AS fecha,u.nombre AS usuario FROM fiado_abonos a JOIN fiados f ON f.id=a.fiado_id JOIN usuarios u ON u.id=a.usuario_id WHERE f.cliente_id=? ORDER BY a.creado_en DESC`,[req.params.id]);const [balances]=await pool.execute(`SELECT id,monto,IF(estado='PENDIENTE',monto_usado,monto) AS montoUsado,IF(estado='PENDIENTE',monto-monto_usado,0) AS disponible,estado,creado_en AS fecha,liquidado_en AS liquidadoEn FROM saldos_clientes WHERE cliente_id=? ORDER BY creado_en DESC`,[req.params.id]);return res.json({client,credits,payments,balances});}catch(error){return next(error);}});
 businessRouter.post('/clients', async (req, res, next) => {
   try { const { nombre, telefono, correo = null, direccion = null } = req.body; if (!nombre?.trim() || !telefono?.trim()) return res.status(400).json({ error: 'Nombre y teléfono son obligatorios.' }); const [result] = await pool.execute('INSERT INTO clientes (nombre,telefono,correo,direccion) VALUES (?,?,?,?)',[nombre.trim(),telefono.trim(),correo?.trim()||null,direccion?.trim()||null]); res.status(201).json({ id: result.insertId }); } catch(e){ next(e); }
 });
+businessRouter.put('/clients/:id/fiscal',requireRole('Administrador'),async(req,res,next)=>{try{const rfc=String(req.body?.rfc??'').trim().toUpperCase(),nombre=String(req.body?.nombre??'').trim(),cp=String(req.body?.codigoPostalFiscal??'').trim(),regimen=String(req.body?.regimenFiscal??'').trim(),uso=String(req.body?.usoCfdi??'').trim().toUpperCase();if(!/^([A-ZÑ&]{3,4})\d{6}[A-Z0-9]{3}$/.test(rfc)||!nombre||!/^\d{5}$/.test(cp)||!/^\d{3}$/.test(regimen)||!uso)return res.status(400).json({error:'RFC, nombre, código postal, régimen y uso CFDI son obligatorios.'});await pool.execute('UPDATE clientes SET nombre=?,rfc=?,codigo_postal_fiscal=?,regimen_fiscal=?,uso_cfdi=? WHERE id=?',[nombre,rfc,cp,regimen,uso,req.params.id]);await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Fiscal','DATOS_RECEPTOR',?,'CLIENTE',?)`,[req.user.sub,`Datos fiscales actualizados para ${rfc}`,req.params.id]);return res.status(204).end();}catch(error){return next(error);}});
 
 businessRouter.get('/products', async (_req,res,next)=>{ try { const [rows]=await pool.query(`SELECT p.id,p.codigo_barras AS codigo,p.nombre,c.nombre AS categoria,p.unidad_medida AS unidadMedida,p.stock_actual AS stock,p.stock_minimo AS stockMinimo,p.costo,p.precio_venta AS precioVenta,p.tasa_iva AS tasaIva,p.activo,(SELECT pr.tipo FROM promociones pr WHERE pr.activa=TRUE AND NOW() BETWEEN pr.fecha_inicio AND pr.fecha_fin AND (pr.producto_id=p.id OR (pr.producto_id IS NULL AND pr.categoria_id=p.categoria_id)) ORDER BY pr.producto_id IS NOT NULL DESC,pr.id DESC LIMIT 1) AS promoTipo,(SELECT pr.valor FROM promociones pr WHERE pr.activa=TRUE AND NOW() BETWEEN pr.fecha_inicio AND pr.fecha_fin AND (pr.producto_id=p.id OR (pr.producto_id IS NULL AND pr.categoria_id=p.categoria_id)) ORDER BY pr.producto_id IS NOT NULL DESC,pr.id DESC LIMIT 1) AS promoValor FROM productos p LEFT JOIN categorias c ON c.id=p.categoria_id ORDER BY p.nombre`); res.json(rows); }catch(e){next(e);} });
 businessRouter.get('/promotions',requireRole('Administrador','Gerente'),async(_req,res,next)=>{try{const [rows]=await pool.query(`SELECT pr.id,pr.nombre,pr.tipo,pr.valor,pr.producto_id AS productoId,p.nombre AS producto,pr.fecha_inicio AS fechaInicio,pr.fecha_fin AS fechaFin,pr.activa FROM promociones pr LEFT JOIN productos p ON p.id=pr.producto_id ORDER BY pr.fecha_fin DESC`);res.json(rows);}catch(e){next(e);}});
@@ -83,12 +86,13 @@ businessRouter.get('/statistics',requireRole('Administrador','Gerente'),async(_r
 
 businessRouter.get('/analytics', requireRole('Administrador','Gerente'), async (_req, res, next) => {
   try {
-    const [salesResult, productsResult, creditsResult] = await Promise.all([
+    const [salesResult, productsResult, creditsResult, cashResult, remindersResult] = await Promise.all([
       pool.query(
-        `SELECT DATE_FORMAT(v.fecha_venta,'%Y-%m-%d') AS fecha,HOUR(v.fecha_venta) AS hora,
+        `SELECT v.id AS ventaId,DATE_FORMAT(v.fecha_venta,'%Y-%m-%d') AS fecha,HOUR(v.fecha_venta) AS hora,
                 vd.importe AS total,(vd.costo_unitario*vd.cantidad) AS costo,
-                CASE COALESCE(vp.metodo,'OTRO') WHEN 'EFECTIVO' THEN 'Efectivo' WHEN 'TARJETA' THEN 'Tarjeta'
-                  WHEN 'TRANSFERENCIA' THEN 'Transferencia' WHEN 'FIADO' THEN 'Fiado' ELSE 'Otro' END AS metodo,
+                CASE WHEN (SELECT COUNT(*) FROM venta_pagos vpc WHERE vpc.venta_id=v.id)>1 THEN 'Múltiple'
+                  ELSE CASE COALESCE(vp.metodo,'OTRO') WHEN 'EFECTIVO' THEN 'Efectivo' WHEN 'TARJETA' THEN 'Tarjeta'
+                  WHEN 'TRANSFERENCIA' THEN 'Transferencia' WHEN 'FIADO' THEN 'Fiado' ELSE 'Otro' END END AS metodo,
                 COALESCE(c.nombre,'Sin categoría') AS categoria,p.nombre AS producto,vd.cantidad AS unidades
          FROM ventas v JOIN venta_detalles vd ON vd.venta_id=v.id JOIN productos p ON p.id=vd.producto_id
          LEFT JOIN categorias c ON c.id=p.categoria_id
@@ -111,8 +115,39 @@ businessRouter.get('/analytics', requireRole('Administrador','Gerente'), async (
          FROM fiados f JOIN clientes c ON c.id=f.cliente_id LEFT JOIN fiado_abonos a ON a.fiado_id=f.id
          WHERE f.estado<>'CANCELADO' GROUP BY f.id ORDER BY f.fecha_registro DESC`,
       ),
+      pool.query(
+        `SELECT sc.id,ua.nombre AS responsable,sc.fecha_apertura AS fechaApertura,sc.fecha_cierre AS fechaCierre,
+                sc.efectivo_esperado AS esperado,sc.efectivo_contado AS contado,sc.diferencia,sc.observaciones
+         FROM sesiones_caja sc JOIN usuarios ua ON ua.id=sc.usuario_apertura_id
+         WHERE sc.estado='CERRADA' AND sc.fecha_cierre>=DATE_SUB(NOW(),INTERVAL 90 DAY)
+         ORDER BY sc.fecha_cierre DESC LIMIT 100`,
+      ),
+      pool.query(
+        `SELECT tipo,titulo,detalle,nivel,ruta FROM (
+           SELECT 'FIADO' tipo,'Cobranza vencida' titulo,
+             CONCAT(c.nombre,' debe $',FORMAT(SUM(f.saldo_pendiente),2)) detalle,'URGENTE' nivel,'/fiados' ruta,1 orden
+           FROM fiados f JOIN clientes c ON c.id=f.cliente_id
+           WHERE f.saldo_pendiente>0 AND f.fecha_limite<CURRENT_DATE AND f.estado NOT IN('LIQUIDADO','CANCELADO') GROUP BY c.id
+           UNION ALL
+           SELECT 'INVENTARIO','Existencia baja',CONCAT(p.nombre,': ',FORMAT(p.stock_actual,3),' de mínimo ',FORMAT(p.stock_minimo,3)),
+             IF(p.stock_actual=0,'URGENTE','ATENCION'),'/inventario',2 FROM productos p WHERE p.activo=TRUE AND p.stock_actual<=p.stock_minimo
+           UNION ALL
+           SELECT 'CADUCIDAD','Producto por caducar',CONCAT(p.nombre,' · lote ',l.lote,' · ',DATE_FORMAT(l.fecha_caducidad,'%d/%m/%Y')),
+             IF(l.fecha_caducidad<=DATE_ADD(CURRENT_DATE,INTERVAL 7 DAY),'URGENTE','ATENCION'),'/inventario',3
+           FROM producto_lotes l JOIN productos p ON p.id=l.producto_id WHERE l.cantidad_disponible>0 AND l.fecha_caducidad<=DATE_ADD(CURRENT_DATE,INTERVAL 30 DAY)
+           UNION ALL
+           SELECT 'RECARGA','Recarga sin conciliar',CONCAT(r.compania,' ',r.telefono,' · $',FORMAT(r.monto,2)),'ATENCION','/caja',4
+           FROM recargas r WHERE r.estado='PENDIENTE' AND r.creada_en<DATE_SUB(NOW(),INTERVAL 10 MINUTE)
+           UNION ALL
+           SELECT 'CAJA','Caja abierta por demasiado tiempo',CONCAT(u.nombre,' · abrió ',DATE_FORMAT(sc.fecha_apertura,'%d/%m %H:%i')),'URGENTE','/caja',5
+           FROM sesiones_caja sc JOIN usuarios u ON u.id=sc.usuario_apertura_id WHERE sc.estado='ABIERTA' AND sc.fecha_apertura<DATE_SUB(NOW(),INTERVAL 15 HOUR)
+           UNION ALL
+           SELECT 'COMPRA','Entrega de proveedor atrasada',CONCAT(pr.empresa,' · entrega ',DATE_FORMAT(co.fecha_entrega,'%d/%m/%Y')),'ATENCION','/compras',6
+           FROM compras co JOIN proveedores pr ON pr.id=co.proveedor_id WHERE co.estado IN('PEDIDA','PARCIAL','ATRASADA') AND co.fecha_entrega<CURRENT_DATE
+         ) alertas ORDER BY orden,nivel DESC LIMIT 50`,
+      ),
     ]);
-    return res.json({ sales: salesResult[0], products: productsResult[0], credits: creditsResult[0] });
+    return res.json({ sales: salesResult[0], products: productsResult[0], credits: creditsResult[0], cashClosures: cashResult[0], reminders: remindersResult[0] });
   } catch (error) { return next(error); }
 });
 
@@ -145,9 +180,11 @@ businessRouter.get('/reports', requireRole('Administrador','Gerente'), async (_r
 });
 
 businessRouter.get('/backups', requireRole('Administrador'), async (_req, res, next) => {
-  try { const [rows] = await pool.query(`SELECT id,nombre_archivo AS nombre, tipo,tamanio_bytes AS tamanio,estado,creado_en AS fecha,mensaje_error AS error FROM respaldos ORDER BY creado_en DESC LIMIT 100`); return res.json(rows); }
+  try { const [rows] = await pool.query(`SELECT id,nombre_archivo AS nombre,tipo,ubicacion,tamanio_bytes AS tamanio,checksum,estado,creado_en AS fecha,mensaje_error AS error FROM respaldos ORDER BY creado_en DESC LIMIT 100`); return res.json(rows); }
   catch (error) { return next(error); }
 });
+businessRouter.post('/backups/automatic',requireRole('Administrador'),async(req,res,next)=>{try{const result=await createAutomaticBackup();if(!result)return res.status(409).json({error:'Ya hay un respaldo automático en proceso.'});await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Respaldos','SOLICITAR_AUTOMATICO',?,'RESPALDO',?)`,[req.user.sub,result.name,result.id]);return res.status(201).json({id:result.id,nombre:result.name,tamanio:result.size,checksum:result.checksum});}catch(error){return next(error);}});
+businessRouter.post('/backups/:id/verify',requireRole('Administrador'),async(req,res,next)=>{try{const [[backup]]=await pool.execute("SELECT id,ubicacion,checksum,estado FROM respaldos WHERE id=? AND tipo='AUTOMATICO'",[req.params.id]);if(!backup?.ubicacion||backup.estado!=='COMPLETADO')return res.status(404).json({error:'Respaldo automático no disponible para verificar.'});const file=await readFile(backup.ubicacion);const checksum=createHash('sha256').update(file).digest('hex');const valido=checksum===backup.checksum;await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Respaldos','VERIFICAR',?,'RESPALDO',?)`,[req.user.sub,valido?'Integridad correcta':'Integridad incorrecta',backup.id]);return res.json({valido,checksum,tamanio:file.length});}catch(error){return next(error);}});
 
 businessRouter.get('/fiscal', requireRole('Administrador'), async (_req, res, next) => {
   try {
@@ -186,6 +223,11 @@ businessRouter.post('/cfdi', requireRole('Administrador'), async (_req, res) => 
   return res.status(501).json({ error: `El adaptador de ${config.pac.provider} requiere definir el contrato específico de su API.` });
 });
 
+businessRouter.get('/invoices',requireRole('Administrador'),async(_req,res,next)=>{try{const [rows]=await pool.query(`SELECT f.id,f.tipo,f.fecha_inicio AS fechaInicio,f.fecha_fin AS fechaFin,f.rfc_receptor AS rfcReceptor,f.nombre_receptor AS receptor,f.subtotal,f.descuento,f.impuestos,f.total,f.estado,f.uuid,f.proveedor_pac AS proveedorPac,f.creado_en AS fecha,COUNT(fv.venta_id) AS ventas FROM facturas_borrador f LEFT JOIN factura_borrador_ventas fv ON fv.factura_id=f.id GROUP BY f.id ORDER BY f.creado_en DESC LIMIT 200`);return res.json(rows);}catch(error){return next(error);}});
+businessRouter.get('/invoices/preview',requireRole('Administrador'),async(req,res,next)=>{try{const tipo=String(req.query?.tipo??'GLOBAL').toUpperCase(),inicio=String(req.query?.inicio??''),fin=String(req.query?.fin??''),clienteId=Number(req.query?.clienteId)||null;if(!['GLOBAL','INDIVIDUAL'].includes(tipo)||!/^\d{4}-\d{2}-\d{2}$/.test(inicio)||!/^\d{4}-\d{2}-\d{2}$/.test(fin)||inicio>fin||tipo==='INDIVIDUAL'&&!clienteId)return res.status(400).json({error:'Tipo, periodo o cliente no válido.'});const [sales]=await pool.execute(`SELECT v.id,v.folio,v.fecha_venta AS fecha,v.subtotal,v.descuento,v.impuestos,v.total FROM ventas v WHERE v.estado='COMPLETADA' AND DATE(v.fecha_venta) BETWEEN ? AND ? AND (?='GLOBAL' AND v.cliente_id IS NULL OR ?='INDIVIDUAL' AND v.cliente_id=?) AND NOT EXISTS(SELECT 1 FROM factura_borrador_ventas fv JOIN facturas_borrador f ON f.id=fv.factura_id WHERE fv.venta_id=v.id AND f.estado<>'CANCELADA') ORDER BY v.fecha_venta`,[inicio,fin,tipo,tipo,clienteId]);const totals=sales.reduce((a,v)=>({subtotal:a.subtotal+Number(v.subtotal),descuento:a.descuento+Number(v.descuento),impuestos:a.impuestos+Number(v.impuestos),total:a.total+Number(v.total)}),{subtotal:0,descuento:0,impuestos:0,total:0});return res.json({tipo,inicio,fin,ventas:sales,totals});}catch(error){return next(error);}});
+businessRouter.post('/invoices',requireRole('Administrador'),async(req,res,next)=>{const connection=await pool.getConnection();try{const tipo=String(req.body?.tipo??'').toUpperCase(),inicio=String(req.body?.inicio??''),fin=String(req.body?.fin??''),clienteId=Number(req.body?.clienteId)||null,periodicidad=String(req.body?.periodicidad??'').trim(),meses=String(req.body?.meses??'').trim(),anio=Number(req.body?.anio);if(!['GLOBAL','INDIVIDUAL'].includes(tipo)||!/^\d{4}-\d{2}-\d{2}$/.test(inicio)||!/^\d{4}-\d{2}-\d{2}$/.test(fin)||inicio>fin||tipo==='INDIVIDUAL'&&!clienteId)return res.status(400).json({error:'Datos de factura no válidos.'});if(tipo==='GLOBAL'&&(!periodicidad||!meses||!Number.isInteger(anio)))return res.status(400).json({error:'Periodicidad, mes y año son obligatorios para factura global.'});await connection.beginTransaction();const [[emisor]]=await connection.execute('SELECT codigo_postal FROM configuracion_fiscal WHERE id=1');if(!emisor){await connection.rollback();return res.status(409).json({error:'Configura primero los datos fiscales del emisor.'});}let receptor;if(tipo==='INDIVIDUAL'){const [[client]]=await connection.execute('SELECT id,nombre,rfc,codigo_postal_fiscal,regimen_fiscal,uso_cfdi FROM clientes WHERE id=? AND activo=TRUE',[clienteId]);if(!client?.rfc||!client.codigo_postal_fiscal||!client.regimen_fiscal||!client.uso_cfdi){await connection.rollback();return res.status(409).json({error:'El cliente no tiene completos sus datos fiscales CFDI 4.0.'});}receptor={rfc:client.rfc,nombre:client.nombre,cp:client.codigo_postal_fiscal,regimen:client.regimen_fiscal,uso:client.uso_cfdi};}else receptor={rfc:'XAXX010101000',nombre:'PUBLICO EN GENERAL',cp:emisor.codigo_postal,regimen:'616',uso:'S01'};const [sales]=await connection.execute(`SELECT v.id,v.subtotal,v.descuento,v.impuestos,v.total FROM ventas v WHERE v.estado='COMPLETADA' AND DATE(v.fecha_venta) BETWEEN ? AND ? AND (?='GLOBAL' AND v.cliente_id IS NULL OR ?='INDIVIDUAL' AND v.cliente_id=?) AND NOT EXISTS(SELECT 1 FROM factura_borrador_ventas fv JOIN facturas_borrador f ON f.id=fv.factura_id WHERE fv.venta_id=v.id AND f.estado<>'CANCELADA') FOR UPDATE`,[inicio,fin,tipo,tipo,clienteId]);if(!sales.length){await connection.rollback();return res.status(409).json({error:'No hay ventas disponibles para este borrador.'});}const totals=sales.reduce((a,v)=>({subtotal:a.subtotal+Number(v.subtotal),descuento:a.descuento+Number(v.descuento),impuestos:a.impuestos+Number(v.impuestos),total:a.total+Number(v.total)}),{subtotal:0,descuento:0,impuestos:0,total:0});const [invoice]=await connection.execute(`INSERT INTO facturas_borrador(tipo,cliente_id,fecha_inicio,fecha_fin,periodicidad,meses,anio,rfc_receptor,nombre_receptor,regimen_receptor,codigo_postal_receptor,uso_cfdi,subtotal,descuento,impuestos,total,creado_por) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,[tipo,clienteId,inicio,fin,tipo==='GLOBAL'?periodicidad:null,tipo==='GLOBAL'?meses:null,tipo==='GLOBAL'?anio:null,receptor.rfc,receptor.nombre,receptor.regimen,receptor.cp,receptor.uso,totals.subtotal,totals.descuento,totals.impuestos,totals.total,req.user.sub]);for(const sale of sales)await connection.execute('INSERT INTO factura_borrador_ventas(factura_id,venta_id) VALUES(?,?)',[invoice.insertId,sale.id]);await connection.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Fiscal','CREAR_BORRADOR',?,'FACTURA',?)`,[req.user.sub,`${tipo} con ${sales.length} ventas por $${totals.total.toFixed(2)}`,invoice.insertId]);await connection.commit();return res.status(201).json({id:invoice.insertId,ventas:sales.length,...totals,estado:'BORRADOR'});}catch(error){await connection.rollback();return next(error);}finally{connection.release();}});
+businessRouter.post('/invoices/:id/stamp',requireRole('Administrador'),async(req,res,next)=>{try{const [[invoice]]=await pool.execute("SELECT id,estado FROM facturas_borrador WHERE id=?",[req.params.id]);if(!invoice)return res.status(404).json({error:'Borrador no encontrado.'});if(invoice.estado!=='BORRADOR'&&invoice.estado!=='ERROR')return res.status(409).json({error:'El documento no está disponible para timbrado.'});if(!config.pac.provider||!config.pac.apiUrl||!config.pac.apiKey)return res.status(503).json({error:'Timbrado bloqueado: configura un PAC autorizado en el servidor.'});return res.status(501).json({error:`Falta implementar el adaptador contractual del PAC ${config.pac.provider}.`});}catch(error){return next(error);}});
+
 businessRouter.get('/backups/export', requireRole('Administrador'), async (req, res, next) => {
   let backupId;
   try {
@@ -193,7 +235,8 @@ businessRouter.get('/backups/export', requireRole('Administrador'), async (req, 
     const [record] = await pool.execute(`INSERT INTO respaldos(usuario_id,nombre_archivo,tipo,version_esquema,estado) VALUES(?,?,'MANUAL','1','CREANDO')`, [req.user.sub, name]);
     backupId = record.insertId;
     const dump = await mysqlProcess('mysqldump', ['--single-transaction','--routines','--triggers','--set-gtid-purged=OFF','--default-character-set=utf8mb4', config.database.database]);
-    await pool.execute("UPDATE respaldos SET tamanio_bytes=?,estado='COMPLETADO' WHERE id=?", [dump.length, backupId]);
+    const checksum=createHash('sha256').update(dump).digest('hex');
+    await pool.execute("UPDATE respaldos SET tamanio_bytes=?,checksum=?,estado='COMPLETADO' WHERE id=?", [dump.length,checksum, backupId]);
     await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Respaldos','EXPORTAR',?,'RESPALDO',?)`, [req.user.sub, name, backupId]);
     res.setHeader('Content-Type', 'application/sql; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
@@ -209,9 +252,12 @@ businessRouter.post('/backups/import', requireRole('Administrador'), express.tex
     if (req.headers['x-confirm-restore'] !== 'RESTAURAR') return res.status(400).json({ error: 'Falta la confirmación de restauración.' });
     const sql = String(req.body ?? '');
     if (sql.length < 100 || !sql.includes('CREATE TABLE') || !sql.includes('usuarios')) return res.status(400).json({ error: 'El archivo SQL no parece pertenecer a este sistema.' });
+    const emergency=await createAutomaticBackup();
+    if(!emergency)return res.status(409).json({error:'Espera a que termine el respaldo actual antes de restaurar.'});
+    const importChecksum=createHash('sha256').update(sql).digest('hex');
     await mysqlProcess('mysql', ['--default-character-set=utf8mb4', config.database.database], sql);
-    await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion) VALUES(?,'Respaldos','RESTAURAR','Restauración SQL ejecutada por administrador')`, [req.user.sub]);
-    return res.json({ restored: true });
+    await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion) VALUES(?,'Respaldos','RESTAURAR',?)`, [req.user.sub,`Restauración SQL ${importChecksum.slice(0,12)} · respaldo previo ${emergency.name}`]);
+    return res.json({ restored: true,checksum:importChecksum,respaldoPrevio:emergency.name });
   } catch (error) { return next(error); }
 });
 
@@ -297,15 +343,20 @@ businessRouter.post('/cash/services', async (req,res,next)=>{
     const tipo=String(req.body?.tipo??'').toUpperCase();
     const compania=String(req.body?.compania??'').toUpperCase().trim();
     const telefono=String(req.body?.telefono??'').trim();
-    const monto=Number(req.body?.monto);
-    if(tipo!=='RECARGA'||!compania||!/^\d{10}$/.test(telefono)||!Number.isFinite(monto)||monto<=0)return res.status(400).json({error:'Los datos de la recarga no son válidos.'});
+    const monto=Number(req.body?.monto),comision=Number(req.body?.comision??0);
+    if(tipo!=='RECARGA'||!compania||!/^\d{10}$/.test(telefono)||!Number.isFinite(monto)||monto<=0||!Number.isFinite(comision)||comision<0||comision>monto)return res.status(400).json({error:'Los datos de la recarga no son válidos.'});
     const [[session]]=await pool.execute("SELECT id FROM sesiones_caja WHERE usuario_apertura_id=? AND estado='ABIERTA' LIMIT 1",[req.user.sub]);
     if(!session)return res.status(409).json({error:'Debes abrir la caja primero.'});
-    const [result]=await pool.execute(`INSERT INTO movimientos_caja(sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto,referencia) VALUES(?,?,'INGRESO','RECARGA',?,'EFECTIVO',?,?)`,[session.id,req.user.sub,`Recarga ${compania} a ${telefono}`,monto,telefono]);
-    await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion) VALUES(?,'Caja','RECARGA',?)`,[req.user.sub,`Recarga ${compania} por $${monto.toFixed(2)}`]);
-    return res.status(201).json({id:result.insertId});
+    const [result]=await pool.execute(`INSERT INTO recargas(sesion_caja_id,usuario_id,compania,telefono,monto,comision) VALUES(?,?,?,?,?,?)`,[session.id,req.user.sub,compania,telefono,monto,comision]);
+    await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Caja','RECARGA_PENDIENTE',?,'RECARGA',?)`,[req.user.sub,`Recarga ${compania} a ${telefono} por $${monto.toFixed(2)}`,result.insertId]);
+    return res.status(201).json({id:result.insertId,estado:'PENDIENTE'});
   }catch(error){return next(error);}
 });
+
+businessRouter.get('/recharges',async(req,res,next)=>{try{const [rows]=await pool.execute(`SELECT r.id,r.compania,r.telefono,r.monto,r.comision,r.estado,r.folio_proveedor AS folioProveedor,r.motivo,r.creada_en AS fecha,r.resuelta_en AS fechaResolucion,u.nombre AS usuario,ur.nombre AS resueltaPor FROM recargas r JOIN usuarios u ON u.id=r.usuario_id LEFT JOIN usuarios ur ON ur.id=r.resuelta_por WHERE r.sesion_caja_id IN (SELECT id FROM sesiones_caja WHERE usuario_apertura_id=? OR ? IN (SELECT u2.id FROM usuarios u2 JOIN roles ro ON ro.id=u2.rol_id WHERE ro.nombre IN('Administrador','Gerente'))) ORDER BY r.creada_en DESC LIMIT 150`,[req.user.sub,req.user.sub]);return res.json(rows);}catch(error){return next(error);}});
+businessRouter.get('/recharges/reconciliation',async(req,res,next)=>{try{const [[session]]=await pool.execute("SELECT id FROM sesiones_caja WHERE usuario_apertura_id=? AND estado='ABIERTA' LIMIT 1",[req.user.sub]);if(!session)return res.json({total:0,comisiones:0,pendientes:0,exitosas:0,rechazadas:0,canceladas:0,porCompania:[]});const [[summary]]=await pool.execute(`SELECT COALESCE(SUM(CASE WHEN estado='EXITOSA' THEN monto ELSE 0 END),0) total,COALESCE(SUM(CASE WHEN estado='EXITOSA' THEN comision ELSE 0 END),0) comisiones,SUM(estado='PENDIENTE') pendientes,SUM(estado='EXITOSA') exitosas,SUM(estado='RECHAZADA') rechazadas,SUM(estado='CANCELADA') canceladas FROM recargas WHERE sesion_caja_id=?`,[session.id]);const [porCompania]=await pool.execute(`SELECT compania,COUNT(*) operaciones,SUM(CASE WHEN estado='EXITOSA' THEN monto ELSE 0 END) monto,SUM(CASE WHEN estado='EXITOSA' THEN comision ELSE 0 END) comision FROM recargas WHERE sesion_caja_id=? GROUP BY compania ORDER BY compania`,[session.id]);return res.json({...summary,porCompania});}catch(error){return next(error);}});
+businessRouter.patch('/recharges/:id/resolve',async(req,res,next)=>{const connection=await pool.getConnection();try{const estado=String(req.body?.estado??'').toUpperCase(),folio=String(req.body?.folioProveedor??'').trim(),motivo=String(req.body?.motivo??'').trim();if(!['EXITOSA','RECHAZADA'].includes(estado)||estado==='EXITOSA'&&!folio||estado==='RECHAZADA'&&motivo.length<4)return res.status(400).json({error:'Folio o motivo requerido para resolver la recarga.'});await connection.beginTransaction();const [[recarga]]=await connection.execute("SELECT * FROM recargas WHERE id=? AND estado='PENDIENTE' FOR UPDATE",[req.params.id]);if(!recarga){await connection.rollback();return res.status(409).json({error:'La recarga ya fue resuelta.'});}await connection.execute('UPDATE recargas SET estado=?,folio_proveedor=?,motivo=?,resuelta_por=?,resuelta_en=NOW() WHERE id=?',[estado,folio||null,motivo||null,req.user.sub,recarga.id]);if(estado==='EXITOSA')await connection.execute(`INSERT INTO movimientos_caja(sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto,referencia) VALUES(?,?,'INGRESO','RECARGA',?,'EFECTIVO',?,?)`,[recarga.sesion_caja_id,req.user.sub,`Recarga ${recarga.compania} a ${recarga.telefono}`,recarga.monto,folio]);await connection.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Caja',? ,?,'RECARGA',?)`,[req.user.sub,`RECARGA_${estado}`,`${recarga.compania} ${recarga.telefono}: ${estado}`,recarga.id]);await connection.commit();return res.json({id:recarga.id,estado});}catch(error){await connection.rollback();return next(error);}finally{connection.release();}});
+businessRouter.post('/recharges/:id/cancel',requireRole('Administrador','Gerente'),async(req,res,next)=>{const connection=await pool.getConnection();try{const motivo=String(req.body?.motivo??'').trim();if(motivo.length<5)return res.status(400).json({error:'Indica el motivo de cancelación.'});await connection.beginTransaction();const [[recarga]]=await connection.execute("SELECT * FROM recargas WHERE id=? AND estado='EXITOSA' FOR UPDATE",[req.params.id]);if(!recarga){await connection.rollback();return res.status(409).json({error:'Solo se puede cancelar una recarga exitosa.'});}const [[session]]=await connection.execute("SELECT id FROM sesiones_caja WHERE usuario_apertura_id=? AND estado='ABIERTA' LIMIT 1",[req.user.sub]);if(!session){await connection.rollback();return res.status(409).json({error:'Abre una caja para registrar el reembolso.'});}await connection.execute("UPDATE recargas SET estado='CANCELADA',motivo=?,resuelta_por=?,resuelta_en=NOW() WHERE id=?",[motivo,req.user.sub,recarga.id]);await connection.execute(`INSERT INTO movimientos_caja(sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto,referencia) VALUES(?,?,'SALIDA','CANCELACION_RECARGA',?,'EFECTIVO',?,?)`,[session.id,req.user.sub,`Cancelación recarga #${recarga.id}`,recarga.monto,recarga.folio_proveedor]);await connection.commit();return res.json({id:recarga.id,estado:'CANCELADA'});}catch(error){await connection.rollback();return next(error);}finally{connection.release();}});
 
 businessRouter.get('/customer-balances',async(_req,res,next)=>{try{const [rows]=await pool.query(`SELECT s.id,s.cliente_id AS clienteId,c.nombre AS cliente,c.telefono,(s.monto-s.monto_usado) AS monto,s.estado,s.creado_en AS fecha FROM saldos_clientes s JOIN clientes c ON c.id=s.cliente_id WHERE s.estado='PENDIENTE' AND s.monto>s.monto_usado ORDER BY s.creado_en DESC`);return res.json(rows);}catch(error){return next(error);}});
 businessRouter.post('/customer-balances',async(req,res,next)=>{try{const clienteId=Number(req.body?.clienteId),monto=Number(req.body?.monto);if(!Number.isInteger(clienteId)||!Number.isFinite(monto)||monto<=0)return res.status(400).json({error:'El cambio pendiente no es válido.'});const [[cliente]]=await pool.execute('SELECT id FROM clientes WHERE id=? AND activo=TRUE',[clienteId]);if(!cliente)return res.status(404).json({error:'Cliente no encontrado.'});const [result]=await pool.execute('INSERT INTO saldos_clientes(cliente_id,usuario_id,monto) VALUES(?,?,?)',[clienteId,req.user.sub,monto]);return res.status(201).json({id:result.insertId});}catch(error){return next(error);}});

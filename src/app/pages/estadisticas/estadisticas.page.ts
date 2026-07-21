@@ -10,10 +10,12 @@ import { BusinessApi } from '../../services/business-api';
 Chart.register(...registerables);
 
 type Periodo = 'hoy' | 'ayer' | 'semana' | 'mes' | 'anio' | 'personalizado';
-type MetodoPago = 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Fiado';
-interface Venta { fecha: string; hora: number; total: number; costo: number; metodo: MetodoPago; categoria: string; producto: string; unidades: number; }
+type MetodoPago = 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Fiado' | 'Múltiple' | 'Otro';
+interface Venta { ventaId: number; fecha: string; hora: number; total: number; costo: number; metodo: MetodoPago; categoria: string; producto: string; unidades: number; }
 interface ProductoAnalisis { producto: string; categoria: string; stock: number; minimo: number; vendidos: number; precio: number; costo: number; diasSinVenta: number; merma: number; }
 interface FiadoAnalisis { cliente: string; saldo: number; vencido: boolean; abonos: number; }
+interface CierreCaja { id: number; responsable: string; fechaApertura: string; fechaCierre: string; esperado: number; contado: number; diferencia: number; observaciones: string | null; }
+interface Recordatorio { tipo: string; titulo: string; detalle: string; nivel: 'URGENTE' | 'ATENCION'; ruta: string; }
 
 @Component({
   selector: 'app-estadisticas',
@@ -38,13 +40,17 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
 
   productos: ProductoAnalisis[] = [];
   fiados: FiadoAnalisis[] = [];
+  cierresCaja: CierreCaja[] = [];
+  recordatorios: Recordatorio[] = [];
 
   async ngOnInit(): Promise<void> {
     try {
-      const datos = await this.api.get<{ sales: Venta[]; products: ProductoAnalisis[]; credits: FiadoAnalisis[] }>('analytics');
+      const datos = await this.api.get<{ sales: Venta[]; products: ProductoAnalisis[]; credits: FiadoAnalisis[]; cashClosures: CierreCaja[]; reminders: Recordatorio[] }>('analytics');
       this.ventas = datos.sales.map((v) => ({ ...v, hora: Number(v.hora), total: Number(v.total), costo: Number(v.costo), unidades: Number(v.unidades) }));
       this.productos = datos.products.map((p) => ({ ...p, stock: Number(p.stock), minimo: Number(p.minimo), vendidos: Number(p.vendidos), precio: Number(p.precio), costo: Number(p.costo), diasSinVenta: Number(p.diasSinVenta), merma: Number(p.merma) }));
       this.fiados = datos.credits.map((f) => ({ ...f, saldo: Number(f.saldo), vencido: Boolean(f.vencido), abonos: Number(f.abonos) }));
+      this.cierresCaja = datos.cashClosures.map((c) => ({ ...c, esperado: Number(c.esperado), contado: Number(c.contado), diferencia: Number(c.diferencia) }));
+      this.recordatorios = datos.reminders;
       this.actualizarGraficas();
     } catch { this.mensajeFechas = 'No fue posible cargar las estadísticas desde MySQL.'; }
   }
@@ -70,23 +76,30 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  get operacionesFiltradas(): number { return new Set(this.ventasFiltradas.map((v) => v.ventaId)).size; }
+  get operacionesPeriodoAnterior(): number { return new Set(this.ventasPeriodoAnterior.map((v) => v.ventaId)).size; }
   get totalVentas(): number { return this.sumar(this.ventasFiltradas, 'total'); }
   get costoVentas(): number { return this.sumar(this.ventasFiltradas, 'costo'); }
-  get gastos(): number { return this.totalVentas * 0.06; }
-  get utilidad(): number { return this.totalVentas - this.costoVentas - this.gastos; }
+  get utilidad(): number { return this.totalVentas - this.costoVentas; }
   get margen(): number { return this.totalVentas ? (this.utilidad / this.totalVentas) * 100 : 0; }
-  get ticketPromedio(): number { return this.ventasFiltradas.length ? this.totalVentas / this.ventasFiltradas.length : 0; }
+  get ticketPromedio(): number { return this.operacionesFiltradas ? this.totalVentas / this.operacionesFiltradas : 0; }
   get variacionVentas(): number { return this.variacion(this.totalVentas, this.sumar(this.ventasPeriodoAnterior, 'total')); }
-  get variacionOperaciones(): number { return this.variacion(this.ventasFiltradas.length, this.ventasPeriodoAnterior.length); }
+  get variacionOperaciones(): number { return this.variacion(this.operacionesFiltradas, this.operacionesPeriodoAnterior); }
   get variacionTicket(): number {
-    const anterior = this.ventasPeriodoAnterior.length ? this.sumar(this.ventasPeriodoAnterior, 'total') / this.ventasPeriodoAnterior.length : 0;
+    const anterior = this.operacionesPeriodoAnterior ? this.sumar(this.ventasPeriodoAnterior, 'total') / this.operacionesPeriodoAnterior : 0;
     return this.variacion(this.ticketPromedio, anterior);
   }
   get totalFiado(): number { return this.fiados.reduce((suma, item) => suma + item.saldo, 0); }
   get carteraVencida(): number { return this.fiados.filter((item) => item.vencido).reduce((suma, item) => suma + item.saldo, 0); }
   get totalAbonos(): number { return this.fiados.reduce((suma, item) => suma + item.abonos, 0); }
   get productosProblematicos(): ProductoAnalisis[] { return this.productos.filter((item) => item.stock <= item.minimo || item.diasSinVenta >= 14 || item.merma >= 4); }
-  get productosMasVendidos(): ProductoAnalisis[] { return [...this.productos].sort((a, b) => b.vendidos - a.vendidos).slice(0, 5); }
+  get productosMasVendidos(): ProductoAnalisis[] {
+    const unidades = new Map<string, number>();
+    this.ventasFiltradas.forEach((v) => unidades.set(v.producto, (unidades.get(v.producto) ?? 0) + v.unidades));
+    return this.productos.map((p) => ({ ...p, vendidos: unidades.get(p.producto) ?? 0 })).filter((p) => p.vendidos > 0).sort((a, b) => b.vendidos - a.vendidos).slice(0, 5);
+  }
+  get cierresConDiferencia(): CierreCaja[] { return this.cierresCaja.filter((c) => Math.abs(c.diferencia) >= 0.01); }
+  get diferenciaAcumulada(): number { return this.cierresCaja.reduce((s, c) => s + c.diferencia, 0); }
 
   cambiarPeriodo(): void {
     this.mensajeFechas = '';
@@ -141,8 +154,8 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
     const fechas = [...agrupadas.keys()].sort();
     this.graficas.push(new Chart(this.graficaVentasRef.nativeElement, this.configLinea(fechas, fechas.map((f) => agrupadas.get(f)?.ventas ?? 0), fechas.map((f) => agrupadas.get(f)?.costos ?? 0))));
 
-    const metodos: MetodoPago[] = ['Efectivo', 'Tarjeta', 'Transferencia', 'Fiado'];
-    this.graficas.push(new Chart(this.graficaPagosRef.nativeElement, { type: 'doughnut', data: { labels: metodos, datasets: [{ data: metodos.map((m) => this.ventasFiltradas.filter((v) => v.metodo === m).reduce((s, v) => s + v.total, 0)), backgroundColor: ['#f57c1f', '#4a2c1d', '#f4a259', '#6bbf59'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }));
+    const metodos: MetodoPago[] = ['Efectivo', 'Tarjeta', 'Transferencia', 'Fiado', 'Múltiple', 'Otro'];
+    this.graficas.push(new Chart(this.graficaPagosRef.nativeElement, { type: 'doughnut', data: { labels: metodos, datasets: [{ data: metodos.map((m) => this.ventasFiltradas.filter((v) => v.metodo === m).reduce((s, v) => s + v.total, 0)), backgroundColor: ['#f57c1f', '#4a2c1d', '#f4a259', '#6bbf59', '#7b61a8', '#9a887a'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }));
 
     const categorias = [...new Set(this.ventasFiltradas.map((v) => v.categoria))];
     this.graficas.push(new Chart(this.graficaCategoriasRef.nativeElement, { type: 'bar', data: { labels: categorias, datasets: [{ label: 'Ventas', data: categorias.map((c) => this.ventasFiltradas.filter((v) => v.categoria === c).reduce((s, v) => s + v.total, 0)), backgroundColor: '#f57c1f', borderRadius: 7 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } } }));

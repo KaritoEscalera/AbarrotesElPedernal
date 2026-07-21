@@ -95,7 +95,9 @@
           <ion-item><ion-label position="stacked">Compañía</ion-label><ion-select [(ngModel)]="recargaCompania"><ion-select-option value="TELCEL">Telcel</ion-select-option><ion-select-option value="MOVISTAR">Movistar</ion-select-option><ion-select-option value="AT&T">AT&amp;T</ion-select-option><ion-select-option value="BAIT">BAIT</ion-select-option><ion-select-option value="UNEFON">Unefon</ion-select-option></ion-select></ion-item>
           <ion-item><ion-label position="stacked">Número celular</ion-label><ion-input type="tel" maxlength="10" [(ngModel)]="recargaTelefono"></ion-input></ion-item>
           <ion-item><ion-label position="stacked">Monto</ion-label><ion-input type="number" min="1" [(ngModel)]="recargaMonto"></ion-input></ion-item>
-          <ion-button fill="outline" [disabled]="procesando" (click)="registrarRecarga()">Registrar recarga</ion-button>
+          <ion-item><ion-label position="stacked">Comisión ganada por la tienda</ion-label><ion-input type="number" min="0" step="0.01" [(ngModel)]="recargaComision"></ion-input></ion-item>
+          <p class="helper">La operación se guardará pendiente. Márcala exitosa únicamente cuando el proveedor entregue un folio.</p>
+          <ion-button fill="outline" [disabled]="procesando" (click)="registrarRecarga()">Crear recarga pendiente</ion-button>
         </ion-card-content></ion-card>
         <ion-card><ion-card-header><ion-card-title>Cambio pendiente a clientes</ion-card-title></ion-card-header><ion-card-content>
           <p class="helper">Guarda los $2 o $3 que la tienda queda debiendo para entregarlos después.</p>
@@ -118,6 +120,8 @@
           <ion-button color="danger" fill="outline" [disabled]="procesando" (click)="cerrarCaja()">Cerrar y entregar turno</ion-button>
         </ion-card-content></ion-card>
       </div>
+
+      <ion-card class="recharges-card"><ion-card-header><ion-card-title>Conciliación de recargas</ion-card-title></ion-card-header><ion-card-content><section class="recharge-summary"><div><span>Monto exitoso</span><strong>{{conciliacionRecargas.total | currency:'MXN'}}</strong></div><div><span>Comisiones</span><strong>{{conciliacionRecargas.comisiones | currency:'MXN'}}</strong></div><div><span>Pendientes</span><strong>{{conciliacionRecargas.pendientes}}</strong></div><div><span>Exitosas</span><strong>{{conciliacionRecargas.exitosas}}</strong></div></section><div class="recharge-list"><article *ngFor="let r of recargas"><header><div><strong>{{r.compania}} · {{r.telefono}}</strong><small>{{r.fecha | date:'short'}} · {{r.usuario}}</small></div><span class="recharge-state" [class.success]="r.estado==='EXITOSA'" [class.failed]="r.estado==='RECHAZADA'||r.estado==='CANCELADA'">{{r.estado}}</span></header><div class="recharge-amount"><b>{{r.monto | currency:'MXN'}}</b><span>Comisión {{r.comision | currency:'MXN'}}</span><span *ngIf="r.folioProveedor">Folio {{r.folioProveedor}}</span></div><section class="resolve-recharge" *ngIf="r.estado==='PENDIENTE'"><ion-item><ion-label position="stacked">Folio del proveedor</ion-label><ion-input [(ngModel)]="r.folioCaptura"></ion-input></ion-item><ion-item><ion-label position="stacked">Motivo si fue rechazada</ion-label><ion-input [(ngModel)]="r.motivoCaptura"></ion-input></ion-item><div><ion-button size="small" color="success" (click)="resolverRecarga(r,'EXITOSA')">Confirmar exitosa</ion-button><ion-button size="small" color="danger" fill="outline" (click)="resolverRecarga(r,'RECHAZADA')">Marcar rechazada</ion-button></div></section><p *ngIf="r.motivo">Motivo: {{r.motivo}}</p><ion-button *ngIf="puedeAdministrarRecargas && r.estado==='EXITOSA'" size="small" color="danger" fill="clear" (click)="cancelarRecarga(r)">Cancelar y reembolsar</ion-button></article><p *ngIf="!recargas.length">No hay recargas registradas en este turno.</p></div></ion-card-content></ion-card>
     </ng-container>
   </div>
 </ion-content>

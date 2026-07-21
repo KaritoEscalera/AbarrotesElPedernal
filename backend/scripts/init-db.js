@@ -20,6 +20,12 @@ try {
   if (Number(saldoColumns[0].total) === 0) {
     await connection.query('ALTER TABLE AbarrotesElPedernal.saldos_clientes ADD COLUMN monto_usado DECIMAL(12,2) NOT NULL DEFAULT 0.00 AFTER monto');
   }
+  const [sessionColumns] = await connection.query(
+    "SELECT COUNT(*) AS total FROM information_schema.columns WHERE table_schema='AbarrotesElPedernal' AND table_name='usuarios' AND column_name='sesion_version'",
+  );
+  if (Number(sessionColumns[0].total) === 0) {
+    await connection.query('ALTER TABLE AbarrotesElPedernal.usuarios ADD COLUMN sesion_version INT UNSIGNED NOT NULL DEFAULT 0 AFTER password_hash');
+  }
   const [tables] = await connection.query(
     "SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema = 'AbarrotesElPedernal' AND table_type = 'BASE TABLE'",
   );
