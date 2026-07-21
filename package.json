@@ -5,7 +5,8 @@
   "homepage": "https://ionicframework.com/",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "node scripts/dev-all.js",
+    "start:web": "ng serve",
     "dev:all": "node scripts/dev-all.js",
     "verify": "npx tsc -p tsconfig.app.json --noEmit && node --check backend/src/server.js && node --check backend/src/routes/business.js && npm --prefix backend run smoke-test",
     "build": "ng build",
