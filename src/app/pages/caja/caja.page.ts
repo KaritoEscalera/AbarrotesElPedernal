@@ -69,17 +69,6 @@ export class CajaPage implements OnInit, OnDestroy {
   efectivoEsperado = 0;
   ventasPorMetodo = { EFECTIVO:0, TARJETA:0, TRANSFERENCIA:0, FIADO:0 };
   busqueda = '';
-  mostrarNuevoProducto = false;
-  nuevoProducto = {
-    codigo: '',
-    nombre: '',
-    categoria: 'Abarrotes',
-    unidadMedida: 'Pieza' as 'Pieza' | 'Kilogramo',
-    stock: 1 as number | null,
-    costo: 0 as number | null,
-    precioVenta: null as number | null,
-    tasaIva: 0 as number | null,
-  };
   fondoInicial: number | null = 1000;
   metodo: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'FIADO' | 'SALDO_FAVOR' | 'MIXTO' = 'EFECTIVO';
   clienteId: number | null = null;
@@ -126,7 +115,7 @@ export class CajaPage implements OnInit, OnDestroy {
 
   get productosFiltrados(): ProductoCaja[] {
     const term = this.busqueda.trim().toLowerCase();
-    return this.productos.filter((p) => p.activo && p.stock > 0 && (!term || p.nombre.toLowerCase().includes(term) || p.codigo?.toLowerCase().includes(term))).slice(0, 30);
+    return this.productos.filter((p) => p.activo && (!term || p.nombre.toLowerCase().includes(term) || p.codigo?.toLowerCase().includes(term)));
   }
 
   get subtotal(): number { return this.carrito.reduce((sum, p) => sum + p.precioVenta * p.cantidad, 0); }
@@ -156,6 +145,10 @@ export class CajaPage implements OnInit, OnDestroy {
   usarMontoExacto(): void { this.efectivoRecibido = this.total; }
 
   agregar(producto: ProductoCaja): void {
+    if (producto.stock <= 0) {
+      this.fallar(`${producto.nombre} está agotado. Registra una entrada desde Inventario.`);
+      return;
+    }
     const linea = this.carrito.find((item) => item.id === producto.id);
     if (linea) {
       const incremento = this.esVentaGranel(producto) ? .5 : 1;
@@ -175,55 +168,12 @@ export class CajaPage implements OnInit, OnDestroy {
     }
   }
 
-  async procesarCodigo(): Promise<void> {
+  procesarCodigo(): void {
     const codigo = this.busqueda.trim().toLowerCase();
     if (!codigo) return;
     const exacto = this.productos.find((p) => p.activo && (p.codigo?.toLowerCase() === codigo || p.nombre.toLowerCase() === codigo));
     if (exacto) { this.agregar(exacto); this.busqueda = ''; this.mensaje = `${exacto.nombre} agregado.`; this.error = ''; }
-    else if (/^\d{8,14}$/.test(codigo)) {
-      try {
-        const encontrado = await this.api.get<{encontrado:boolean;codigo:string;nombre?:string;categoria?:string}>(`catalog/barcode/${codigo}`);
-        if (!encontrado.encontrado) return this.fallar('El código no está en el inventario ni en el catálogo público.');
-        this.nuevoProducto.codigo = encontrado.codigo;
-        this.nuevoProducto.nombre = encontrado.nombre ?? '';
-        this.nuevoProducto.categoria = encontrado.categoria ?? 'Abarrotes';
-        this.mostrarNuevoProducto = true;
-        this.busqueda = '';
-        this.error = '';
-        this.mensaje = 'Producto encontrado en Open Food Facts. Revisa precio, existencia y unidad antes de guardarlo.';
-      } catch { this.fallar('No existe el producto localmente y no fue posible consultar el catálogo público.'); }
-    } else this.fallar('No existe un producto con ese nombre o código de barras.');
-  }
-
-  async crearProductoDesdeCaja(): Promise<void> {
-    const nombre = this.nuevoProducto.nombre.trim();
-    const categoria = this.nuevoProducto.categoria.trim();
-    const stock = Number(this.nuevoProducto.stock);
-    const costo = Number(this.nuevoProducto.costo);
-    const precioVenta = Number(this.nuevoProducto.precioVenta);
-    const tasaIva = Number(this.nuevoProducto.tasaIva);
-    if (!nombre || !categoria) return this.fallar('Captura el nombre y la categoría del producto.');
-    if (![stock, costo, precioVenta, tasaIva].every(Number.isFinite) || stock < 0 || costo < 0 || precioVenta <= 0 || tasaIva < 0) {
-      return this.fallar('Existencia, costo, precio e IVA deben ser cantidades válidas.');
-    }
-    await this.ejecutar(async () => {
-      const creado = await this.api.post<{ id: number }>('products', {
-        codigo: this.nuevoProducto.codigo.trim() || null,
-        nombre,
-        categoria,
-        unidadMedida: this.nuevoProducto.unidadMedida,
-        stock,
-        costo,
-        precioVenta,
-        tasaIva,
-      });
-      await this.cargarCatalogos();
-      const producto = this.productos.find((item) => item.id === Number(creado.id));
-      if (producto && producto.stock > 0) this.agregar(producto);
-      this.nuevoProducto = { codigo: '', nombre: '', categoria: 'Abarrotes', unidadMedida: 'Pieza', stock: 1, costo: 0, precioVenta: null, tasaIva: 0 };
-      this.mostrarNuevoProducto = false;
-      this.mensaje = `${nombre} fue guardado en inventario${producto?.stock ? ' y agregado a la venta' : ''}.`;
-    });
+    else this.fallar('Este producto no está registrado. Agrégalo primero desde Inventario.');
   }
 
   suspenderVenta(): void {

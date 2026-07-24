@@ -38,3 +38,25 @@ usersRouter.patch('/:id/status', async (req, res, next) => {
     return res.status(204).end();
   } catch (error) { return next(error); }
 });
+
+usersRouter.put('/:id',async(req,res,next)=>{
+  try{
+    const nombre=String(req.body?.nombre??'').trim(),correo=String(req.body?.correo??'').trim().toLowerCase(),rol=String(req.body?.rol??'').trim(),password=String(req.body?.password??'');
+    if(!nombre||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)||!rol)return res.status(400).json({error:'Nombre, correo y rol válidos son obligatorios.'});
+    if(password&&(password.length<10||!/[A-Z]/.test(password)||!/[a-z]/.test(password)||!/\d/.test(password)))return res.status(400).json({error:'La contraseña nueva debe tener 10 caracteres, mayúscula, minúscula y número.'});
+    const [[role]]=await pool.execute('SELECT id FROM roles WHERE nombre=?',[rol]);if(!role)return res.status(400).json({error:'El rol no es válido.'});
+    if(password){const hash=await bcrypt.hash(password,12);await pool.execute('UPDATE usuarios SET nombre=?,correo=?,rol_id=?,password_hash=?,sesion_version=sesion_version+1 WHERE id=?',[nombre,correo,role.id,hash,req.params.id]);}
+    else await pool.execute('UPDATE usuarios SET nombre=?,correo=?,rol_id=? WHERE id=?',[nombre,correo,role.id,req.params.id]);
+    await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Usuarios','EDITAR',?,'USUARIO',?)`,[req.user.sub,`Cuenta actualizada: ${correo}`,req.params.id]);
+    return res.status(204).end();
+  }catch(error){if(error?.code==='ER_DUP_ENTRY')return res.status(409).json({error:'Ya existe un usuario con ese correo.'});return next(error);}
+});
+
+usersRouter.delete('/:id',async(req,res,next)=>{
+  try{
+    if(Number(req.params.id)===Number(req.user.sub))return res.status(400).json({error:'No puedes eliminar tu propia cuenta.'});
+    await pool.execute('UPDATE usuarios SET activo=FALSE,sesion_version=sesion_version+1 WHERE id=?',[req.params.id]);
+    await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Usuarios','ELIMINAR','Cuenta desactivada; se conservó su historial','USUARIO',?)`,[req.user.sub,req.params.id]);
+    return res.status(204).end();
+  }catch(error){return next(error);}
+});

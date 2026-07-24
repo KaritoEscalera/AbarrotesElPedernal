@@ -105,8 +105,8 @@ export class ProveedoresPage implements OnInit {
   }
 
   async archivarProveedor(proveedor: Proveedor): Promise<void> {
-    if (!confirm(`¿Deseas archivar a ${proveedor.empresa}? Su historial se conservará.`)) return;
-    try { await this.api.delete(`providers/${proveedor.id}`); await this.recargar(); this.mensaje = 'Proveedor archivado; su historial se conservó.'; } catch { this.mensaje = 'No fue posible archivar el proveedor.'; }
+    if (!confirm(`¿Deseas eliminar a ${proveedor.empresa}? Su historial de compras se conservará.`)) return;
+    try { await this.api.delete(`providers/${proveedor.id}`); await this.recargar(); this.mensaje = 'Proveedor eliminado; su historial se conservó.'; } catch { this.mensaje = 'No fue posible eliminar el proveedor.'; }
   }
 
   cancelarFormulario(): void {

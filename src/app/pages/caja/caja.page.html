@@ -33,25 +33,10 @@
           <ion-card-header><ion-card-title>Productos</ion-card-title></ion-card-header>
           <ion-card-content>
             <ion-item><ion-label position="stacked">Escanear código o buscar producto</ion-label><ion-input [(ngModel)]="busqueda" (keyup.enter)="procesarCodigo()" placeholder="Escanea y presiona Enter"></ion-input></ion-item>
-            <small class="scanner-help">El lector de códigos funciona como teclado: apunta, escanea y el producto se agrega automáticamente.</small>
-            <ion-button size="small" fill="outline" (click)="mostrarNuevoProducto=!mostrarNuevoProducto">
-              {{mostrarNuevoProducto ? 'Cancelar' : '+ Agregar producto nuevo'}}
-            </ion-button>
-            <section class="quick-product" *ngIf="mostrarNuevoProducto">
-              <h3>Producto nuevo</h3>
-              <ion-item><ion-label position="stacked">Nombre *</ion-label><ion-input [(ngModel)]="nuevoProducto.nombre"></ion-input></ion-item>
-              <ion-item><ion-label position="stacked">Código de barras (opcional)</ion-label><ion-input [(ngModel)]="nuevoProducto.codigo"></ion-input></ion-item>
-              <ion-item><ion-label position="stacked">Categoría *</ion-label><ion-input [(ngModel)]="nuevoProducto.categoria"></ion-input></ion-item>
-              <ion-item><ion-label position="stacked">Forma de venta *</ion-label><ion-select [(ngModel)]="nuevoProducto.unidadMedida"><ion-select-option value="Pieza">Por pieza</ion-select-option><ion-select-option value="Kilogramo">A granel (precio por kg)</ion-select-option></ion-select></ion-item>
-              <ion-item><ion-label position="stacked">Existencia inicial ({{nuevoProducto.unidadMedida === 'Kilogramo' ? 'kg' : 'piezas'}}) *</ion-label><ion-input type="number" min="0" [step]="nuevoProducto.unidadMedida === 'Kilogramo' ? 0.001 : 1" [(ngModel)]="nuevoProducto.stock"></ion-input></ion-item>
-              <ion-item><ion-label position="stacked">Costo</ion-label><ion-input type="number" min="0" step="0.01" [(ngModel)]="nuevoProducto.costo"></ion-input></ion-item>
-              <ion-item><ion-label position="stacked">Precio de venta por {{nuevoProducto.unidadMedida === 'Kilogramo' ? 'kilogramo' : 'pieza'}} *</ion-label><ion-input type="number" min="0.01" step="0.01" [(ngModel)]="nuevoProducto.precioVenta"></ion-input></ion-item>
-              <ion-item><ion-label position="stacked">IVA %</ion-label><ion-input type="number" min="0" step="0.01" [(ngModel)]="nuevoProducto.tasaIva"></ion-input></ion-item>
-              <ion-button expand="block" [disabled]="procesando" (click)="crearProductoDesdeCaja()">Guardar y agregar a la venta</ion-button>
-            </section>
+            <small class="scanner-help">Aquí aparecen todos los productos registrados. Los productos nuevos se agregan desde Inventario.</small>
             <div class="product-list">
-              <button type="button" class="product" *ngFor="let producto of productosFiltrados" (click)="agregar(producto)">
-                <span>{{ producto.nombre }}</span><small>{{ producto.categoria }} · Stock {{ producto.stock }} {{ esVentaGranel(producto) ? 'kg' : 'pzas.' }}</small><strong>{{ producto.precioVenta | currency:'MXN' }} / {{ esVentaGranel(producto) ? 'kg' : 'pza.' }}</strong>
+              <button type="button" class="product" [class.out-of-stock]="producto.stock <= 0" [disabled]="producto.stock <= 0" *ngFor="let producto of productosFiltrados" (click)="agregar(producto)">
+                <span>{{ producto.nombre }}</span><small>{{ producto.categoria }} · {{producto.stock > 0 ? 'Stock ' + producto.stock + ' ' + (esVentaGranel(producto) ? 'kg' : 'pzas.') : 'AGOTADO'}}</small><strong>{{ producto.precioVenta | currency:'MXN' }} / {{ esVentaGranel(producto) ? 'kg' : 'pza.' }}</strong>
               </button>
             </div>
           </ion-card-content>
