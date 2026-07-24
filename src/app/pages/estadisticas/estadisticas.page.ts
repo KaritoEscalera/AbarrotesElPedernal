@@ -48,8 +48,18 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
   recordatorios: Recordatorio[] = [];
 
   async ngOnInit(): Promise<void> {
+    await this.cargarEstadisticas();
+  }
+
+  ionViewWillEnter():void {
+    if(this.errorCarga&&!this.cargando)void this.cargarEstadisticas();
+  }
+
+  async cargarEstadisticas(): Promise<void> {
+    this.cargando = true;
+    this.errorCarga = '';
     try {
-      const datos = await this.api.get<{ sales: Venta[]; products: ProductoAnalisis[]; credits: FiadoAnalisis[]; cashClosures: CierreCaja[]; reminders: Recordatorio[] }>('analytics');
+      const datos = await this.conTiempoLimite(this.api.get<{ sales: Venta[]; products: ProductoAnalisis[]; credits: FiadoAnalisis[]; cashClosures: CierreCaja[]; reminders: Recordatorio[] }>('analytics'), 15000);
       this.ventas = datos.sales.map((v) => ({ ...v, hora: Number(v.hora), total: Number(v.total), costo: Number(v.costo), unidades: Number(v.unidades) }));
       this.productos = datos.products.map((p) => ({ ...p, stock: Number(p.stock), minimo: Number(p.minimo), vendidos: Number(p.vendidos), precio: Number(p.precio), costo: Number(p.costo), diasSinVenta: Number(p.diasSinVenta), merma: Number(p.merma) }));
       this.fiados = datos.credits.map((f) => ({ ...f, saldo: Number(f.saldo), vencido: Boolean(f.vencido), abonos: Number(f.abonos) }));
@@ -188,6 +198,11 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
 
   private sumar(ventas: Venta[], campo: 'total' | 'costo'): number { return ventas.reduce((suma, venta) => suma + venta[campo], 0); }
   private variacion(actual: number, anterior: number): number { return anterior ? ((actual - anterior) / anterior) * 100 : actual ? 100 : 0; }
+  private async conTiempoLimite<T>(peticion:Promise<T>,milisegundos:number):Promise<T>{
+    let temporizador:number|undefined;
+    try{return await Promise.race([peticion,new Promise<T>((_resolver,rechazar)=>{temporizador=window.setTimeout(()=>rechazar(new Error('Tiempo de espera agotado.')),milisegundos);})]);}
+    finally{if(temporizador!==undefined)window.clearTimeout(temporizador);}
+  }
 
   ngOnDestroy(): void { if(this.temporizadorGraficas!==undefined)window.clearTimeout(this.temporizadorGraficas);this.graficas.forEach((grafica) => grafica.destroy()); }
 }

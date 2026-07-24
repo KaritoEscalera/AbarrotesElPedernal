@@ -24,6 +24,8 @@ ion-card-content { color: #4a2c1d; }
 .pos-grid { display: grid; grid-template-columns: minmax(330px, .9fr) minmax(440px, 1.2fr); gap: 14px; margin-top: 14px; align-items: start; }
 .product-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 9px; margin-top: 14px; max-height: 520px; overflow: auto; }
 .scanner-help { display:block; margin:8px 4px; color:#80624f; }
+.quick-product { display:grid; gap:6px; margin:10px 0; padding:13px; border:1px solid #e3b98f; border-radius:13px; background:#fff8f1; }
+.quick-product h3 { margin:0 0 3px; color:#8d4313; }
 .suspended { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid #ead8c8; }
 .suspended div { display:grid; gap:3px; }
 .product { display: grid; gap: 5px; text-align: left; border: 1px solid #ead3bf; background: #fffaf5; color: #4a2c1d; padding: 12px; border-radius: 12px; cursor: pointer; }
@@ -31,9 +33,12 @@ ion-card-content { color: #4a2c1d; }
 .product small { color: #836754; }
 .product strong { color: #a65318; }
 .empty { color: #876b58; text-align: center; padding: 26px; }
-.cart-line { display: grid; grid-template-columns: 1fr 72px 100px auto; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0dfd1; }
+.cart-line { display: grid; grid-template-columns: 1fr minmax(145px,auto) 100px auto; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0dfd1; }
 .cart-line div { display: grid; gap: 3px; }
 .cart-line small { color: #876b58; }
+.cart-line .quantity-editor { grid-template-columns: minmax(70px,1fr) auto; align-items: center; gap: 5px; }
+.quantity-editor ion-select { min-width: 92px; }
+.quantity-editor span { color: #876b58; font-size: 13px; }
 .totals { display: grid; gap: 7px; margin: 16px 0; padding: 12px; background: #fff6ee; border-radius: 12px; }
 .totals span { display: flex; justify-content: space-between; }
 .totals .grand { border-top: 1px solid #e8c9ae; padding-top: 8px; font-size: 21px; color: #8d4313; }

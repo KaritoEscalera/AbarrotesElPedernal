@@ -112,7 +112,7 @@ export class AppComponent {
 
   async activarNotificaciones(): Promise<void> {
     const resultado = await this.alertasService.solicitarPermiso();
-    this.mensajeNotificaciones = resultado === 'granted' ? 'Notificaciones y campanitas activadas.' : resultado === 'denied' ? 'El navegador no autorizó las notificaciones.' : 'Este navegador no admite notificaciones.';
+    this.mensajeNotificaciones = resultado === 'granted' ? 'Notificaciones y sonido activados.' : resultado === 'denied' ? 'Android no autorizó las notificaciones. Puedes habilitarlas en Ajustes.' : 'Este navegador no admite notificaciones.';
   }
 
   seleccionarTema(modo: ModoTema): void { this.tema.seleccionar(modo); }

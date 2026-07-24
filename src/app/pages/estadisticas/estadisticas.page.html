@@ -10,7 +10,7 @@
       <ng-container *ngIf="periodoSeleccionado === 'personalizado'"><ion-item lines="none"><ion-label position="stacked">Desde</ion-label><ion-input type="date" [(ngModel)]="fechaInicio"></ion-input></ion-item><ion-item lines="none"><ion-label position="stacked">Hasta</ion-label><ion-input type="date" [(ngModel)]="fechaFin"></ion-input></ion-item><ion-button (click)="aplicarFechas()">Aplicar</ion-button></ng-container>
       <p class="filter-error" *ngIf="mensajeFechas">{{ mensajeFechas }}</p>
     </section>
-    <p class="load-error" role="alert" *ngIf="errorCarga">{{errorCarga}} Actualiza la página o comprueba que el servidor esté encendido.</p>
+    <p class="load-error" role="alert" *ngIf="errorCarga">{{errorCarga}} Comprueba que el servidor esté encendido. <button type="button" (click)="cargarEstadisticas()">Reintentar</button></p>
 
     <section class="summary-grid" aria-label="Indicadores principales">
       <article class="summary-card"><span>Ventas</span><strong>{{ totalVentas | currency:'MXN' }}</strong><small [class]="claseVariacion(variacionVentas)">{{ variacionVentas >= 0 ? '+' : '' }}{{ variacionVentas | number:'1.1-1' }}% vs. periodo anterior</small></article>

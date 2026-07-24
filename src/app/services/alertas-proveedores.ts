@@ -1,4 +1,6 @@
 import { Injectable, inject } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { BusinessApi } from './business-api';
 
 interface ProveedorEntrega { id: number; empresa: string; diaEntrega: string | null; estado: string; }
@@ -24,8 +26,8 @@ export class AlertasProveedores {
         .sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
       const nuevas = this.alertas.filter((a) => !this.avisadas().has(a.id));
       if (nuevas.length && reproducir) {
-        this.campanitas();
-        this.notificacionNativa(nuevas);
+        if (!this.esAndroid) this.campanitas();
+        await this.notificacionNativa(nuevas);
         const avisadas = this.avisadas(); nuevas.forEach((a) => avisadas.add(a.id));
         localStorage.setItem(this.claveAvisadas, JSON.stringify([...avisadas].slice(-100)));
       }
@@ -34,6 +36,20 @@ export class AlertasProveedores {
   }
 
   async solicitarPermiso(): Promise<'granted' | 'denied' | 'unsupported'> {
+    if (this.esAndroid) {
+      const permiso = await LocalNotifications.requestPermissions();
+      if (permiso.display !== 'granted') return 'denied';
+      await LocalNotifications.schedule({
+        notifications: [{
+          id: this.idNotificacion(),
+          title: 'Avisos activados',
+          body: 'Las notificaciones de Abarrotes El Pedernal ya tienen sonido.',
+          channelId: 'default',
+        }],
+      });
+      await this.actualizar(false);
+      return 'granted';
+    }
     if (!('Notification' in window)) return 'unsupported';
     const permiso = await Notification.requestPermission();
     if (permiso === 'granted') { await this.actualizar(false); this.campanitas(); }
@@ -62,9 +78,22 @@ export class AlertasProveedores {
     catch { return new Set(); }
   }
 
-  private notificacionNativa(alertas: AlertaProveedor[]): void {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  private async notificacionNativa(alertas: AlertaProveedor[]): Promise<void> {
     const detalle = alertas.slice(0, 3).map((a) => a.mensaje).join(' · ');
+    if (this.esAndroid) {
+      const permiso = await LocalNotifications.checkPermissions();
+      if (permiso.display !== 'granted') return;
+      await LocalNotifications.schedule({
+        notifications: [{
+          id: this.idNotificacion(),
+          title: 'Entregas de proveedores',
+          body: detalle,
+          channelId: 'default',
+        }],
+      });
+      return;
+    }
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
     new Notification('Entregas de proveedores', { body: detalle, icon: 'assets/icon/favicon.png', tag: 'proveedores-entregas' });
   }
 
@@ -88,4 +117,6 @@ export class AlertasProveedores {
   }
 
   private fechaIso(fecha: Date): string { return `${fecha.getFullYear()}-${String(fecha.getMonth()+1).padStart(2,'0')}-${String(fecha.getDate()).padStart(2,'0')}`; }
+  private get esAndroid():boolean{return Capacitor.getPlatform()==='android';}
+  private idNotificacion():number{return Math.floor(Date.now()%2_000_000_000);}
 }

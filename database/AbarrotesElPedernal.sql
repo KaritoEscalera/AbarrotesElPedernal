@@ -1,6 +1,3 @@
--- Abarrotes El Pedernal - Esquema MySQL 8+
--- Este script crea la base sin eliminar bases o tablas existentes.
-
 CREATE DATABASE IF NOT EXISTS `AbarrotesElPedernal`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_0900_ai_ci;

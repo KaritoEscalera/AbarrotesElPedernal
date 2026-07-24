@@ -24,7 +24,9 @@
         <ion-card><ion-card-content><small>Ventas del turno</small><strong>{{ ventasTurno | currency:'MXN' }}</strong></ion-card-content></ion-card>
         <ion-card><ion-card-content><small>Efectivo esperado</small><strong>{{ efectivoEsperado | currency:'MXN' }}</strong></ion-card-content></ion-card>
       </section>
-      <div class="cut-action"><ion-button fill="outline" (click)="imprimirCorteX()">Imprimir Corte X</ion-button></div>
+      <div class="cut-action">
+        <ion-button fill="outline" (click)="imprimirCorteX()">Imprimir Corte X</ion-button>
+      </div>
 
       <div class="pos-grid">
         <ion-card>
@@ -32,6 +34,21 @@
           <ion-card-content>
             <ion-item><ion-label position="stacked">Escanear código o buscar producto</ion-label><ion-input [(ngModel)]="busqueda" (keyup.enter)="procesarCodigo()" placeholder="Escanea y presiona Enter"></ion-input></ion-item>
             <small class="scanner-help">El lector de códigos funciona como teclado: apunta, escanea y el producto se agrega automáticamente.</small>
+            <ion-button size="small" fill="outline" (click)="mostrarNuevoProducto=!mostrarNuevoProducto">
+              {{mostrarNuevoProducto ? 'Cancelar' : '+ Agregar producto nuevo'}}
+            </ion-button>
+            <section class="quick-product" *ngIf="mostrarNuevoProducto">
+              <h3>Producto nuevo</h3>
+              <ion-item><ion-label position="stacked">Nombre *</ion-label><ion-input [(ngModel)]="nuevoProducto.nombre"></ion-input></ion-item>
+              <ion-item><ion-label position="stacked">Código de barras (opcional)</ion-label><ion-input [(ngModel)]="nuevoProducto.codigo"></ion-input></ion-item>
+              <ion-item><ion-label position="stacked">Categoría *</ion-label><ion-input [(ngModel)]="nuevoProducto.categoria"></ion-input></ion-item>
+              <ion-item><ion-label position="stacked">Forma de venta *</ion-label><ion-select [(ngModel)]="nuevoProducto.unidadMedida"><ion-select-option value="Pieza">Por pieza</ion-select-option><ion-select-option value="Kilogramo">A granel (precio por kg)</ion-select-option></ion-select></ion-item>
+              <ion-item><ion-label position="stacked">Existencia inicial ({{nuevoProducto.unidadMedida === 'Kilogramo' ? 'kg' : 'piezas'}}) *</ion-label><ion-input type="number" min="0" [step]="nuevoProducto.unidadMedida === 'Kilogramo' ? 0.001 : 1" [(ngModel)]="nuevoProducto.stock"></ion-input></ion-item>
+              <ion-item><ion-label position="stacked">Costo</ion-label><ion-input type="number" min="0" step="0.01" [(ngModel)]="nuevoProducto.costo"></ion-input></ion-item>
+              <ion-item><ion-label position="stacked">Precio de venta por {{nuevoProducto.unidadMedida === 'Kilogramo' ? 'kilogramo' : 'pieza'}} *</ion-label><ion-input type="number" min="0.01" step="0.01" [(ngModel)]="nuevoProducto.precioVenta"></ion-input></ion-item>
+              <ion-item><ion-label position="stacked">IVA %</ion-label><ion-input type="number" min="0" step="0.01" [(ngModel)]="nuevoProducto.tasaIva"></ion-input></ion-item>
+              <ion-button expand="block" [disabled]="procesando" (click)="crearProductoDesdeCaja()">Guardar y agregar a la venta</ion-button>
+            </section>
             <div class="product-list">
               <button type="button" class="product" *ngFor="let producto of productosFiltrados" (click)="agregar(producto)">
                 <span>{{ producto.nombre }}</span><small>{{ producto.categoria }} · Stock {{ producto.stock }} {{ esVentaGranel(producto) ? 'kg' : 'pzas.' }}</small><strong>{{ producto.precioVenta | currency:'MXN' }} / {{ esVentaGranel(producto) ? 'kg' : 'pza.' }}</strong>
@@ -45,8 +62,12 @@
           <ion-card-content>
             <p class="empty" *ngIf="!carrito.length">Selecciona productos para comenzar.</p>
             <div class="cart-line" *ngFor="let linea of carrito">
-              <div><strong>{{ linea.nombre }}</strong><small>{{ linea.precioVenta | currency:'MXN' }} c/u</small></div>
-              <ion-input type="number" min="0" [step]="esVentaGranel(linea) ? 0.001 : 1" [max]="linea.stock" [ngModel]="linea.cantidad" (ngModelChange)="cambiarCantidad(linea, $event)"></ion-input>
+              <div><strong>{{ linea.nombre }}</strong><small>{{ linea.precioVenta | currency:'MXN' }} / {{esVentaGranel(linea) ? 'kg' : 'pza.'}} · {{etiquetaCantidad(linea)}}</small></div>
+              <div class="quantity-editor">
+                <ion-input type="number" min="0" [step]="linea.unidadCaptura === 'Gramo' ? 1 : 0.001" [ngModel]="linea.cantidadCapturada" (ngModelChange)="cambiarCantidad(linea, $event)"></ion-input>
+                <ion-select *ngIf="esVentaGranel(linea)" interface="popover" [ngModel]="linea.unidadCaptura" (ngModelChange)="cambiarUnidadCaptura(linea, $event)"><ion-select-option value="Gramo">gramos</ion-select-option><ion-select-option value="Kilogramo">kilos</ion-select-option></ion-select>
+                <span *ngIf="!esVentaGranel(linea)">piezas</span>
+              </div>
               <strong>{{ totalLinea(linea) | currency:'MXN' }}</strong>
               <ion-button fill="clear" color="danger" (click)="quitar(linea.id)">Quitar</ion-button>
             </div>

@@ -7,6 +7,7 @@ import {
 } from '@ionic/angular/standalone';
 import { BusinessApi } from '../../services/business-api';
 import { Auth } from '../../services/auth';
+import { BluetoothPrinterService } from '../../services/bluetooth-printer';
 
 interface ProductoCaja {
   id: number;
@@ -24,7 +25,12 @@ interface ProductoCaja {
 
 interface ClienteCaja { id: number; nombre: string; telefono: string; activo: boolean; saldoFavor:number; }
 interface CambioPendiente { id:number; clienteId:number; cliente:string; telefono:string; monto:number; estado:'PENDIENTE'|'ENTREGADO'; fecha:string; }
-interface LineaCarrito extends ProductoCaja { cantidad: number; }
+interface LineaCarrito extends ProductoCaja {
+  /** Cantidad normalizada: kg para granel y unidades para productos por pieza. */
+  cantidad: number;
+  cantidadCapturada: number;
+  unidadCaptura: 'Pieza' | 'Kilogramo' | 'Gramo';
+}
 interface SesionCaja { id: number; estado: 'ABIERTA'; fondoInicial: number; fechaApertura: string; }
 interface MovimientoCaja { id: number; tipo: string; descripcion: string; metodo: string; monto: number; fecha: string; }
 
@@ -52,6 +58,7 @@ interface ConciliacionRecargas {total:number;comisiones:number;pendientes:number
 export class CajaPage implements OnInit, OnDestroy {
   private readonly api = inject(BusinessApi);
   private readonly auth = inject(Auth);
+  private readonly bluetoothPrinter = inject(BluetoothPrinterService);
 
   productos: ProductoCaja[] = [];
   clientes: ClienteCaja[] = [];
@@ -62,6 +69,17 @@ export class CajaPage implements OnInit, OnDestroy {
   efectivoEsperado = 0;
   ventasPorMetodo = { EFECTIVO:0, TARJETA:0, TRANSFERENCIA:0, FIADO:0 };
   busqueda = '';
+  mostrarNuevoProducto = false;
+  nuevoProducto = {
+    codigo: '',
+    nombre: '',
+    categoria: 'Abarrotes',
+    unidadMedida: 'Pieza' as 'Pieza' | 'Kilogramo',
+    stock: 1 as number | null,
+    costo: 0 as number | null,
+    precioVenta: null as number | null,
+    tasaIva: 0 as number | null,
+  };
   fondoInicial: number | null = 1000;
   metodo: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'FIADO' | 'SALDO_FAVOR' | 'MIXTO' = 'EFECTIVO';
   clienteId: number | null = null;
@@ -140,18 +158,72 @@ export class CajaPage implements OnInit, OnDestroy {
   agregar(producto: ProductoCaja): void {
     const linea = this.carrito.find((item) => item.id === producto.id);
     if (linea) {
-      if (linea.cantidad < producto.stock) linea.cantidad += 1;
+      const incremento = this.esVentaGranel(producto) ? .5 : 1;
+      if (linea.cantidad < producto.stock) {
+        linea.cantidad = Math.min(producto.stock, linea.cantidad + incremento);
+        this.sincronizarCantidadCapturada(linea);
+      }
     } else {
-      this.carrito = [...this.carrito, { ...producto, cantidad: 1 }];
+      const esGranel = this.esVentaGranel(producto);
+      const cantidad = Math.min(producto.stock, esGranel ? .5 : 1);
+      this.carrito = [...this.carrito, {
+        ...producto,
+        cantidad,
+        cantidadCapturada: esGranel ? cantidad * 1000 : cantidad,
+        unidadCaptura: esGranel ? 'Gramo' : 'Pieza',
+      }];
     }
   }
 
-  procesarCodigo(): void {
+  async procesarCodigo(): Promise<void> {
     const codigo = this.busqueda.trim().toLowerCase();
     if (!codigo) return;
     const exacto = this.productos.find((p) => p.activo && (p.codigo?.toLowerCase() === codigo || p.nombre.toLowerCase() === codigo));
     if (exacto) { this.agregar(exacto); this.busqueda = ''; this.mensaje = `${exacto.nombre} agregado.`; this.error = ''; }
-    else this.fallar('No existe un producto con ese código de barras.');
+    else if (/^\d{8,14}$/.test(codigo)) {
+      try {
+        const encontrado = await this.api.get<{encontrado:boolean;codigo:string;nombre?:string;categoria?:string}>(`catalog/barcode/${codigo}`);
+        if (!encontrado.encontrado) return this.fallar('El código no está en el inventario ni en el catálogo público.');
+        this.nuevoProducto.codigo = encontrado.codigo;
+        this.nuevoProducto.nombre = encontrado.nombre ?? '';
+        this.nuevoProducto.categoria = encontrado.categoria ?? 'Abarrotes';
+        this.mostrarNuevoProducto = true;
+        this.busqueda = '';
+        this.error = '';
+        this.mensaje = 'Producto encontrado en Open Food Facts. Revisa precio, existencia y unidad antes de guardarlo.';
+      } catch { this.fallar('No existe el producto localmente y no fue posible consultar el catálogo público.'); }
+    } else this.fallar('No existe un producto con ese nombre o código de barras.');
+  }
+
+  async crearProductoDesdeCaja(): Promise<void> {
+    const nombre = this.nuevoProducto.nombre.trim();
+    const categoria = this.nuevoProducto.categoria.trim();
+    const stock = Number(this.nuevoProducto.stock);
+    const costo = Number(this.nuevoProducto.costo);
+    const precioVenta = Number(this.nuevoProducto.precioVenta);
+    const tasaIva = Number(this.nuevoProducto.tasaIva);
+    if (!nombre || !categoria) return this.fallar('Captura el nombre y la categoría del producto.');
+    if (![stock, costo, precioVenta, tasaIva].every(Number.isFinite) || stock < 0 || costo < 0 || precioVenta <= 0 || tasaIva < 0) {
+      return this.fallar('Existencia, costo, precio e IVA deben ser cantidades válidas.');
+    }
+    await this.ejecutar(async () => {
+      const creado = await this.api.post<{ id: number }>('products', {
+        codigo: this.nuevoProducto.codigo.trim() || null,
+        nombre,
+        categoria,
+        unidadMedida: this.nuevoProducto.unidadMedida,
+        stock,
+        costo,
+        precioVenta,
+        tasaIva,
+      });
+      await this.cargarCatalogos();
+      const producto = this.productos.find((item) => item.id === Number(creado.id));
+      if (producto && producto.stock > 0) this.agregar(producto);
+      this.nuevoProducto = { codigo: '', nombre: '', categoria: 'Abarrotes', unidadMedida: 'Pieza', stock: 1, costo: 0, precioVenta: null, tasaIva: 0 };
+      this.mostrarNuevoProducto = false;
+      this.mensaje = `${nombre} fue guardado en inventario${producto?.stock ? ' y agregado a la venta' : ''}.`;
+    });
   }
 
   suspenderVenta(): void {
@@ -164,7 +236,10 @@ export class CajaPage implements OnInit, OnDestroy {
 
   recuperarVenta(id: number): void {
     const venta = this.ventasSuspendidas.find((v) => v.id === id); if (!venta) return;
-    this.carrito = venta.carrito.map((p) => ({ ...p }));
+    this.carrito = venta.carrito.map((p) => {
+      const unidadCaptura = p.unidadCaptura ?? (this.esVentaGranel(p) ? 'Gramo' : 'Pieza');
+      return { ...p, unidadCaptura, cantidadCapturada: p.cantidadCapturada ?? (unidadCaptura === 'Gramo' ? p.cantidad * 1000 : p.cantidad) };
+    });
     this.ventasSuspendidas = this.ventasSuspendidas.filter((v) => v.id !== id);
     localStorage.setItem('ventasSuspendidas', JSON.stringify(this.ventasSuspendidas));
     this.mensaje = 'Venta recuperada.';
@@ -174,12 +249,32 @@ export class CajaPage implements OnInit, OnDestroy {
   cambiarCantidad(linea: LineaCarrito, cantidad: unknown): void {
     const nueva = Number(cantidad);
     if (!Number.isFinite(nueva) || nueva <= 0) this.quitar(linea.id);
-    else linea.cantidad = Math.min(nueva, linea.stock);
+    else {
+      const normalizada = linea.unidadCaptura === 'Gramo' ? nueva / 1000 : nueva;
+      linea.cantidad = Math.min(normalizada, linea.stock);
+      this.sincronizarCantidadCapturada(linea);
+    }
   }
 
   quitar(id: number): void { this.carrito = this.carrito.filter((item) => item.id !== id); }
 
-  esVentaGranel(producto: ProductoCaja): boolean { return producto.unidadMedida?.toLowerCase() === 'kilogramo' || ['granel','frutas','verduras','carnes'].includes(producto.categoria?.toLowerCase() ?? ''); }
+  cambiarUnidadCaptura(linea: LineaCarrito, unidad: 'Kilogramo'|'Gramo'): void {
+    linea.unidadCaptura = unidad;
+    this.sincronizarCantidadCapturada(linea);
+  }
+
+  etiquetaCantidad(linea: LineaCarrito): string {
+    if (!this.esVentaGranel(linea)) return `${linea.cantidad} pza${linea.cantidad === 1 ? '' : 's'}`;
+    return linea.cantidad < 1 ? `${Math.round(linea.cantidad * 1000)} g` : `${Number(linea.cantidad.toFixed(3))} kg`;
+  }
+
+  private sincronizarCantidadCapturada(linea: LineaCarrito): void {
+    linea.cantidadCapturada = linea.unidadCaptura === 'Gramo'
+      ? Math.round(linea.cantidad * 1000)
+      : Number(linea.cantidad.toFixed(3));
+  }
+
+  esVentaGranel(producto: ProductoCaja): boolean { return producto.unidadMedida === 'Kilogramo'; }
 
   async abrirCaja(): Promise<void> {
     const fondo = Number(this.fondoInicial);
@@ -288,7 +383,18 @@ export class CajaPage implements OnInit, OnDestroy {
   cerrarDetalleVenta():void{this.ventaSeleccionada=null;this.motivoCancelacion='';}
   async cancelarVenta():Promise<void>{if(!this.ventaSeleccionada)return;const motivo=this.motivoCancelacion.trim();if(motivo.length<5)return this.fallar('Escribe un motivo de cancelación de al menos 5 caracteres.');await this.ejecutar(async()=>{await this.api.post(`sales/${this.ventaSeleccionada!.id}/cancel`,{motivo});this.cerrarDetalleVenta();await Promise.all([this.cargarHistorial(),this.cargarTodo()]);this.mensaje='Venta cancelada, inventario y caja actualizados.';});}
   async imprimirTicket(id:number,cambio=0):Promise<void>{
-    const venta=await this.obtenerVenta(id);const w=window.open('','_blank','width=420,height=720');
+    const venta=await this.obtenerVenta(id);
+    if (this.bluetoothPrinter.disponible) {
+      try {
+        const impresora = await this.bluetoothPrinter.imprimir(this.construirTicketBluetooth(venta, cambio));
+        this.mensaje = `${this.mensaje} Ticket impreso en ${impresora}.`.trim();
+      } catch (error: unknown) {
+        const detalle = error instanceof Error ? error.message : String((error as { message?: string })?.message ?? '');
+        this.error = `La venta quedó registrada, pero el ticket no se imprimió. ${detalle || 'Revisa que “Bluetooth Printer” esté encendida y emparejada.'}`;
+      }
+      return;
+    }
+    const w=window.open('','_blank','width=420,height=720');
     if(!w){this.error='Permite ventanas emergentes para imprimir el ticket.';return;}
     const dinero=(n:number)=>`$${Number(n).toFixed(2)}`;
     const logo=`${window.location.origin}/assets/logo-pedernal.png`;
@@ -296,6 +402,35 @@ export class CajaPage implements OnInit, OnDestroy {
     const pagos=venta.pagos.map(p=>`<tr><td>${this.escapar(p.metodo==='TARJETA'?'TERMINAL / TARJETA':p.metodo)}</td><td>${dinero(p.monto)}</td></tr>`).join('');
     const credito=venta.fiado?`<section class="credit"><b>VENTA A FIADO</b><div>Cliente: ${this.escapar(venta.cliente)}</div><div>Monto fiado: ${dinero(venta.fiado.monto)}</div><div>Total que debe: ${dinero(venta.fiado.saldoPendiente)}</div><div>Vence: ${new Date(`${venta.fiado.fechaLimite}T00:00:00`).toLocaleDateString('es-MX')}</div></section>`:'';
     w.document.write(`<html><head><title>${this.escapar(venta.folio)}</title><style>body{font:13px monospace;width:300px;margin:18px auto;color:#111}h2,p{text-align:center;margin:6px}table{width:100%;border-collapse:collapse;margin:10px 0}td{padding:5px 0;border-bottom:1px dashed #bbb}td:last-child{text-align:right}.total{font-size:17px;font-weight:bold}.credit{border:2px solid #111;padding:10px;margin-top:12px}.credit b{display:block;text-align:center;margin-bottom:8px}.credit div{padding:3px 0}small{display:block;text-align:center;margin-top:16px}.ticket-logo{display:block;max-width:130px;max-height:90px;object-fit:contain;margin:14px auto 0;filter:grayscale(1) contrast(1.35)}@media print{.ticket-logo{filter:grayscale(1) contrast(1.5)}}</style></head><body><h2>Abarrotes El Pedernal</h2><p>${this.escapar(venta.folio)}<br>${new Date(venta.fecha).toLocaleString('es-MX')}<br>Atendió: ${this.escapar(venta.usuario)}</p><table>${filas}</table><table><tr><td>Subtotal</td><td>${dinero(venta.subtotal)}</td></tr>${venta.descuento?`<tr><td>Descuento</td><td>-${dinero(venta.descuento)}</td></tr>`:''}<tr><td>IVA</td><td>${dinero(venta.impuestos)}</td></tr><tr class="total"><td>Total</td><td>${dinero(venta.total)}</td></tr>${pagos}${cambio?`<tr><td>Cambio</td><td>${dinero(cambio)}</td></tr>`:''}</table>${credito}<small>Gracias por su compra</small><img class="ticket-logo" src="${this.escapar(logo)}" alt="Abarrotes El Pedernal"><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();
+  }
+
+  private construirTicketBluetooth(venta:VentaDetalle,cambio:number):string {
+    const ancho=32;
+    const centro=(texto:string)=>{const limpio=texto.slice(0,ancho);return ' '.repeat(Math.max(0,Math.floor((ancho-limpio.length)/2)))+limpio;};
+    const fila=(etiqueta:string,valor:string)=>{const derecha=valor.slice(0,12);const izquierda=etiqueta.slice(0,Math.max(1,ancho-derecha.length-1));return izquierda+' '.repeat(Math.max(1,ancho-izquierda.length-derecha.length))+derecha;};
+    const dinero=(n:number)=>`$${Number(n).toFixed(2)}`;
+    const lineas=[
+      centro('ABARROTES EL PEDERNAL'),
+      centro(venta.folio),
+      centro(new Date(venta.fecha).toLocaleString('es-MX')),
+      centro(`Atendio: ${venta.usuario}`),
+      '-'.repeat(ancho),
+      ...venta.items.reduce<string[]>((resultado,item)=>[
+        ...resultado,
+        `${item.cantidad} x ${item.nombre}`.slice(0,ancho),
+        fila('',dinero(item.importe)),
+      ],[]),
+      '-'.repeat(ancho),
+      fila('Subtotal',dinero(venta.subtotal)),
+      ...(venta.descuento?[fila('Descuento',`-${dinero(venta.descuento)}`)]:[]),
+      fila('IVA',dinero(venta.impuestos)),
+      fila('TOTAL',dinero(venta.total)),
+      ...venta.pagos.map(p=>fila(p.metodo==='TARJETA'?'TARJETA':p.metodo,dinero(p.monto))),
+      ...(cambio?[fila('Cambio',dinero(cambio))]:[]),
+    ];
+    if(venta.fiado)lineas.push('-'.repeat(ancho),centro('VENTA A FIADO'),`Cliente: ${venta.cliente}`.slice(0,ancho),fila('Monto fiado',dinero(venta.fiado.monto)),fila('Total que debe',dinero(venta.fiado.saldoPendiente)),`Vence: ${new Date(`${venta.fiado.fechaLimite}T00:00:00`).toLocaleDateString('es-MX')}`);
+    lineas.push('-'.repeat(ancho),centro('Gracias por su compra'));
+    return lineas.join('\n');
   }
 
   imprimirCorteX(): void {
