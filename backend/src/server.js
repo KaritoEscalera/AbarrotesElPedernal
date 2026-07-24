@@ -33,5 +33,8 @@ app.use((error, _req, res, _next) => {
 });
 
 verifyDatabase()
-  .then((database) => app.listen(config.port, () => { console.log(`API disponible en http://localhost:${config.port} · BD ${database.databaseName}`);startBackupScheduler(); }))
+  .then((database) => app.listen(config.port, '0.0.0.0', () => {
+    console.log(`API disponible en toda la red, puerto ${config.port} · BD ${database.databaseName}`);
+    startBackupScheduler();
+  }))
   .catch((error) => { console.error('No fue posible conectar con MySQL:', error.message); process.exit(1); });

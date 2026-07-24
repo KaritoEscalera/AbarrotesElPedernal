@@ -2,13 +2,18 @@
 
 ## Arranque diario
 
-Desde la raíz del proyecto ejecuta:
+La Mac tiene registrados MySQL y la API como servicios de inicio automático. La API
+se recupera sola si llega a cerrarse. Para comprobarla desde cualquier equipo de la
+red del negocio abre:
 
 ```bash
-npm run dev:all
+http://192.168.120.230:3000/api/health
 ```
 
-El comando comprueba MySQL y levanta la API y Angular. Mantén la terminal abierta. Para detener ambos procesos usa `Ctrl+C`.
+Debe aparecer un estado `ok`. La Mac debe permanecer encendida, conectada a la red
+del negocio y con la dirección `192.168.120.230` reservada en el módem/router.
+
+`npm run dev:all` sigue disponible para trabajar en la versión web durante el desarrollo.
 
 ## Verificación
 
