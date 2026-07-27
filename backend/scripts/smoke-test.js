@@ -28,6 +28,9 @@ const purchases = await fetch(`${api}/purchases`, { headers: { Authorization: `B
 if (!purchases.ok || !Array.isArray(await purchases.json())) throw new Error(`Compras falló con HTTP ${purchases.status}`);
 const backups = await fetch(`${api}/backups`, { headers: { Authorization: `Bearer ${session.token}` } });
 if (!backups.ok || !Array.isArray(await backups.json())) throw new Error(`Respaldos falló con HTTP ${backups.status}`);
+const health = await fetch(`${api}/system/health`, { headers: { Authorization: `Bearer ${session.token}` } });
+const healthData = await health.json();
+if (!health.ok || healthData.api?.estado !== 'OK' || healthData.database?.estado !== 'OK' || !healthData.disk?.totalBytes) throw new Error(`Salud del sistema falló con HTTP ${health.status}`);
 for (const endpoint of ['purchase-suggestions','lots/alerts','inventory/movements','recharges','invoices','promotions']) {
   const response = await fetch(`${api}/${endpoint}`, { headers: { Authorization: `Bearer ${session.token}` } });
   if (!response.ok || !Array.isArray(await response.json())) throw new Error(`${endpoint} falló con HTTP ${response.status}`);
@@ -39,4 +42,20 @@ if (process.env.TEST_BACKUP === '1') {
   const backup = await fetch(`${api}/backups/export`, { headers: { Authorization: `Bearer ${session.token}` } });
   if (!backup.ok || (await backup.arrayBuffer()).byteLength < 1000) throw new Error(`Exportación de respaldo falló con HTTP ${backup.status}`);
 }
-console.log(`Prueba completa correcta: login, ${rows.length} clientes, caja, compras, promociones, lotes, sugerencias, reportes, estadísticas, respaldos y bitácora conectados con MySQL.`);
+if (process.env.TEST_AUTOMATIC_BACKUP === '1') {
+  const created = await fetch(`${api}/backups/automatic`, { method: 'POST', headers: { Authorization: `Bearer ${session.token}`, 'Content-Type': 'application/json' }, body: '{}' });
+  const createdData = await created.json();
+  if (!created.ok || !createdData.id || !createdData.checksum) throw new Error(`Respaldo automático falló con HTTP ${created.status}`);
+  const verified = await fetch(`${api}/backups/${createdData.id}/verify`, { method: 'POST', headers: { Authorization: `Bearer ${session.token}`, 'Content-Type': 'application/json' }, body: '{}' });
+  const verifiedData = await verified.json();
+  if (!verified.ok || verifiedData.valido !== true || verifiedData.checksum !== createdData.checksum) throw new Error(`Verificación SHA-256 falló con HTTP ${verified.status}`);
+}
+const cashierLogin = await fetch(`${api}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ correo: 'cajera@pedernal.com', password: '123456' }) });
+if (cashierLogin.ok) {
+  const cashier = await cashierLogin.json();
+  for (const endpoint of ['audit','backups','system/health','users']) {
+    const denied = await fetch(`${api}/${endpoint}`, { headers: { Authorization: `Bearer ${cashier.token}` } });
+    if (denied.status !== 403) throw new Error(`Permisos incorrectos: Cajera obtuvo HTTP ${denied.status} en ${endpoint}`);
+  }
+}
+console.log(`Prueba completa correcta: login, ${rows.length} clientes, caja, compras, promociones, lotes, sugerencias, reportes, estadísticas, salud, respaldos, bitácora y permisos conectados con MySQL.`);

@@ -56,6 +56,9 @@ npm run build
 - Conserva copias fuera de la computadora de caja.
 - Antes de restaurar, crea una copia nueva.
 - La restauración requiere un administrador, archivo `.sql`, confirmación escrita y confirmación visual.
+- Configura `OFFSITE_BACKUP_DIR` con la ruta de un disco externo o carpeta sincronizada
+  para crear una segunda copia automática. El respaldo se considera fallido si esa
+  copia configurada no puede escribirse.
 
 ## Seguridad
 

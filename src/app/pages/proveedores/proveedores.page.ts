@@ -18,6 +18,7 @@ type ErroresFormulario = Partial<Record<'nombre' | 'empresa' | 'telefono' | 'cor
   imports: [CommonModule, FormsModule, IonContent, IonButton, IonInput, IonItem, IonLabel, IonSearchbar, IonSelect, IonSelectOption],
 })
 export class ProveedoresPage implements OnInit {
+  confirmandoArchivarId:number|null=null;
   private readonly api = inject(BusinessApi);
   private readonly auth = inject(Auth);
 
@@ -105,8 +106,8 @@ export class ProveedoresPage implements OnInit {
   }
 
   async archivarProveedor(proveedor: Proveedor): Promise<void> {
-    if (!confirm(`¿Deseas eliminar a ${proveedor.empresa}? Su historial de compras se conservará.`)) return;
-    try { await this.api.delete(`providers/${proveedor.id}`); await this.recargar(); this.mensaje = 'Proveedor eliminado; su historial se conservó.'; } catch { this.mensaje = 'No fue posible eliminar el proveedor.'; }
+    if(this.confirmandoArchivarId!==proveedor.id){this.confirmandoArchivarId=proveedor.id;this.mensaje=`Confirma eliminar a ${proveedor.empresa}. Su historial de compras se conservará.`;return;}
+    try { await this.api.delete(`providers/${proveedor.id}`); await this.recargar();this.confirmandoArchivarId=null; this.mensaje = 'Proveedor eliminado; su historial se conservó.'; } catch { this.mensaje = 'No fue posible eliminar el proveedor.'; }
   }
 
   cancelarFormulario(): void {

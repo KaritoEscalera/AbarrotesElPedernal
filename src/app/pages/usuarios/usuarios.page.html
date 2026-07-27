@@ -63,7 +63,7 @@
                 {{ usuario.activo ? 'Desactivar' : 'Activar' }}
               </ion-button>
               <ion-button size="small" fill="outline" (click)="editarUsuario(usuario)">Editar</ion-button>
-              <ion-button size="small" fill="outline" color="danger" (click)="eliminarUsuario(usuario)">Eliminar</ion-button>
+              <ion-button size="small" [fill]="confirmandoEliminarId === usuario.id ? 'solid' : 'outline'" color="danger" (click)="eliminarUsuario(usuario)">{{ confirmandoEliminarId === usuario.id ? 'Confirmar eliminación' : 'Eliminar' }}</ion-button>
             </div>
           </article>
         </div>

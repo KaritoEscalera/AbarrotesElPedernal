@@ -7,7 +7,11 @@
 
     <p class="notice success" *ngIf="mensaje">{{ mensaje }}</p>
     <p class="notice error" *ngIf="error">{{ error }}</p>
-    <p class="notice pending-sync" *ngIf="ventasPendientes.length">📡 {{ventasPendientes.length}} venta(s) pendiente(s) de sincronizar. <button type="button" (click)="sincronizarPendientes()">Reintentar ahora</button></p>
+    <section class="notice pending-sync" *ngIf="ventasPendientes.length">
+      <div><strong>📡 {{ ventasPendientes.length }} venta(s) protegida(s) pendientes</strong><span>{{ navigator.onLine ? 'Conexión disponible' : 'Sin conexión' }} · No cierres la caja.</span></div>
+      <button type="button" [disabled]="sincronizandoPendientes || !navigator.onLine" (click)="sincronizarPendientes()">{{ sincronizandoPendientes ? 'Sincronizando…' : 'Reintentar ahora' }}</button>
+      <details><summary>Ver estado de las operaciones</summary><p *ngFor="let pendiente of ventasPendientes"><code>{{ pendiente.operacionUuid | slice:0:8 }}</code> · creada {{ pendiente.creada | date:'short' }} · {{ pendiente.intentos || 0 }} intento(s)<small *ngIf="pendiente.ultimoError">{{ pendiente.ultimoError }}</small></p></details>
+    </section>
     <section class="store-info"><div><strong>Horario de atención</strong><span>Lunes a sábado: 8:00 a.m.–10:00 p.m. · Domingo: 9:00 a.m.–9:30 p.m.</span></div><div><strong>Producto fresco</strong><span>Lunes, miércoles y viernes: frutas, verduras y carne frescas.</span></div></section>
 
     <ion-card *ngIf="!sesion">
@@ -132,7 +136,45 @@
         </ion-card-content></ion-card>
       </div>
 
-      <ion-card class="recharges-card"><ion-card-header><ion-card-title>Conciliación de recargas</ion-card-title></ion-card-header><ion-card-content><section class="recharge-summary"><div><span>Monto exitoso</span><strong>{{conciliacionRecargas.total | currency:'MXN'}}</strong></div><div><span>Comisiones</span><strong>{{conciliacionRecargas.comisiones | currency:'MXN'}}</strong></div><div><span>Pendientes</span><strong>{{conciliacionRecargas.pendientes}}</strong></div><div><span>Exitosas</span><strong>{{conciliacionRecargas.exitosas}}</strong></div></section><div class="recharge-list"><article *ngFor="let r of recargas"><header><div><strong>{{r.compania}} · {{r.telefono}}</strong><small>{{r.fecha | date:'short'}} · {{r.usuario}}</small></div><span class="recharge-state" [class.success]="r.estado==='EXITOSA'" [class.failed]="r.estado==='RECHAZADA'||r.estado==='CANCELADA'">{{r.estado}}</span></header><div class="recharge-amount"><b>{{r.monto | currency:'MXN'}}</b><span>Comisión {{r.comision | currency:'MXN'}}</span><span *ngIf="r.folioProveedor">Folio {{r.folioProveedor}}</span></div><section class="resolve-recharge" *ngIf="r.estado==='PENDIENTE'"><ion-item><ion-label position="stacked">Folio del proveedor</ion-label><ion-input [(ngModel)]="r.folioCaptura"></ion-input></ion-item><ion-item><ion-label position="stacked">Motivo si fue rechazada</ion-label><ion-input [(ngModel)]="r.motivoCaptura"></ion-input></ion-item><div><ion-button size="small" color="success" (click)="resolverRecarga(r,'EXITOSA')">Confirmar exitosa</ion-button><ion-button size="small" color="danger" fill="outline" (click)="resolverRecarga(r,'RECHAZADA')">Marcar rechazada</ion-button></div></section><p *ngIf="r.motivo">Motivo: {{r.motivo}}</p><ion-button *ngIf="puedeAdministrarRecargas && r.estado==='EXITOSA'" size="small" color="danger" fill="clear" (click)="cancelarRecarga(r)">Cancelar y reembolsar</ion-button></article><p *ngIf="!recargas.length">No hay recargas registradas en este turno.</p></div></ion-card-content></ion-card>
+      <ion-card class="recharges-card">
+        <ion-card-header><ion-card-title>Conciliación de recargas</ion-card-title></ion-card-header>
+        <ion-card-content>
+          <section class="recharge-summary">
+            <div><span>Monto exitoso</span><strong>{{conciliacionRecargas.total | currency:'MXN'}}</strong></div>
+            <div><span>Comisiones</span><strong>{{conciliacionRecargas.comisiones | currency:'MXN'}}</strong></div>
+            <div><span>Pendientes</span><strong>{{conciliacionRecargas.pendientes}}</strong></div>
+            <div><span>Exitosas</span><strong>{{conciliacionRecargas.exitosas}}</strong></div>
+          </section>
+          <p class="recharge-help">Para confirmar una recarga captura el folio del proveedor. Para rechazarla escribe el motivo. Después pulsa la acción correspondiente.</p>
+          <div class="recharge-list">
+            <article *ngFor="let r of recargas">
+              <header><div><strong>{{r.compania}} · {{r.telefono}}</strong><small>{{r.fecha | date:'short'}} · {{r.usuario}}</small></div><span class="recharge-state" [class.success]="r.estado==='EXITOSA'" [class.failed]="r.estado==='RECHAZADA'||r.estado==='CANCELADA'">{{r.estado}}</span></header>
+              <div class="recharge-amount"><b>{{r.monto | currency:'MXN'}}</b><span>Comisión {{r.comision | currency:'MXN'}}</span><span *ngIf="r.folioProveedor">Folio {{r.folioProveedor}}</span></div>
+              <section class="resolve-recharge" *ngIf="r.estado==='PENDIENTE'">
+                <ion-item><ion-label position="stacked">Folio del proveedor para confirmar</ion-label><ion-input [(ngModel)]="r.folioCaptura" (ngModelChange)="r.validacion=''"></ion-input></ion-item>
+                <ion-item><ion-label position="stacked">Motivo para rechazar</ion-label><ion-input [(ngModel)]="r.motivoCaptura" (ngModelChange)="r.validacion=''"></ion-input></ion-item>
+                <p class="recharge-validation" *ngIf="r.validacion">{{r.validacion}}</p>
+                <div>
+                  <ion-button class="recharge-success-action" size="small" [disabled]="!r.folioCaptura?.trim() || procesando" (click)="resolverRecarga(r,'EXITOSA')">Confirmar exitosa</ion-button>
+                  <ion-button class="recharge-reject-action" size="small" fill="outline" [disabled]="(r.motivoCaptura?.trim()?.length || 0) < 4 || procesando" (click)="resolverRecarga(r,'RECHAZADA')">Marcar rechazada</ion-button>
+                </div>
+              </section>
+              <p *ngIf="r.motivo">Motivo: {{r.motivo}}</p>
+              <ion-button *ngIf="puedeAdministrarRecargas && r.estado==='EXITOSA'" size="small" color="danger" fill="clear" (click)="cancelarRecarga(r)">Cancelar y reembolsar</ion-button>
+            </article>
+            <p *ngIf="!recargas.length">No hay recargas registradas en este turno.</p>
+          </div>
+        </ion-card-content>
+      </ion-card>
     </ng-container>
   </div>
+  <section class="operation-overlay" *ngIf="recargaCancelar">
+    <article class="operation-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-cancelar-recarga">
+      <header><div><small>Cancelación y reembolso</small><h2 id="titulo-cancelar-recarga">{{recargaCancelar.compania}} · {{recargaCancelar.telefono}}</h2></div><button type="button" aria-label="Cerrar" (click)="cerrarCancelacionRecarga()">×</button></header>
+      <p>Esta acción registrará la cancelación, devolverá el importe en caja y conservará el movimiento para auditoría.</p>
+      <div class="operation-summary"><span>Monto<strong>{{recargaCancelar.monto | currency:'MXN'}}</strong></span><span>Folio<strong>{{recargaCancelar.folioProveedor || 'Sin folio'}}</strong></span></div>
+      <label>Motivo obligatorio<textarea rows="3" maxlength="300" [(ngModel)]="motivoCancelacionRecarga" placeholder="Explica por qué se cancela y reembolsa"></textarea><small>{{motivoCancelacionRecarga.trim().length}}/300 · mínimo 5 caracteres</small></label>
+      <footer><ion-button fill="outline" color="medium" [disabled]="procesando" (click)="cerrarCancelacionRecarga()">Regresar</ion-button><ion-button color="danger" [disabled]="procesando || motivoCancelacionRecarga.trim().length < 5" (click)="confirmarCancelacionRecarga()">{{procesando ? 'Procesando…' : 'Confirmar reembolso'}}</ion-button></footer>
+    </article>
+  </section>
 </ion-content>

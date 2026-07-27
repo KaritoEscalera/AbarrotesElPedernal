@@ -1,13 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonButton, IonContent, IonInput, IonItem, IonLabel, IonSelect, IonSelectOption } from '@ionic/angular/standalone';
-import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
 import { BusinessApi } from '../../services/business-api';
-
-Chart.register(...registerables);
 
 type Periodo = 'hoy' | 'ayer' | 'semana' | 'mes' | 'anio' | 'personalizado';
 type MetodoPago = 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Fiado' | 'Múltiple' | 'Otro';
@@ -16,6 +13,7 @@ interface ProductoAnalisis { producto: string; categoria: string; stock: number;
 interface FiadoAnalisis { cliente: string; saldo: number; vencido: boolean; abonos: number; }
 interface CierreCaja { id: number; responsable: string; fechaApertura: string; fechaCierre: string; esperado: number; contado: number; diferencia: number; observaciones: string | null; }
 interface Recordatorio { tipo: string; titulo: string; detalle: string; nivel: 'URGENTE' | 'ATENCION'; ruta: string; }
+interface BarraEstadistica { etiqueta: string; valor: number; porcentaje: number; secundario?: number; }
 
 @Component({
   selector: 'app-estadisticas',
@@ -24,12 +22,8 @@ interface Recordatorio { tipo: string; titulo: string; detalle: string; nivel: '
   standalone: true,
   imports: [CommonModule, FormsModule, IonButton, IonContent, IonInput, IonItem, IonLabel, IonSelect, IonSelectOption],
 })
-export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
+export class EstadisticasPage implements OnInit {
   private readonly api = inject(BusinessApi);
-  @ViewChild('graficaVentas') graficaVentasRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('graficaPagos') graficaPagosRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('graficaCategorias') graficaCategoriasRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('graficaHoras') graficaHorasRef!: ElementRef<HTMLCanvasElement>;
 
   periodoSeleccionado: Periodo = 'semana';
   fechaInicio = '';
@@ -37,15 +31,19 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
   mensajeFechas = '';
   errorCarga = '';
   cargando = true;
-  private graficas: Chart[] = [];
   private ventas: Venta[] = [];
-  private temporizadorGraficas?: number;
-  private vistaLista = false;
+  private ventasActuales: Venta[] = [];
+  private ventasAnteriores: Venta[] = [];
+  private resumen = { operaciones: 0, operacionesAnteriores: 0, total: 0, costo: 0, totalAnterior: 0 };
 
   productos: ProductoAnalisis[] = [];
   fiados: FiadoAnalisis[] = [];
   cierresCaja: CierreCaja[] = [];
   recordatorios: Recordatorio[] = [];
+  ventasPorDia: BarraEstadistica[] = [];
+  ventasPorMetodo: BarraEstadistica[] = [];
+  ventasPorCategoria: BarraEstadistica[] = [];
+  ventasPorHora: BarraEstadistica[] = [];
 
   async ngOnInit(): Promise<void> {
     await this.cargarEstadisticas();
@@ -60,47 +58,35 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
     this.errorCarga = '';
     try {
       const datos = await this.conTiempoLimite(this.api.get<{ sales: Venta[]; products: ProductoAnalisis[]; credits: FiadoAnalisis[]; cashClosures: CierreCaja[]; reminders: Recordatorio[] }>('analytics'), 15000);
-      this.ventas = datos.sales.map((v) => ({ ...v, hora: Number(v.hora), total: Number(v.total), costo: Number(v.costo), unidades: Number(v.unidades) }));
-      this.productos = datos.products.map((p) => ({ ...p, stock: Number(p.stock), minimo: Number(p.minimo), vendidos: Number(p.vendidos), precio: Number(p.precio), costo: Number(p.costo), diasSinVenta: Number(p.diasSinVenta), merma: Number(p.merma) }));
-      this.fiados = datos.credits.map((f) => ({ ...f, saldo: Number(f.saldo), vencido: Boolean(f.vencido), abonos: Number(f.abonos) }));
-      this.cierresCaja = datos.cashClosures.map((c) => ({ ...c, esperado: Number(c.esperado), contado: Number(c.contado), diferencia: Number(c.diferencia) }));
-      this.recordatorios = datos.reminders;
+      this.ventas = (datos.sales ?? []).map((v) => ({ ...v, hora: Number(v.hora), total: Number(v.total), costo: Number(v.costo), unidades: Number(v.unidades) }));
+      this.productos = (datos.products ?? []).map((p) => ({ ...p, stock: Number(p.stock), minimo: Number(p.minimo), vendidos: Number(p.vendidos), precio: Number(p.precio), costo: Number(p.costo), diasSinVenta: Number(p.diasSinVenta), merma: Number(p.merma) }));
+      this.fiados = (datos.credits ?? []).map((f) => ({ ...f, saldo: Number(f.saldo), vencido: Boolean(f.vencido), abonos: Number(f.abonos) }));
+      this.cierresCaja = (datos.cashClosures ?? []).map((c) => ({ ...c, esperado: Number(c.esperado), contado: Number(c.contado), diferencia: Number(c.diferencia) }));
+      this.recordatorios = datos.reminders ?? [];
+      this.recalcularPeriodo();
     } catch { this.errorCarga = 'No fue posible cargar las estadísticas desde MySQL.'; }
-    finally { this.cargando = false; if(this.vistaLista)this.actualizarGraficas(); }
+    finally { this.cargando = false; }
   }
 
-  ngAfterViewInit(): void { this.vistaLista=true;if(!this.cargando)this.actualizarGraficas(); }
-
   get ventasFiltradas(): Venta[] {
-    const [inicio, fin] = this.rangoActual();
-    return this.ventas.filter((venta) => {
-      const fecha = new Date(`${venta.fecha}T12:00:00`);
-      return fecha >= inicio && fecha <= fin;
-    });
+    return this.ventasActuales;
   }
 
   get ventasPeriodoAnterior(): Venta[] {
-    const [inicio, fin] = this.rangoActual();
-    const duracion = fin.getTime() - inicio.getTime() + 86400000;
-    const finAnterior = new Date(inicio.getTime() - 1);
-    const inicioAnterior = new Date(finAnterior.getTime() - duracion + 86400000);
-    return this.ventas.filter((venta) => {
-      const fecha = new Date(`${venta.fecha}T12:00:00`);
-      return fecha >= inicioAnterior && fecha <= finAnterior;
-    });
+    return this.ventasAnteriores;
   }
 
-  get operacionesFiltradas(): number { return new Set(this.ventasFiltradas.map((v) => v.ventaId)).size; }
-  get operacionesPeriodoAnterior(): number { return new Set(this.ventasPeriodoAnterior.map((v) => v.ventaId)).size; }
-  get totalVentas(): number { return this.sumar(this.ventasFiltradas, 'total'); }
-  get costoVentas(): number { return this.sumar(this.ventasFiltradas, 'costo'); }
+  get operacionesFiltradas(): number { return this.resumen.operaciones; }
+  get operacionesPeriodoAnterior(): number { return this.resumen.operacionesAnteriores; }
+  get totalVentas(): number { return this.resumen.total; }
+  get costoVentas(): number { return this.resumen.costo; }
   get utilidad(): number { return this.totalVentas - this.costoVentas; }
   get margen(): number { return this.totalVentas ? (this.utilidad / this.totalVentas) * 100 : 0; }
   get ticketPromedio(): number { return this.operacionesFiltradas ? this.totalVentas / this.operacionesFiltradas : 0; }
-  get variacionVentas(): number { return this.variacion(this.totalVentas, this.sumar(this.ventasPeriodoAnterior, 'total')); }
+  get variacionVentas(): number { return this.variacion(this.totalVentas, this.resumen.totalAnterior); }
   get variacionOperaciones(): number { return this.variacion(this.operacionesFiltradas, this.operacionesPeriodoAnterior); }
   get variacionTicket(): number {
-    const anterior = this.operacionesPeriodoAnterior ? this.sumar(this.ventasPeriodoAnterior, 'total') / this.operacionesPeriodoAnterior : 0;
+    const anterior = this.operacionesPeriodoAnterior ? this.resumen.totalAnterior / this.operacionesPeriodoAnterior : 0;
     return this.variacion(this.ticketPromedio, anterior);
   }
   get totalFiado(): number { return this.fiados.reduce((suma, item) => suma + item.saldo, 0); }
@@ -118,7 +104,7 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
 
   cambiarPeriodo(): void {
     this.mensajeFechas = '';
-    if (this.periodoSeleccionado !== 'personalizado') this.actualizarGraficas();
+    if (this.periodoSeleccionado !== 'personalizado') this.recalcularPeriodo();
   }
 
   aplicarFechas(): void {
@@ -127,7 +113,7 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     this.mensajeFechas = '';
-    this.actualizarGraficas();
+    this.recalcularPeriodo();
   }
 
   exportarCsv(): void {
@@ -153,35 +139,54 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
   claseVariacion(valor: number): string { return valor >= 0 ? 'positive' : 'negative'; }
   moneda(valor: number): string { return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(valor); }
 
-  private actualizarGraficas(): void {
-    if(this.temporizadorGraficas!==undefined)window.clearTimeout(this.temporizadorGraficas);
-    this.graficas.forEach((grafica) => grafica.destroy());
-    this.graficas = [];
-    this.temporizadorGraficas=window.setTimeout(()=>{this.temporizadorGraficas=undefined;this.crearGraficas();});
-  }
-
-  private crearGraficas(): void {
-    if (!this.graficaVentasRef||this.cargando||this.errorCarga||this.sinVentasPeriodo) return;
+  private recalcularVisualizaciones(): void {
     const agrupadas = new Map<string, { ventas: number; costos: number }>();
-    this.ventasFiltradas.forEach((venta) => {
+    const totalesMetodos = new Map<MetodoPago, number>();
+    const totalesCategorias = new Map<string, number>();
+    const totalesHoras = new Map<number, number>();
+    this.ventasActuales.forEach((venta) => {
       const actual = agrupadas.get(venta.fecha) ?? { ventas: 0, costos: 0 };
       actual.ventas += venta.total; actual.costos += venta.costo; agrupadas.set(venta.fecha, actual);
+      totalesMetodos.set(venta.metodo, (totalesMetodos.get(venta.metodo) ?? 0) + venta.total);
+      totalesCategorias.set(venta.categoria, (totalesCategorias.get(venta.categoria) ?? 0) + venta.total);
+      totalesHoras.set(venta.hora, (totalesHoras.get(venta.hora) ?? 0) + venta.total);
     });
-    const fechas = [...agrupadas.keys()].sort();
-    this.graficas.push(new Chart(this.graficaVentasRef.nativeElement, this.configLinea(fechas, fechas.map((f) => agrupadas.get(f)?.ventas ?? 0), fechas.map((f) => agrupadas.get(f)?.costos ?? 0))));
-
     const metodos: MetodoPago[] = ['Efectivo', 'Tarjeta', 'Transferencia', 'Fiado', 'Múltiple', 'Otro'];
-    this.graficas.push(new Chart(this.graficaPagosRef.nativeElement, { type: 'doughnut', data: { labels: metodos, datasets: [{ data: metodos.map((m) => this.ventasFiltradas.filter((v) => v.metodo === m).reduce((s, v) => s + v.total, 0)), backgroundColor: ['#f57c1f', '#4a2c1d', '#f4a259', '#6bbf59', '#7b61a8', '#9a887a'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }));
-
-    const categorias = [...new Set(this.ventasFiltradas.map((v) => v.categoria))];
-    this.graficas.push(new Chart(this.graficaCategoriasRef.nativeElement, { type: 'bar', data: { labels: categorias, datasets: [{ label: 'Ventas', data: categorias.map((c) => this.ventasFiltradas.filter((v) => v.categoria === c).reduce((s, v) => s + v.total, 0)), backgroundColor: '#f57c1f', borderRadius: 7 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } } }));
-
-    const horas = Array.from({ length: 13 }, (_, i) => i + 8);
-    this.graficas.push(new Chart(this.graficaHorasRef.nativeElement, { type: 'bar', data: { labels: horas.map((h) => `${h}:00`), datasets: [{ label: 'Ventas', data: horas.map((h) => this.ventasFiltradas.filter((v) => v.hora === h).reduce((s, v) => s + v.total, 0)), backgroundColor: '#4a2c1d', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }));
+    this.ventasPorDia = this.crearBarras([...agrupadas.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([etiqueta, datos]) => ({ etiqueta: this.fechaCorta(etiqueta), valor: datos.ventas, secundario: datos.costos })));
+    this.ventasPorMetodo = this.crearBarras(metodos.map((etiqueta) => ({ etiqueta, valor: totalesMetodos.get(etiqueta) ?? 0 })).filter((item) => item.valor > 0));
+    this.ventasPorCategoria = this.crearBarras([...totalesCategorias.entries()].map(([etiqueta, valor]) => ({ etiqueta, valor })).sort((a, b) => b.valor - a.valor).slice(0, 8));
+    this.ventasPorHora = this.crearBarras([...totalesHoras.entries()].map(([hora, valor]) => ({ etiqueta: `${hora}:00`, valor })).sort((a, b) => b.valor - a.valor).slice(0, 8));
   }
 
-  private configLinea(labels: string[], ventas: number[], costos: number[]): ChartConfiguration<'line'> {
-    return { type: 'line', data: { labels, datasets: [{ label: 'Ventas', data: ventas, borderColor: '#f57c1f', backgroundColor: 'rgba(245,124,31,.15)', fill: true, tension: .3 }, { label: 'Costo vendido', data: costos, borderColor: '#4a2c1d', tension: .3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } } };
+  private crearBarras(items: Array<Omit<BarraEstadistica, 'porcentaje'>>): BarraEstadistica[] {
+    const maximo = Math.max(0, ...items.map((item) => item.valor));
+    return items.map((item) => ({ ...item, porcentaje: maximo ? Math.max(3, item.valor / maximo * 100) : 0 }));
+  }
+
+  private fechaCorta(fecha: string): string {
+    return new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short' }).format(new Date(`${fecha}T12:00:00`));
+  }
+
+  private recalcularPeriodo(): void {
+    const [inicio, fin] = this.rangoActual();
+    const duracion = fin.getTime() - inicio.getTime() + 1;
+    const finAnterior = new Date(inicio.getTime() - 1);
+    const inicioAnterior = new Date(finAnterior.getTime() - duracion + 1);
+    this.ventasActuales = [];
+    this.ventasAnteriores = [];
+    for (const venta of this.ventas) {
+      const tiempo = new Date(`${venta.fecha}T12:00:00`).getTime();
+      if (tiempo >= inicio.getTime() && tiempo <= fin.getTime()) this.ventasActuales.push(venta);
+      else if (tiempo >= inicioAnterior.getTime() && tiempo <= finAnterior.getTime()) this.ventasAnteriores.push(venta);
+    }
+    this.resumen = {
+      operaciones: new Set(this.ventasActuales.map((v) => v.ventaId)).size,
+      operacionesAnteriores: new Set(this.ventasAnteriores.map((v) => v.ventaId)).size,
+      total: this.sumar(this.ventasActuales, 'total'),
+      costo: this.sumar(this.ventasActuales, 'costo'),
+      totalAnterior: this.sumar(this.ventasAnteriores, 'total'),
+    };
+    this.recalcularVisualizaciones();
   }
 
   private rangoActual(): [Date, Date] {
@@ -203,6 +208,4 @@ export class EstadisticasPage implements OnInit, AfterViewInit, OnDestroy {
     try{return await Promise.race([peticion,new Promise<T>((_resolver,rechazar)=>{temporizador=window.setTimeout(()=>rechazar(new Error('Tiempo de espera agotado.')),milisegundos);})]);}
     finally{if(temporizador!==undefined)window.clearTimeout(temporizador);}
   }
-
-  ngOnDestroy(): void { if(this.temporizadorGraficas!==undefined)window.clearTimeout(this.temporizadorGraficas);this.graficas.forEach((grafica) => grafica.destroy()); }
 }

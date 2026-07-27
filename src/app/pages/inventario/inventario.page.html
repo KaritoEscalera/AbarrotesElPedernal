@@ -208,7 +208,7 @@
                   <button class="stock-button text" type="button" (click)="conteoFisico(producto)">Conteo</button>
                   <button class="stock-button text" type="button" (click)="configurarProducto(producto)">Unidad</button>
                   <button class="stock-button text edit" type="button" (click)="editarProducto(producto)">Editar</button>
-                  <button class="stock-button text delete" type="button" (click)="eliminarProducto(producto)">Eliminar</button>
+                  <button class="stock-button text delete" type="button" (click)="eliminarProducto(producto)">{{ confirmandoEliminarId === producto.id ? 'Confirmar eliminación' : 'Eliminar' }}</button>
 
                   <button
                     class="stock-button add"

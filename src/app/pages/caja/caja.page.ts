@@ -40,11 +40,11 @@ interface EstadoCaja {
   movements: MovimientoCaja[];
 }
 interface CorteCaja { sesionId?:number; fondoInicial:number; efectivoEsperado:number; efectivoContado?:number; diferencia?:number; ventasEfectivo:number; ventasTarjeta:number; ventasTransferencia:number; ventasFiado:number; fechaCierre?:string; }
-interface VentaPendiente { operacionUuid:string; payload:Record<string,unknown>; creada:string; }
+interface VentaPendiente { operacionUuid:string; payload:Record<string,unknown>; creada:string; intentos?:number; ultimoIntento?:string; ultimoError?:string; }
 interface VentaResumen { id:number; folio:string; fecha:string; estado:'COMPLETADA'|'CANCELADA'|'DEVUELTA'; total:number; usuario:string; cliente:string; metodo:string; }
 interface VentaDetalle extends VentaResumen { subtotal:number; descuento:number; impuestos:number; items:Array<{nombre:string;cantidad:number;precioUnitario:number;importe:number}>; pagos:Array<{metodo:string;monto:number;referencia:string|null}>; fiado:{monto:number;saldoPendiente:number;fechaLimite:string}|null; }
 interface Denominacion { valor:number; etiqueta:string; cantidad:number|null; }
-interface Recarga {id:number;compania:string;telefono:string;monto:number;comision:number;estado:'PENDIENTE'|'EXITOSA'|'RECHAZADA'|'CANCELADA';folioProveedor:string|null;motivo:string|null;fecha:string;usuario:string;folioCaptura?:string;motivoCaptura?:string;}
+interface Recarga {id:number;compania:string;telefono:string;monto:number;comision:number;estado:'PENDIENTE'|'EXITOSA'|'RECHAZADA'|'CANCELADA';folioProveedor:string|null;motivo:string|null;fecha:string;usuario:string;folioCaptura?:string;motivoCaptura?:string;validacion?:string;}
 interface ConciliacionRecargas {total:number;comisiones:number;pendientes:number;exitosas:number;rechazadas:number;canceladas:number;porCompania:Array<{compania:string;operaciones:number;monto:number;comision:number}>;}
 
 @Component({
@@ -59,6 +59,7 @@ export class CajaPage implements OnInit, OnDestroy {
   private readonly api = inject(BusinessApi);
   private readonly auth = inject(Auth);
   private readonly bluetoothPrinter = inject(BluetoothPrinterService);
+  readonly navigator = window.navigator;
 
   productos: ProductoCaja[] = [];
   clientes: ClienteCaja[] = [];
@@ -85,6 +86,8 @@ export class CajaPage implements OnInit, OnDestroy {
   recargaMonto: number | null = null;
   recargaComision:number|null=0;
   recargas:Recarga[]=[];
+  recargaCancelar:Recarga|null=null;
+  motivoCancelacionRecarga='';
   conciliacionRecargas:ConciliacionRecargas={total:0,comisiones:0,pendientes:0,exitosas:0,rechazadas:0,canceladas:0,porCompania:[]};
   cambioClienteId: number | null = null;
   cambioPendienteMonto: number | null = null;
@@ -98,6 +101,7 @@ export class CajaPage implements OnInit, OnDestroy {
   mensaje = '';
   error = '';
   procesando = false;
+  sincronizandoPendientes = false;
   ventasSuspendidas: Array<{ id: number; fecha: string; carrito: LineaCarrito[] }> = this.cargarSuspendidas();
   ventasPendientes:VentaPendiente[]=this.cargarPendientes();
   historialVentas:VentaResumen[]=[];
@@ -263,7 +267,7 @@ export class CajaPage implements OnInit, OnDestroy {
         ] : undefined,
         plazoDias: (this.metodo === 'FIADO' || Number(this.pagoMixtoFiado || 0) > 0) ? this.plazoCredito : undefined };
       let venta:{id:number;folio:string;total:number};
-      try{venta=await this.api.post<{id:number;folio:string;total:number}>('sales',payload);}catch(e:unknown){const x=e as{status?:number};if(x.status===0||!navigator.onLine){this.ventasPendientes=[...this.ventasPendientes,{operacionUuid,payload,creada:new Date().toISOString()}];localStorage.setItem('ventasPendientesSync',JSON.stringify(this.ventasPendientes));this.carrito=[];this.mensaje='Venta guardada sin conexión. Se sincronizará automáticamente; no cierres la caja todavía.';return;}throw e;}
+      try{venta=await this.api.post<{id:number;folio:string;total:number}>('sales',payload);}catch(e:unknown){const x=e as{status?:number};if(x.status===0||!navigator.onLine){this.ventasPendientes=[...this.ventasPendientes,{operacionUuid,payload,creada:new Date().toISOString(),intentos:0}];this.guardarPendientes();this.carrito=[];this.mensaje='Venta guardada sin conexión. Se sincronizará automáticamente; no cierres la caja todavía.';return;}throw e;}
       const cambio = this.cambio;
       this.carrito = [];
       this.referencia = '';
@@ -294,8 +298,10 @@ export class CajaPage implements OnInit, OnDestroy {
     if(!/^\d{10}$/.test(telefono)||!Number.isFinite(monto)||monto<=0||comision<0||comision>monto)return this.fallar('Captura teléfono, monto y comisión válidos.');
     await this.ejecutar(async()=>{await this.api.post('cash/services',{tipo:'RECARGA',compania:this.recargaCompania,telefono,monto,comision});this.recargaTelefono='';this.recargaMonto=null;this.recargaComision=0;await this.cargarRecargas();this.mensaje=`Recarga ${this.recargaCompania} creada como pendiente. Confirma el resultado del proveedor.`;});
   }
-  async resolverRecarga(item:Recarga,estado:'EXITOSA'|'RECHAZADA'):Promise<void>{const folio=String(item.folioCaptura||'').trim(),motivo=String(item.motivoCaptura||'').trim();if(estado==='EXITOSA'&&!folio)return this.fallar('Captura el folio entregado por el proveedor.');if(estado==='RECHAZADA'&&motivo.length<4)return this.fallar('Indica por qué fue rechazada.');await this.ejecutar(async()=>{await this.api.patch(`recharges/${item.id}/resolve`,{estado,folioProveedor:folio,motivo});await Promise.all([this.cargarRecargas(),this.cargarEstado()]);this.mensaje=`Recarga marcada como ${estado.toLowerCase()}.`;});}
-  async cancelarRecarga(item:Recarga):Promise<void>{const motivo=prompt('Motivo de la cancelación y reembolso:')?.trim()||'';if(motivo.length<5)return this.fallar('El motivo debe tener al menos 5 caracteres.');await this.ejecutar(async()=>{await this.api.post(`recharges/${item.id}/cancel`,{motivo});await Promise.all([this.cargarRecargas(),this.cargarEstado()]);this.mensaje='Recarga cancelada y reembolso registrado en caja.';});}
+  async resolverRecarga(item:Recarga,estado:'EXITOSA'|'RECHAZADA'):Promise<void>{const folio=String(item.folioCaptura||'').trim(),motivo=String(item.motivoCaptura||'').trim();item.validacion='';if(estado==='EXITOSA'&&!folio){item.validacion='Captura el folio entregado por el proveedor para confirmar.';return;}if(estado==='RECHAZADA'&&motivo.length<4){item.validacion='Escribe un motivo de al menos 4 caracteres para rechazarla.';return;}await this.ejecutar(async()=>{await this.api.patch(`recharges/${item.id}/resolve`,{estado,folioProveedor:folio,motivo});await Promise.all([this.cargarRecargas(),this.cargarEstado()]);this.mensaje=`Recarga marcada como ${estado.toLowerCase()}.`;});}
+  cancelarRecarga(item:Recarga):void{this.recargaCancelar=item;this.motivoCancelacionRecarga='';this.error='';}
+  cerrarCancelacionRecarga():void{if(this.procesando)return;this.recargaCancelar=null;this.motivoCancelacionRecarga='';}
+  async confirmarCancelacionRecarga():Promise<void>{const item=this.recargaCancelar,motivo=this.motivoCancelacionRecarga.trim();if(!item||motivo.length<5)return this.fallar('El motivo debe tener al menos 5 caracteres.');await this.ejecutar(async()=>{await this.api.post(`recharges/${item.id}/cancel`,{motivo});this.recargaCancelar=null;this.motivoCancelacionRecarga='';await Promise.all([this.cargarRecargas(),this.cargarEstado()]);this.mensaje='Recarga cancelada y reembolso registrado en caja.';});}
 
   async guardarCambioPendiente():Promise<void>{
     const monto=Number(this.cambioPendienteMonto);
@@ -437,5 +443,28 @@ export class CajaPage implements OnInit, OnDestroy {
   private fallar(mensaje: string): void { this.error = mensaje; this.mensaje = ''; }
   private cargarSuspendidas(): Array<{ id: number; fecha: string; carrito: LineaCarrito[] }> { try { const value=JSON.parse(localStorage.getItem('ventasSuspendidas')??'[]'); return Array.isArray(value)?value:[]; } catch { return []; } }
   private cargarPendientes():VentaPendiente[]{try{const v=JSON.parse(localStorage.getItem('ventasPendientesSync')??'[]');return Array.isArray(v)?v:[];}catch{return[];}}
-  async sincronizarPendientes():Promise<void>{if(!navigator.onLine||!this.ventasPendientes.length)return;for(const pendiente of [...this.ventasPendientes]){try{await this.api.post('sales',pendiente.payload);this.ventasPendientes=this.ventasPendientes.filter(v=>v.operacionUuid!==pendiente.operacionUuid);localStorage.setItem('ventasPendientesSync',JSON.stringify(this.ventasPendientes));}catch{break;}}if(!this.ventasPendientes.length)await this.cargarTodo();}
+  async sincronizarPendientes():Promise<void>{
+    if(this.sincronizandoPendientes||!navigator.onLine||!this.ventasPendientes.length)return;
+    this.sincronizandoPendientes=true;
+    try{
+      for(const pendiente of [...this.ventasPendientes]){
+        pendiente.intentos=Number(pendiente.intentos||0)+1;
+        pendiente.ultimoIntento=new Date().toISOString();
+        pendiente.ultimoError='';
+        this.guardarPendientes();
+        try{
+          await this.api.post('sales',pendiente.payload);
+          this.ventasPendientes=this.ventasPendientes.filter(v=>v.operacionUuid!==pendiente.operacionUuid);
+          this.guardarPendientes();
+        }catch(error:unknown){
+          const respuesta=error as{error?:{error?:string};message?:string};
+          pendiente.ultimoError=respuesta.error?.error||respuesta.message||'El servidor rechazó la sincronización.';
+          this.guardarPendientes();
+          break;
+        }
+      }
+      if(!this.ventasPendientes.length){this.mensaje='Todas las ventas pendientes se sincronizaron correctamente.';await this.cargarTodo();}
+    }finally{this.sincronizandoPendientes=false;}
+  }
+  private guardarPendientes():void{localStorage.setItem('ventasPendientesSync',JSON.stringify(this.ventasPendientes));}
 }

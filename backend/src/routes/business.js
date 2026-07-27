@@ -1,7 +1,7 @@
 import express, { Router } from 'express';
 import { createHash, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { readFile, statfs } from 'node:fs/promises';
 import { pool } from '../database.js';
 import { config } from '../config.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
@@ -10,10 +10,34 @@ import { createAutomaticBackup } from '../backup-scheduler.js';
 export const businessRouter = Router();
 businessRouter.use(requireAuth);
 
+businessRouter.get('/system/health', requireRole('Administrador'), async (_req, res, next) => {
+  try {
+    const started = Date.now();
+    const [databaseResult, backupResult, disk] = await Promise.all([
+      pool.query('SELECT NOW() AS hora,COUNT(*) AS conexiones FROM information_schema.PROCESSLIST WHERE DB=?', [config.database.database]),
+      pool.query("SELECT nombre_archivo AS nombre,estado,creado_en AS fecha,mensaje_error AS error FROM respaldos ORDER BY creado_en DESC LIMIT 1"),
+      statfs(process.cwd()),
+    ]);
+    const database = databaseResult[0][0];
+    const backupRows = backupResult[0];
+    const ultimoRespaldo = backupRows[0] ?? null;
+    return res.json({
+      api: { estado: 'OK', uptimeSegundos: Math.floor(process.uptime()) },
+      database: { estado: 'OK', hora: database.hora, conexiones: Number(database.conexiones), latenciaMs: Date.now() - started },
+      backup: { estado: ultimoRespaldo?.estado ?? 'SIN_RESPALDOS', ...ultimoRespaldo },
+      disk: { libreBytes: Number(disk.bavail) * Number(disk.bsize), totalBytes: Number(disk.blocks) * Number(disk.bsize) },
+      ambiente: process.env.NODE_ENV ?? 'development',
+      version: process.env.APP_VERSION ?? '1.0.0',
+      offsiteBackup: { configurado: Boolean(config.backups.offsiteDirectory) },
+    });
+  } catch (error) { return next(error); }
+});
+
 function mysqlProcess(command, extraArgs = [], input = null) {
   return new Promise((resolve, reject) => {
+    const executable = command === 'mysqldump' ? config.database.mysqldumpCommand : command === 'mysql' ? config.database.mysqlCommand : command;
     const args = ['-h', config.database.host, '-P', String(config.database.port), '-u', config.database.user, ...extraArgs];
-    const child = spawn(command, args, { env: { ...process.env, MYSQL_PWD: config.database.password } });
+    const child = spawn(executable, args, { env: { ...process.env, MYSQL_PWD: config.database.password } });
     const output = []; const errors = []; let size = 0;
     child.stdout.on('data', (chunk) => { size += chunk.length; if (size > 100 * 1024 * 1024) child.kill(); else output.push(chunk); });
     child.stderr.on('data', (chunk) => errors.push(chunk));
@@ -92,24 +116,33 @@ businessRouter.get('/analytics', requireRole('Administrador','Gerente'), async (
       pool.query(
         `SELECT v.id AS ventaId,DATE_FORMAT(v.fecha_venta,'%Y-%m-%d') AS fecha,HOUR(v.fecha_venta) AS hora,
                 vd.importe AS total,(vd.costo_unitario*vd.cantidad) AS costo,
-                CASE WHEN (SELECT COUNT(*) FROM venta_pagos vpc WHERE vpc.venta_id=v.id)>1 THEN 'Múltiple'
+                CASE WHEN COALESCE(vp.cantidad,0)>1 THEN 'Múltiple'
                   ELSE CASE COALESCE(vp.metodo,'OTRO') WHEN 'EFECTIVO' THEN 'Efectivo' WHEN 'TARJETA' THEN 'Tarjeta'
                   WHEN 'TRANSFERENCIA' THEN 'Transferencia' WHEN 'FIADO' THEN 'Fiado' ELSE 'Otro' END END AS metodo,
                 COALESCE(c.nombre,'Sin categoría') AS categoria,p.nombre AS producto,vd.cantidad AS unidades
          FROM ventas v JOIN venta_detalles vd ON vd.venta_id=v.id JOIN productos p ON p.id=vd.producto_id
          LEFT JOIN categorias c ON c.id=p.categoria_id
-         LEFT JOIN venta_pagos vp ON vp.id=(SELECT MIN(vp2.id) FROM venta_pagos vp2 WHERE vp2.venta_id=v.id)
+         LEFT JOIN (
+           SELECT venta_id,COUNT(*) AS cantidad,SUBSTRING_INDEX(GROUP_CONCAT(metodo ORDER BY id),',',1) AS metodo
+           FROM venta_pagos GROUP BY venta_id
+         ) vp ON vp.venta_id=v.id
          WHERE v.estado='COMPLETADA' AND v.fecha_venta>=DATE_SUB(CURRENT_DATE,INTERVAL 1 YEAR)
          ORDER BY v.fecha_venta`,
       ),
       pool.query(
         `SELECT p.nombre AS producto,COALESCE(c.nombre,'Sin categoría') AS categoria,p.stock_actual AS stock,
-                p.stock_minimo AS minimo,COALESCE(SUM(CASE WHEN v.estado='COMPLETADA' THEN vd.cantidad ELSE 0 END),0) AS vendidos,
+                p.stock_minimo AS minimo,COALESCE(ventas.vendidos,0) AS vendidos,
                 p.precio_venta AS precio,p.costo,
-                COALESCE(DATEDIFF(CURRENT_DATE,MAX(CASE WHEN v.estado='COMPLETADA' THEN DATE(v.fecha_venta) END)),999) AS diasSinVenta,
+                COALESCE(DATEDIFF(CURRENT_DATE,ventas.ultimaVenta),999) AS diasSinVenta,
                 COALESCE((SELECT SUM(mi.cantidad) FROM movimientos_inventario mi WHERE mi.producto_id=p.id AND mi.tipo='MERMA' AND mi.creado_en>=DATE_SUB(CURRENT_DATE,INTERVAL 30 DAY)),0) AS merma
-         FROM productos p LEFT JOIN categorias c ON c.id=p.categoria_id LEFT JOIN venta_detalles vd ON vd.producto_id=p.id
-         LEFT JOIN ventas v ON v.id=vd.venta_id WHERE p.activo=TRUE GROUP BY p.id ORDER BY p.nombre`,
+         FROM productos p LEFT JOIN categorias c ON c.id=p.categoria_id
+         LEFT JOIN (
+           SELECT vd.producto_id,SUM(vd.cantidad) AS vendidos,MAX(DATE(v.fecha_venta)) AS ultimaVenta
+           FROM venta_detalles vd JOIN ventas v ON v.id=vd.venta_id
+           WHERE v.estado='COMPLETADA' AND v.fecha_venta>=DATE_SUB(CURRENT_DATE,INTERVAL 1 YEAR)
+           GROUP BY vd.producto_id
+         ) ventas ON ventas.producto_id=p.id
+         WHERE p.activo=TRUE ORDER BY p.nombre`,
       ),
       pool.query(
         `SELECT c.nombre AS cliente,f.saldo_pendiente AS saldo,(f.fecha_limite<CURRENT_DATE AND f.saldo_pendiente>0) AS vencido,

@@ -539,4 +539,24 @@
 
   </div>
 
+  <section class="operation-overlay" *ngIf="ventaCancelar">
+    <article class="operation-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-cancelar">
+      <header><div><small>Operación irreversible</small><h2 id="titulo-cancelar">Cancelar {{ ventaCancelar.folio }}</h2></div><button type="button" aria-label="Cerrar" (click)="cerrarOperacion()">×</button></header>
+      <p>Se cancelará la venta completa, se devolverán los productos al inventario y quedará registro en caja y bitácora.</p>
+      <dl><div><dt>Fecha</dt><dd>{{ ventaCancelar.fecha | date:'short' }}</dd></div><div><dt>Total</dt><dd>{{ ventaCancelar.total | currency:'MXN' }}</dd></div></dl>
+      <label>Motivo obligatorio<textarea rows="3" maxlength="300" [(ngModel)]="motivoCancelacion" placeholder="Explica por qué se cancela la venta"></textarea><small>{{ motivoCancelacion.trim().length }}/300 · mínimo 5 caracteres</small></label>
+      <footer><ion-button fill="outline" color="medium" [disabled]="procesandoOperacion" (click)="cerrarOperacion()">Regresar</ion-button><ion-button color="danger" [disabled]="procesandoOperacion || motivoCancelacion.trim().length < 5" (click)="confirmarCancelacion()">{{ procesandoOperacion ? 'Cancelando…' : 'Confirmar cancelación' }}</ion-button></footer>
+    </article>
+  </section>
+
+  <section class="operation-overlay" *ngIf="ventaDevolver">
+    <article class="operation-panel return-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-devolver">
+      <header><div><small>Devolución parcial</small><h2 id="titulo-devolver">{{ ventaDevolver.folio }}</h2></div><button type="button" aria-label="Cerrar" (click)="cerrarOperacion()">×</button></header>
+      <p>Captura únicamente lo que el cliente entrega. El servidor calculará el reembolso y repondrá esas cantidades.</p>
+      <div class="return-lines"><div *ngFor="let item of partidasDevolucion"><span><strong>{{ item.nombre }}</strong><small>Disponible: {{ item.disponible }}</small></span><label>Cantidad<input type="number" min="0" [max]="item.disponible" step="0.001" [(ngModel)]="item.devolver"></label></div></div>
+      <label>Motivo obligatorio<textarea rows="3" maxlength="300" [(ngModel)]="motivoDevolucion" placeholder="Describe el motivo de la devolución"></textarea><small>{{ motivoDevolucion.trim().length }}/300 · mínimo 5 caracteres</small></label>
+      <footer><ion-button fill="outline" color="medium" [disabled]="procesandoOperacion" (click)="cerrarOperacion()">Regresar</ion-button><ion-button color="warning" [disabled]="procesandoOperacion || motivoDevolucion.trim().length < 5" (click)="confirmarDevolucion()">{{ procesandoOperacion ? 'Registrando…' : 'Registrar devolución' }}</ion-button></footer>
+    </article>
+  </section>
+
 </ion-content>
