@@ -9,6 +9,7 @@
     "init-db": "node scripts/init-db.js",
     "check-db": "node scripts/check-db.js",
     "create-admin": "node scripts/create-admin.js",
+    "bootstrap-admin": "node scripts/bootstrap-admin.js",
     "seed-users": "node scripts/seed-users.js",
     "seed-data": "node scripts/seed-data.js",
     "seed-catalog": "node scripts/seed-data.js",
