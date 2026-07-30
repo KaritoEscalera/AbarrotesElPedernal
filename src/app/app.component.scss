@@ -1,5 +1,7 @@
 .menu-content { --background: #4a2c1d !important; --color: #fff !important; }
 .routed-content { position: absolute; inset: 0; display: block; overflow: hidden; color: #2e2e2e; background: #fff; }
+.offline-banner { position: fixed; z-index: 1200; top: max(8px, env(safe-area-inset-top)); left: 50%; display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 150px); padding: 8px 13px; color: #4a2c1d; background: #fff0b8; border: 1px solid #dfb43b; border-radius: 999px; box-shadow: 0 4px 15px rgba(74,44,29,.18); transform: translateX(-50%); font-size: 12px; }
+.offline-banner strong { white-space: nowrap; }
 .menu-brand { display: flex; align-items: center; gap: 12px; padding: 25px 20px 18px; border-bottom: 1px solid rgba(255,255,255,.12); }
 .menu-logo { width: 62px; height: 54px; object-fit: contain; flex: 0 0 auto; }
 .menu-brand strong, .menu-brand small, .user-card strong, .user-card small { display: block; }

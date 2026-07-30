@@ -1,7 +1,12 @@
 import 'dotenv/config';
 
-const required = ['DB_HOST', 'DB_USER', 'DB_NAME', 'JWT_SECRET'];
-const missing = required.filter((key) => !process.env[key]);
+const resolved = {
+  DB_HOST: process.env.DB_HOST ?? process.env.MYSQLHOST,
+  DB_USER: process.env.DB_USER ?? process.env.MYSQLUSER,
+  DB_NAME: process.env.DB_NAME ?? process.env.MYSQLDATABASE,
+  JWT_SECRET: process.env.JWT_SECRET,
+};
+const missing = Object.entries(resolved).filter(([, value]) => !value).map(([key]) => key);
 
 if (missing.length) {
   throw new Error(`Faltan variables de entorno: ${missing.join(', ')}`);
@@ -11,11 +16,11 @@ export const config = {
   port: Number(process.env.PORT ?? 3000),
   frontendUrls: (process.env.FRONTEND_URL ?? 'http://localhost:4200,http://localhost:8100,http://localhost,https://localhost,capacitor://localhost').split(',').map((url) => url.trim()),
   database: {
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT ?? 3306),
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD ?? '',
-    database: process.env.DB_NAME,
+    host: process.env.DB_HOST ?? process.env.MYSQLHOST,
+    port: Number(process.env.DB_PORT ?? process.env.MYSQLPORT ?? 3306),
+    user: process.env.DB_USER ?? process.env.MYSQLUSER,
+    password: process.env.DB_PASSWORD ?? process.env.MYSQLPASSWORD ?? '',
+    database: process.env.DB_NAME ?? process.env.MYSQLDATABASE,
     connectionLimit: Number(process.env.DB_CONNECTION_LIMIT ?? 10),
     mysqlCommand: process.env.MYSQL_COMMAND ?? '/opt/homebrew/bin/mysql',
     mysqldumpCommand: process.env.MYSQLDUMP_COMMAND ?? '/opt/homebrew/bin/mysqldump',

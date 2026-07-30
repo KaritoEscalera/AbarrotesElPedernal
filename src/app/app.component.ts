@@ -17,6 +17,7 @@ import { filter } from 'rxjs';
 import { Auth, RolUsuario } from './services/auth';
 import { AlertasProveedores } from './services/alertas-proveedores';
 import { ModoTema, TemaService } from './services/tema';
+import { ConnectivityService } from './services/connectivity';
 
 interface OpcionMenu {
   etiqueta: string;
@@ -37,6 +38,7 @@ export class AppComponent {
   private readonly destroyRef = inject(DestroyRef);
   readonly alertasService = inject(AlertasProveedores);
   readonly tema = inject(TemaService);
+  readonly connectivity = inject(ConnectivityService);
 
   mostrarMenu = false;
   rol: RolUsuario | null = null;

@@ -9,6 +9,8 @@ import {
 import { BusinessApi } from '../../services/business-api';
 import { Auth } from '../../services/auth';
 import { BluetoothPrinterService } from '../../services/bluetooth-printer';
+import { ConnectivityService } from '../../services/connectivity';
+import { OfflineStorage } from '../../services/offline-storage';
 
 interface ProductoCaja {
   id: number;
@@ -61,6 +63,8 @@ export class CajaPage implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly auth = inject(Auth);
   private readonly bluetoothPrinter = inject(BluetoothPrinterService);
+  private readonly connectivity = inject(ConnectivityService);
+  private readonly offline = inject(OfflineStorage);
   readonly navigator = window.navigator;
 
   productos: ProductoCaja[] = [];
@@ -314,9 +318,23 @@ export class CajaPage implements OnInit, OnDestroy {
     const fondo = Number(this.fondoInicial);
     if (!Number.isFinite(fondo) || fondo < 0) return this.fallar('Ingresa un fondo inicial válido.');
     await this.ejecutar(async () => {
-      await this.api.post('cash/open', { fondoInicial: fondo });
-      await this.cargarEstado();
-      this.mensaje = 'Caja abierta correctamente.';
+      try {
+        await this.api.post('cash/open', { fondoInicial: fondo });
+        await this.cargarEstado();
+        this.mensaje = 'Caja abierta correctamente.';
+      } catch (error: unknown) {
+        const status = Number((error as { status?: number })?.status ?? 0);
+        if (status !== 0 && navigator.onLine) throw error;
+        const fechaApertura = new Date().toISOString();
+        this.sesion = { id: -Date.now(), estado: 'ABIERTA', fondoInicial: fondo, fechaApertura };
+        this.movimientos = [];
+        this.ventasTurno = 0;
+        this.efectivoEsperado = fondo;
+        this.ventasPorMetodo = { EFECTIVO: 0, TARJETA: 0, TRANSFERENCIA: 0, FIADO: 0 };
+        localStorage.setItem('cajaAperturaPendiente', JSON.stringify({ fondoInicial: fondo, fechaApertura }));
+        this.guardarEstadoLocal();
+        this.mensaje = 'Caja abierta sin conexión. Podrás vender y se sincronizará cuando regrese internet.';
+      }
     });
   }
 
@@ -340,13 +358,19 @@ export class CajaPage implements OnInit, OnDestroy {
         ] : undefined,
         plazoDias: (this.metodo === 'FIADO' || Number(this.pagoMixtoFiado || 0) > 0) ? this.plazoCredito : undefined };
       let venta:{id:number;folio:string;total:number};
-      try{venta=await this.api.post<{id:number;folio:string;total:number}>('sales',payload);}catch(e:unknown){const x=e as{status?:number};if(x.status===0||!navigator.onLine){this.ventasPendientes=[...this.ventasPendientes,{operacionUuid,payload,creada:new Date().toISOString(),intentos:0}];this.guardarPendientes();this.carrito=[];this.mensaje='Venta guardada sin conexión. Se sincronizará automáticamente; no cierres la caja todavía.';return;}throw e;}
+      try{venta=await this.api.post<{id:number;folio:string;total:number}>('sales',payload);}catch(e:unknown){const x=e as{status?:number};if(x.status===0||!navigator.onLine){
+        const productosVendidos=this.carrito.map(item=>({id:item.id,cantidad:item.cantidad}));
+        const totalLocal=this.total;
+        const metodoLocal=this.metodo;
+        this.ventasPendientes=[...this.ventasPendientes,{operacionUuid,payload,creada:new Date().toISOString(),intentos:0}];
+        this.guardarPendientes();
+        this.aplicarVentaLocal(productosVendidos,totalLocal,metodoLocal);
+        this.limpiarCobro();
+        this.mensaje=`Venta guardada sin conexión por $${totalLocal.toFixed(2)}. Se sincronizará automáticamente.`;
+        return;
+      }throw e;}
       const cambio = this.cambio;
-      this.carrito = [];
-      this.referencia = '';
-      this.clienteId = null;
-      this.efectivoRecibido = null;
-      this.pagoMixtoEfectivo = null; this.pagoMixtoTarjeta = null; this.pagoMixtoTransferencia = null; this.pagoMixtoFiado = null; this.pagoMixtoSaldoFavor=null;
+      this.limpiarCobro();
       await this.cargarTodo();
       this.mensaje = `Venta ${venta.folio} registrada por $${Number(venta.total).toFixed(2)}${cambio ? `; cambio $${cambio.toFixed(2)}` : ''}.`;
       await this.cargarHistorial();
@@ -474,7 +498,10 @@ export class CajaPage implements OnInit, OnDestroy {
   }
 
   private async cargarTodo(): Promise<void> {
-    await Promise.all([this.cargarEstado(), this.cargarCatalogos(),this.cargarCambios(),this.cargarHistorial(),this.cargarRecargas()]);
+    const resultados = await Promise.allSettled([this.cargarEstado(), this.cargarCatalogos(),this.cargarCambios(),this.cargarHistorial(),this.cargarRecargas()]);
+    if (resultados[0].status === 'rejected' || resultados[1].status === 'rejected') {
+      this.error = 'Conéctate una vez para descargar productos y abrir la caja en esta tablet.';
+    }
   }
 
   private async cargarCatalogos(): Promise<void> {
@@ -536,9 +563,11 @@ export class CajaPage implements OnInit, OnDestroy {
   private cargarSuspendidas(): Array<{ id: number; fecha: string; carrito: LineaCarrito[] }> { try { const value=JSON.parse(localStorage.getItem('ventasSuspendidas')??'[]'); return Array.isArray(value)?value:[]; } catch { return []; } }
   private cargarPendientes():VentaPendiente[]{try{const v=JSON.parse(localStorage.getItem('ventasPendientesSync')??'[]');return Array.isArray(v)?v:[];}catch{return[];}}
   async sincronizarPendientes():Promise<void>{
-    if(this.sincronizandoPendientes||!navigator.onLine||!this.ventasPendientes.length)return;
+    if(this.sincronizandoPendientes||!this.ventasPendientes.length)return;
     this.sincronizandoPendientes=true;
     try{
+      if(!await this.connectivity.checkNow())return;
+      await this.asegurarCajaServidor();
       for(const pendiente of [...this.ventasPendientes]){
         pendiente.intentos=Number(pendiente.intentos||0)+1;
         pendiente.ultimoIntento=new Date().toISOString();
@@ -555,8 +584,63 @@ export class CajaPage implements OnInit, OnDestroy {
           break;
         }
       }
-      if(!this.ventasPendientes.length){this.mensaje='Todas las ventas pendientes se sincronizaron correctamente.';await this.cargarTodo();}
+      if(!this.ventasPendientes.length){
+        localStorage.removeItem('cajaAperturaPendiente');
+        this.mensaje='Todas las ventas pendientes se sincronizaron correctamente.';
+        await this.cargarTodo();
+      }
     }finally{this.sincronizandoPendientes=false;}
   }
   private guardarPendientes():void{localStorage.setItem('ventasPendientesSync',JSON.stringify(this.ventasPendientes));}
+
+  private async asegurarCajaServidor(): Promise<void> {
+    const aperturaRaw = localStorage.getItem('cajaAperturaPendiente');
+    if (!aperturaRaw) return;
+    const apertura = JSON.parse(aperturaRaw) as { fondoInicial: number };
+    const estado = await this.api.get<EstadoCaja>('cash/current');
+    if (!estado.session) await this.api.post('cash/open', { fondoInicial: Number(apertura.fondoInicial) });
+  }
+
+  private aplicarVentaLocal(productosVendidos:Array<{id:number;cantidad:number}>,total:number,metodo:string):void {
+    for (const vendido of productosVendidos) {
+      const producto = this.productos.find(item => item.id === vendido.id);
+      if (producto) producto.stock = Math.max(0, Number(producto.stock) - vendido.cantidad);
+    }
+    this.offline.saveCache('products', this.productos);
+    this.ventasTurno = Math.round((this.ventasTurno + total) * 100) / 100;
+    if (metodo in this.ventasPorMetodo) {
+      const key = metodo as keyof typeof this.ventasPorMetodo;
+      this.ventasPorMetodo[key] = Math.round((this.ventasPorMetodo[key] + total) * 100) / 100;
+    }
+    if (metodo === 'EFECTIVO') this.efectivoEsperado = Math.round((this.efectivoEsperado + total) * 100) / 100;
+    this.guardarEstadoLocal();
+  }
+
+  private guardarEstadoLocal():void {
+    const estado:EstadoCaja = {
+      session: this.sesion,
+      totals: this.sesion ? {
+        ventas: this.ventasTurno,
+        efectivoEsperado: this.efectivoEsperado,
+        ventasEfectivo: this.ventasPorMetodo.EFECTIVO,
+        ventasTarjeta: this.ventasPorMetodo.TARJETA,
+        ventasTransferencia: this.ventasPorMetodo.TRANSFERENCIA,
+        ventasFiado: this.ventasPorMetodo.FIADO,
+      } : null,
+      movements: this.movimientos,
+    };
+    this.offline.saveCache('cash/current', estado);
+  }
+
+  private limpiarCobro():void {
+    this.carrito = [];
+    this.referencia = '';
+    this.clienteId = null;
+    this.efectivoRecibido = null;
+    this.pagoMixtoEfectivo = null;
+    this.pagoMixtoTarjeta = null;
+    this.pagoMixtoTransferencia = null;
+    this.pagoMixtoFiado = null;
+    this.pagoMixtoSaldoFavor = null;
+  }
 }

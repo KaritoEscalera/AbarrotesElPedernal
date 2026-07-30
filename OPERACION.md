@@ -1,6 +1,41 @@
 # Operación de Abarrotes El Pedernal
 
-## Arranque diario
+## Instalación definitiva en una sola tablet
+
+La versión instalada en la tablet no debe apuntar a una Mac ni a una IP privada.
+La API y MySQL deben alojarse en un servicio con HTTPS y disponibilidad permanente.
+Antes de generar el APK definitivo, sustituye `apiUrl` en
+`src/environments/environment.android.ts` por el dominio público de la API.
+
+La tablet conserva una copia de productos, clientes y caja después del primer acceso
+correcto. Si pierde internet:
+
+1. El usuario previamente validado puede iniciar sesión en modo sin conexión.
+2. Caja permite abrir un turno local y registrar ventas.
+3. Cada venta recibe un UUID, se conserva en la tablet y descuenta la existencia local.
+4. Al recuperar conexión se abre el turno remoto si hace falta y las ventas se envían
+   una sola vez; el servidor rechaza duplicados.
+5. Caja no permite cerrar mientras queden ventas por sincronizar.
+
+WhatsApp, timbrado fiscal, respaldos remotos y recargas requieren internet. No borres
+los datos de la aplicación ni desinstales el APK cuando existan ventas pendientes.
+
+### Despliegue recomendado
+
+El backend incluye `Dockerfile` y `railway.json`. En Railway:
+
+1. Crea un proyecto y agrega MySQL.
+2. Conecta este repositorio completo; `railway.json` utilizará `backend/Dockerfile`.
+3. Define `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` y `DB_NAME` usando las
+   variables del servicio MySQL.
+4. Define `JWT_SECRET` con una cadena aleatoria extensa y `FRONTEND_URL` con
+   `http://localhost,https://localhost,capacitor://localhost`.
+5. Inicializa el esquema con `npm run init-db`, crea los usuarios y activa respaldos
+   automáticos del proveedor.
+6. Genera un dominio HTTPS, colócalo en `environment.android.ts`, ejecuta
+   `npm run android:sync` y genera el APK firmado.
+
+## Arranque diario en desarrollo local
 
 La Mac tiene registrados MySQL y la API como servicios de inicio automático. La API
 se recupera sola si llega a cerrarse. Para comprobarla desde cualquier equipo de la
