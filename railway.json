@@ -5,6 +5,7 @@
     "dockerfilePath": "backend/Dockerfile"
   },
   "deploy": {
+    "preDeployCommand": "npm run init-db",
     "startCommand": "npm start",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 120,
