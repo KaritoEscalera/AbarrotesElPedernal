@@ -9,6 +9,39 @@ body {
   box-sizing: border-box;
 }
 
+button,
+ion-button,
+[button] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #f0a15f;
+  outline-offset: 3px;
+}
+
+ion-button {
+  min-height: 44px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+ion-button:not([fill]):not([color]) {
+  --background: var(--pedernal-acento);
+  --background-hover: #953e0a;
+  --background-activated: #803507;
+  --color: #fff;
+}
+
+html:not(.theme-dark) .eyebrow {
+  color: var(--pedernal-acento-texto) !important;
+}
+
+html:not(.theme-dark) ion-card-title {
+  color: #66371f;
+}
+
 ion-content {
   --background: #ffffff !important;
   --color: #2e2e2e;
@@ -26,7 +59,10 @@ ion-content {
 }
 
 .pedernal-button {
-  --background: #f57c1f;
+  --background: var(--pedernal-acento);
+  --background-hover: #953e0a;
+  --background-activated: #803507;
+  --color: #fff;
   --border-radius: 12px;
   height: 45px;
   font-weight: bold;

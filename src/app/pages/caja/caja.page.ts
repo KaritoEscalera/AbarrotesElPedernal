@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import {
   IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonContent,
   IonInput, IonItem, IonLabel, IonSelect, IonSelectOption,
@@ -23,7 +24,7 @@ interface ProductoCaja {
   promoValor?: number|null;
 }
 
-interface ClienteCaja { id: number; nombre: string; telefono: string; activo: boolean; saldoFavor:number; }
+interface ClienteCaja { id: number; nombre: string; telefono: string; activo: boolean; saldoFavor:number; limiteCredito:number; adeudo:number; fiadosVencidos:number; }
 interface CambioPendiente { id:number; clienteId:number; cliente:string; telefono:string; monto:number; estado:'PENDIENTE'|'ENTREGADO'; fecha:string; }
 interface LineaCarrito extends ProductoCaja {
   /** Cantidad normalizada: kg para granel y unidades para productos por pieza. */
@@ -57,6 +58,7 @@ interface ConciliacionRecargas {total:number;comisiones:number;pendientes:number
 })
 export class CajaPage implements OnInit, OnDestroy {
   private readonly api = inject(BusinessApi);
+  private readonly route = inject(ActivatedRoute);
   private readonly auth = inject(Auth);
   private readonly bluetoothPrinter = inject(BluetoothPrinterService);
   readonly navigator = window.navigator;
@@ -73,6 +75,9 @@ export class CajaPage implements OnInit, OnDestroy {
   fondoInicial: number | null = 1000;
   metodo: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'FIADO' | 'SALDO_FAVOR' | 'MIXTO' = 'EFECTIVO';
   clienteId: number | null = null;
+  nuevoClienteCreditoVisible = false;
+  guardandoClienteCredito = false;
+  nuevoClienteCredito = { nombre: '', telefono: '', direccion: '', limiteCredito: null as number | null };
   referencia = '';
   efectivoRecibido: number | null = null;
   pagoMixtoEfectivo: number | null = null;
@@ -108,13 +113,19 @@ export class CajaPage implements OnInit, OnDestroy {
   busquedaVentas='';
   ventaSeleccionada:VentaDetalle|null=null;
   motivoCancelacion='';
+  confirmacionCobroVisible=false;
   readonly puedeCancelar=this.auth.obtenerRol()==='administrador'||this.auth.obtenerRol()==='gerente';
   readonly puedeAdministrarRecargas=this.puedeCancelar;
   denominaciones:Denominacion[]=[1000,500,200,100,50,20,10,5,2,1,.5].map(valor=>({valor,etiqueta:valor>=20?`Billetes de $${valor}`:`Monedas de $${valor}`,cantidad:null}));
 
   private readonly alVolverConexion = ():void => { void this.sincronizarPendientes(); };
 
-  async ngOnInit(): Promise<void> { await this.cargarTodo(); await this.sincronizarPendientes(); window.addEventListener('online',this.alVolverConexion); }
+  async ngOnInit(): Promise<void> {
+    await this.cargarTodo();
+    this.agregarProductoSolicitado();
+    await this.sincronizarPendientes();
+    window.addEventListener('online',this.alVolverConexion);
+  }
   ngOnDestroy():void { window.removeEventListener('online',this.alVolverConexion); }
 
   get productosFiltrados(): ProductoCaja[] {
@@ -133,6 +144,8 @@ export class CajaPage implements OnInit, OnDestroy {
   get totalPagoMixto(): number { return Number(this.pagoMixtoEfectivo || 0) + Number(this.pagoMixtoTarjeta || 0) + Number(this.pagoMixtoTransferencia || 0) + Number(this.pagoMixtoFiado || 0) + Number(this.pagoMixtoSaldoFavor || 0); }
   get diferenciaPagoMixto(): number { return Math.round((this.total - this.totalPagoMixto) * 100) / 100; }
   get clienteSeleccionado():ClienteCaja|undefined{return this.clientes.find(c=>c.id===Number(this.clienteId));}
+  get montoFiadoActual():number{return this.metodo==='FIADO'?this.total:this.metodo==='MIXTO'?Number(this.pagoMixtoFiado||0):0;}
+  get creditoDisponibleCliente():number{const cliente=this.clienteSeleccionado;if(!cliente)return 0;return Math.max(0,Number(cliente.limiteCredito)-Number(cliente.adeudo));}
   get totalArqueo():number{return Math.round(this.denominaciones.reduce((s,d)=>s+d.valor*Number(d.cantidad||0),0)*100)/100;}
   get diferenciaArqueo():number{return Math.round((this.totalArqueo-this.efectivoEsperado)*100)/100;}
   get errorTelefonoRecarga():string{
@@ -144,9 +157,61 @@ export class CajaPage implements OnInit, OnDestroy {
     return '';
   }
   get telefonoRecargaValido():boolean{return /^\d{10}$/.test(this.recargaTelefono.trim());}
+  get etiquetaMetodoPago():string{return ({EFECTIVO:'Efectivo',TARJETA:'Tarjeta',TRANSFERENCIA:'Transferencia',FIADO:'Fiado',SALDO_FAVOR:'Saldo a favor',MIXTO:'Pago mixto'} as Record<string,string>)[this.metodo]??this.metodo;}
 
   usarEfectivo(monto: number): void { this.efectivoRecibido = monto; }
   usarMontoExacto(): void { this.efectivoRecibido = this.total; }
+
+  abrirConfirmacionCobro():void {
+    const error=this.validarCobro();
+    if(error)return this.fallar(error);
+    this.error='';
+    this.confirmacionCobroVisible=true;
+  }
+
+  cerrarConfirmacionCobro():void {
+    if(!this.procesando)this.confirmacionCobroVisible=false;
+  }
+
+  alternarNuevoClienteCredito(): void {
+    this.nuevoClienteCreditoVisible = !this.nuevoClienteCreditoVisible;
+    this.nuevoClienteCredito = { nombre: '', telefono: '', direccion: '', limiteCredito: null };
+    this.error = '';
+  }
+
+  async guardarClienteCredito(): Promise<void> {
+    const nombre = this.nuevoClienteCredito.nombre.trim();
+    const telefono = this.nuevoClienteCredito.telefono.replace(/\D/g, '');
+    const direccion = this.nuevoClienteCredito.direccion.trim();
+    const limiteCredito = Number(this.nuevoClienteCredito.limiteCredito);
+    if (nombre.length < 3) return this.fallar('Escribe el nombre completo del cliente.');
+    if (!/^\d{10}$/.test(telefono)) return this.fallar('El teléfono del cliente debe tener 10 dígitos para poder enviar recordatorios.');
+    if (!Number.isFinite(limiteCredito) || limiteCredito <= 0) return this.fallar('Asigna un límite de crédito mayor a cero.');
+    if (limiteCredito < this.montoFiadoActual) return this.fallar(`El límite debe cubrir al menos los ${this.montoFiadoActual.toFixed(2)} de esta venta.`);
+    const existente = this.clientes.find((cliente) => cliente.telefono.replace(/\D/g, '') === telefono);
+    if (existente) {
+      this.clienteId = existente.id;
+      this.nuevoClienteCreditoVisible = false;
+      this.nuevoClienteCredito = { nombre: '', telefono: '', direccion: '', limiteCredito: null };
+      this.mensaje = `${existente.nombre} ya estaba registrado y quedó seleccionado.`;
+      this.error = '';
+      return;
+    }
+    this.guardandoClienteCredito = true;
+    this.error = '';
+    try {
+      const creado = await this.api.post<{ id: number }>('clients', { nombre, telefono, direccion, limiteCredito });
+      await this.cargarCatalogos();
+      this.clienteId = Number(creado.id);
+      this.nuevoClienteCreditoVisible = false;
+      this.nuevoClienteCredito = { nombre: '', telefono: '', direccion: '', limiteCredito: null };
+      this.mensaje = `${nombre} fue registrado y seleccionado para esta venta fiada.`;
+    } catch {
+      this.fallar('No fue posible registrar al cliente. Verifica los datos e inténtalo nuevamente.');
+    } finally {
+      this.guardandoClienteCredito = false;
+    }
+  }
 
   agregar(producto: ProductoCaja): void {
     if (producto.stock <= 0) {
@@ -169,6 +234,21 @@ export class CajaPage implements OnInit, OnDestroy {
         cantidadCapturada: esGranel ? cantidad * 1000 : cantidad,
         unidadCaptura: esGranel ? 'Gramo' : 'Pieza',
       }];
+    }
+  }
+
+  private agregarProductoSolicitado(): void {
+    const productoId = Number(this.route.snapshot.queryParamMap.get('producto'));
+    if (!Number.isInteger(productoId) || productoId <= 0) return;
+    const producto = this.productos.find((item) => item.id === productoId && item.activo);
+    if (!producto) {
+      this.fallar('El producto seleccionado ya no está disponible en Caja.');
+      return;
+    }
+    this.agregar(producto);
+    if (producto.stock > 0) {
+      this.mensaje = `${producto.nombre} se agregó a la venta actual.`;
+      this.error = '';
     }
   }
 
@@ -241,16 +321,9 @@ export class CajaPage implements OnInit, OnDestroy {
   }
 
   async cobrar(): Promise<void> {
-    if (!this.sesion) return this.fallar('Abre la caja antes de cobrar.');
-    if (!this.carrito.length) return this.fallar('Agrega al menos un producto.');
-    if (this.metodo === 'FIADO' && !this.clienteId) return this.fallar('Selecciona un cliente para el fiado.');
-    if (this.metodo === 'SALDO_FAVOR' && !this.clienteId) return this.fallar('Selecciona el cliente que utilizará su saldo a favor.');
-    if (this.metodo === 'SALDO_FAVOR' && Number(this.clienteSeleccionado?.saldoFavor||0) < this.total) return this.fallar('El saldo a favor del cliente no alcanza para cubrir la venta completa; usa pago mixto.');
-    if (this.metodo === 'MIXTO' && Number(this.pagoMixtoFiado || 0) > 0 && !this.clienteId) return this.fallar('Selecciona un cliente para la parte a fiado.');
-    if (this.metodo === 'MIXTO' && Number(this.pagoMixtoSaldoFavor || 0) > 0 && !this.clienteId) return this.fallar('Selecciona el cliente para utilizar saldo a favor.');
-    if (['TARJETA', 'TRANSFERENCIA'].includes(this.metodo) && !this.referencia.trim()) return this.fallar('Captura la referencia del pago.');
-    if (this.metodo === 'EFECTIVO' && Number(this.efectivoRecibido) < this.total) return this.fallar('El efectivo recibido es menor al total.');
-    if (this.metodo === 'MIXTO' && Math.abs(this.diferenciaPagoMixto) > .009) return this.fallar('La suma del pago mixto debe coincidir con el total.');
+    const error=this.validarCobro();
+    if(error){this.confirmacionCobroVisible=false;return this.fallar(error);}
+    this.confirmacionCobroVisible=false;
     await this.ejecutar(async () => {
       const operacionUuid=crypto.randomUUID();
       const payload:Record<string,unknown>={operacionUuid,
@@ -410,12 +483,31 @@ export class CajaPage implements OnInit, OnDestroy {
       this.api.get<ClienteCaja[]>('clients'),
     ]);
     this.productos = productos.map((p) => ({ ...p, stock: Number(p.stock), precioVenta: Number(p.precioVenta), tasaIva: Number(p.tasaIva),promoValor:p.promoValor===null?null:Number(p.promoValor) }));
-    this.clientes = clientes.filter((c) => c.activo).map(c=>({...c,saldoFavor:Number(c.saldoFavor||0)}));
+    this.clientes = clientes
+      .filter((c) => c.activo)
+      .map(c=>({...c,saldoFavor:Number(c.saldoFavor||0),limiteCredito:Number(c.limiteCredito||0),adeudo:Number(c.adeudo||0),fiadosVencidos:Number(c.fiadosVencidos||0)}))
+      .sort((a,b)=>a.nombre.localeCompare(b.nombre,'es',{sensitivity:'base'}));
   }
   private async cargarCambios():Promise<void>{try{const datos=await this.api.get<CambioPendiente[]>('customer-balances');this.cambiosPendientes=datos.map(x=>({...x,monto:Number(x.monto)}));}catch{this.cambiosPendientes=[];}}
   private async cargarRecargas():Promise<void>{try{const [datos,resumen]=await Promise.all([this.api.get<Recarga[]>('recharges'),this.api.get<ConciliacionRecargas>('recharges/reconciliation')]);this.recargas=datos.map(x=>({...x,monto:Number(x.monto),comision:Number(x.comision)}));this.conciliacionRecargas={...resumen,total:Number(resumen.total),comisiones:Number(resumen.comisiones),pendientes:Number(resumen.pendientes),exitosas:Number(resumen.exitosas),rechazadas:Number(resumen.rechazadas),canceladas:Number(resumen.canceladas),porCompania:resumen.porCompania.map(x=>({...x,operaciones:Number(x.operaciones),monto:Number(x.monto),comision:Number(x.comision)}))};}catch{this.recargas=[];}}
   private async obtenerVenta(id:number):Promise<VentaDetalle>{const v=await this.api.get<VentaDetalle>(`sales/${id}`);return {...v,subtotal:Number(v.subtotal),descuento:Number(v.descuento),impuestos:Number(v.impuestos),total:Number(v.total),items:v.items.map(i=>({...i,cantidad:Number(i.cantidad),precioUnitario:Number(i.precioUnitario),importe:Number(i.importe)})),pagos:v.pagos.map(p=>({...p,monto:Number(p.monto)})),fiado:v.fiado?{...v.fiado,monto:Number(v.fiado.monto),saldoPendiente:Number(v.fiado.saldoPendiente)}:null};}
   private escapar(valor:unknown):string{return String(valor??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]??c));}
+
+  private validarCobro():string|null {
+    if(!this.sesion)return 'Abre la caja antes de cobrar.';
+    if(!this.carrito.length)return 'Agrega al menos un producto.';
+    if(this.metodo==='FIADO'&&!this.clienteId)return 'Selecciona un cliente para el fiado.';
+    if(this.metodo==='SALDO_FAVOR'&&!this.clienteId)return 'Selecciona el cliente que utilizará su saldo a favor.';
+    if(this.metodo==='SALDO_FAVOR'&&Number(this.clienteSeleccionado?.saldoFavor||0)<this.total)return 'El saldo a favor del cliente no alcanza para cubrir la venta completa; usa pago mixto.';
+    if(this.metodo==='MIXTO'&&Number(this.pagoMixtoFiado||0)>0&&!this.clienteId)return 'Selecciona un cliente para la parte a fiado.';
+    if(this.metodo==='MIXTO'&&Number(this.pagoMixtoSaldoFavor||0)>0&&!this.clienteId)return 'Selecciona el cliente para utilizar saldo a favor.';
+    if(this.montoFiadoActual>0&&Number(this.clienteSeleccionado?.fiadosVencidos||0)>0)return 'El cliente tiene pagos atrasados y no puede recibir otro fiado.';
+    if(this.montoFiadoActual>0&&Number(this.clienteSeleccionado?.limiteCredito||0)>0&&this.creditoDisponibleCliente<this.montoFiadoActual)return 'El crédito disponible del cliente no alcanza para esta venta.';
+    if(['TARJETA','TRANSFERENCIA'].includes(this.metodo)&&!this.referencia.trim())return 'Captura la referencia del pago.';
+    if(this.metodo==='EFECTIVO'&&Number(this.efectivoRecibido)<this.total)return 'El efectivo recibido es menor al total.';
+    if(this.metodo==='MIXTO'&&Math.abs(this.diferenciaPagoMixto)>.009)return 'La suma del pago mixto debe coincidir con el total.';
+    return null;
+  }
 
   private async cargarEstado(): Promise<void> {
     const estado = await this.api.get<EstadoCaja>('cash/current');

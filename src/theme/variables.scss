@@ -1,6 +1,11 @@
 :root {
-  --ion-color-primary: #F57C1F;
-  --ion-color-primary-rgb: 245, 124, 31;
+  /* Naranja de acción con contraste AA sobre texto blanco. */
+  --ion-color-primary: #A9470B;
+  --ion-color-primary-rgb: 169, 71, 11;
+  --ion-color-primary-contrast: #FFFFFF;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #953E0A;
+  --ion-color-primary-tint: #B35923;
 
   --ion-color-secondary: #F4A259;
   --ion-color-secondary-rgb: 244, 162, 89;
@@ -21,6 +26,9 @@
   --pedernal-crema: #FFF8F1;
   --pedernal-arena: #D9C2A3;
   --pedernal-gris: #E8E3DC;
+  --pedernal-acento: #A9470B;
+  --pedernal-acento-texto: #8A3D10;
+  --pedernal-cafe: #4A2C1D;
 }
 
 html.theme-dark {

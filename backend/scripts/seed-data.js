@@ -81,18 +81,17 @@ try {
     const costo=Math.round(Number(precio)*.72*100)/100;
     const [[existente]]=await pool.execute('SELECT id FROM productos WHERE nombre=? LIMIT 1',[nombre]);
     if(existente){
-      await pool.execute('UPDATE productos SET sku=COALESCE(sku,?),categoria_id=?,stock_actual=IF(stock_actual=0,10,stock_actual) WHERE id=?',[sku,cat.id,existente.id]);
+      await pool.execute('UPDATE productos SET sku=COALESCE(sku,?),categoria_id=? WHERE id=?',[sku,cat.id,existente.id]);
       continue;
     }
     await pool.execute(`INSERT INTO productos(categoria_id,sku,nombre,unidad_medida,stock_actual,stock_minimo,costo,precio_venta)
-      VALUES(?,?,?,'Pieza',10,3,?,?)
-      ON DUPLICATE KEY UPDATE nombre=VALUES(nombre),categoria_id=VALUES(categoria_id),stock_actual=IF(stock_actual=0,10,stock_actual)`,
+      VALUES(?,?,?,'Pieza',0,3,?,?)
+      ON DUPLICATE KEY UPDATE nombre=VALUES(nombre),categoria_id=VALUES(categoria_id)`,
       [cat.id,sku,nombre,costo,precio]);
   }
-  const [restocked]=await pool.execute('UPDATE productos SET stock_actual=10 WHERE activo=TRUE AND stock_actual=0');
   const clients = [['Juan Pérez','4491234567','Centro'],['María López','4497654321','La Labor'],['Carlos Hernández','4499876543','Ojocaliente']];
   for (const [nombre,telefono,direccion] of clients) { const [[exists]]=await pool.execute('SELECT id FROM clientes WHERE telefono=?',[telefono]); if(!exists) await pool.execute('INSERT INTO clientes(nombre,telefono,direccion) VALUES(?,?,?)',[nombre,telefono,direccion]); }
   const providers = [['Distribuidora Coca-Cola','Luis Martínez','4491234567','ventas@cocacola.com','Refrescos','Lunes'],['Grupo Bimbo','María González','4497654321','pedidos@bimbo.com','Panadería','Martes y viernes']];
   for (const p of providers) await pool.execute(`INSERT INTO proveedores(empresa,contacto,telefono,correo,producto_principal,dia_entrega) VALUES(?,?,?,?,?,?) ON DUPLICATE KEY UPDATE contacto=VALUES(contacto)`,p);
-  console.log(`Datos iniciales sincronizados, incluido catálogo base de ${catalog.length} productos. Productos agotados surtidos con 10 unidades: ${restocked.affectedRows}.`);
+  console.log(`Datos iniciales sincronizados, incluido catálogo base de ${catalog.length} productos. No se modificaron existencias de productos ya registrados.`);
 } catch(error){console.error(error.message);process.exitCode=1;}finally{await pool.end();}

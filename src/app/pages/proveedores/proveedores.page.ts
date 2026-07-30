@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import {
   IonButton, IonContent, IonInput, IonItem, IonLabel, IonSearchbar, IonSelect, IonSelectOption
 } from '@ionic/angular/standalone';
@@ -21,6 +22,7 @@ export class ProveedoresPage implements OnInit {
   confirmandoArchivarId:number|null=null;
   private readonly api = inject(BusinessApi);
   private readonly auth = inject(Auth);
+  private readonly route = inject(ActivatedRoute);
 
   busqueda = '';
   filtroEstado = 'Todos';
@@ -31,7 +33,10 @@ export class ProveedoresPage implements OnInit {
   formulario: Proveedor = this.crearProveedorVacio();
   proveedores: Proveedor[] = [];
 
-  async ngOnInit(): Promise<void> { await this.recargar(); }
+  async ngOnInit(): Promise<void> {
+    await this.recargar();
+    if (this.puedeAdministrar && this.route.snapshot.queryParamMap.get('nuevo') === '1') this.abrirFormulario();
+  }
 
   get puedeAdministrar(): boolean {
     const rol = this.auth.obtenerRol();

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 import {
   IonButton,
@@ -55,12 +56,16 @@ interface MovimientoInventario {id:number;productoId:number;nombre:string;unidad
 export class InventarioPage implements OnInit {
   confirmandoEliminarId:number|null=null;
   private readonly api = inject(BusinessApi);
+  private readonly route = inject(ActivatedRoute);
 
   busqueda = '';
   filtroEstado = 'todos';
   entradaVisible = false;
   productoNuevoVisible = false;
   guardandoProducto = false;
+  proveedorNuevoId: number | null = null;
+  productoProveedorId: number | null = null;
+  numeroProveedorNuevo = '';
   nuevoProducto = {
     codigo: '',
     nombre: '',
@@ -94,7 +99,10 @@ export class InventarioPage implements OnInit {
   movimientos:MovimientoInventario[]=[];
   proveedores:ProveedorInventario[]=[];
 
-  async ngOnInit(): Promise<void> { await Promise.all([this.cargarProductos(),this.cargarLotes(),this.cargarSugerencias(),this.cargarMovimientos(),this.cargarProveedores()]); }
+  async ngOnInit(): Promise<void> {
+    await Promise.all([this.cargarProductos(),this.cargarLotes(),this.cargarSugerencias(),this.cargarMovimientos(),this.cargarProveedores()]);
+    if (this.route.snapshot.queryParamMap.get('nuevo') === '1') this.productoNuevoVisible = true;
+  }
 
   get productosFiltrados(): ProductoInventario[] {
     const texto = this.busqueda.toLowerCase().trim();
@@ -113,6 +121,47 @@ export class InventarioPage implements OnInit {
 
       return coincideBusqueda && coincideEstado;
     });
+  }
+
+  get productosDelProveedor(): ProductoInventario[] {
+    const proveedor = this.proveedores.find((item) => item.id === Number(this.proveedorNuevoId));
+    if (!proveedor) return [];
+    const empresa = proveedor.empresa.toLowerCase();
+    let patron: RegExp | null = null;
+    if (/sabritas|pepsico/.test(empresa)) patron = /sabritas|doritos|cheetos|ruffles|tostitos|fritos|churrumais|rancheritos|sabritones|crujitos/i;
+    else if (/bimbo/.test(empresa)) patron = /bimbo|tía rosa|tortillinas/i;
+    else if (/lala/.test(empresa)) patron = /lala/i;
+    else if (/coca.?cola/.test(empresa)) patron = /coca.?cola|ciel|del valle|fanta|sprite|fresca/i;
+    const disponibles = this.productos.filter((producto) =>
+      producto.proveedorId === proveedor.id || (!!patron && patron.test(producto.nombre)),
+    );
+    return disponibles.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es',{sensitivity:'base'}));
+  }
+
+  cambiarProveedorNuevo(): void {
+    this.productoProveedorId = null;
+    this.numeroProveedorNuevo = '';
+  }
+
+  async seleccionarProductoProveedor(): Promise<void> {
+    const producto = this.productos.find((item) => item.id === Number(this.productoProveedorId));
+    const proveedorId = Number(this.proveedorNuevoId);
+    if (!producto || !proveedorId) return;
+    try {
+      await this.api.patch(`products/${producto.id}/provider`, {
+        proveedorId,
+        numeroProveedor: this.numeroProveedorNuevo.trim() || null,
+      });
+      this.productoEntradaId = producto.id;
+      this.costoEntrada = producto.costo;
+      this.motivoEntrada = 'Recepción de mercancía de proveedor';
+      this.productoNuevoVisible = false;
+      this.entradaVisible = true;
+      await this.cargarProductos();
+      this.mensajeEntrada = `${producto.nombre} ya estaba en el catálogo. Captura la cantidad recibida; después estará disponible en Caja.`;
+    } catch {
+      this.mensajeEntrada = 'No fue posible relacionar el producto con el proveedor.';
+    }
   }
 
   get totalProductos(): number {
@@ -191,8 +240,9 @@ export class InventarioPage implements OnInit {
     }
     this.guardandoProducto=true;
     try{
-      await this.api.post('products',{codigo:p.codigo.trim()||null,nombre,categoria,unidadMedida:p.unidadMedida,stock,stockMinimo,costo,precioVenta,tasaIva});
+      await this.api.post('products',{codigo:p.codigo.trim()||null,nombre,categoria,unidadMedida:p.unidadMedida,stock,stockMinimo,costo,precioVenta,tasaIva,proveedorId:this.proveedorNuevoId,numeroProveedor:this.numeroProveedorNuevo.trim()||null});
       this.nuevoProducto={codigo:'',nombre:'',categoria:'Abarrotes',unidadMedida:'Pieza',stock:0,stockMinimo:0,costo:0,precioVenta:null,tasaIva:0};
+      this.proveedorNuevoId=null;this.productoProveedorId=null;this.numeroProveedorNuevo='';
       this.productoNuevoVisible=false;
       await Promise.all([this.cargarProductos(),this.cargarSugerencias(),this.cargarMovimientos()]);
       this.mensajeEntrada=`${nombre} fue agregado al inventario y ya aparecerá en Caja.`;

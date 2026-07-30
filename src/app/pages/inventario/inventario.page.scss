@@ -174,6 +174,16 @@ h1 {
   color: #7a614f;
 }
 
+.supplier-help {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 12px;
+  color: #68452f;
+  background: #fff0df;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
 
 .inventory-card {
   overflow: hidden;

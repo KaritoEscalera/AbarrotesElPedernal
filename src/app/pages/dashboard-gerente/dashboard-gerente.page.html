@@ -17,6 +17,7 @@
       <ion-button routerLink="/caja">Caja</ion-button>
       <ion-button routerLink="/fiados">Fiados</ion-button>
       <ion-button routerLink="/proveedores">Proveedores</ion-button>
+      <ion-button [routerLink]="['/proveedores']" [queryParams]="{ nuevo: 1 }">Agregar proveedor</ion-button>
     </nav>
 
     <p *ngIf="cargando">Cargando información del negocio...</p>

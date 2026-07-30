@@ -7,7 +7,7 @@
         <p class="welcome">Consulta precios, existencias y productos que requieren reabastecimiento.</p>
       </div>
 
-      <ion-button type="button">Agregar producto</ion-button>
+      <ion-button type="button" [routerLink]="['/inventario']" [queryParams]="{ nuevo: 1 }">Agregar producto</ion-button>
     </header>
 
     <ion-card>
@@ -28,6 +28,7 @@
             <span role="columnheader">Precio</span>
             <span role="columnheader">Existencias</span>
             <span role="columnheader">Estado</span>
+            <span role="columnheader">Acción</span>
           </div>
 
           <div class="product-row" role="row" *ngFor="let producto of productosFiltrados">
@@ -40,6 +41,14 @@
             <span class="stock-status" [class.is-low]="producto.stock <= producto.minimo" role="cell">
               {{ estadoStock(producto) }}
             </span>
+            <ion-button
+              class="sell-button"
+              size="small"
+              fill="outline"
+              [disabled]="producto.stock <= 0"
+              (click)="venderEnCaja(producto)">
+              {{ producto.stock > 0 ? 'Llevar a Caja' : 'Agotado' }}
+            </ion-button>
           </div>
 
           <p class="empty-state" *ngIf="productosFiltrados.length === 0">

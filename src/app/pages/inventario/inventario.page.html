@@ -21,6 +21,10 @@
 
     <section class="entry-form new-product-form" *ngIf="productoNuevoVisible" aria-label="Agregar producto nuevo">
       <header class="form-heading"><div><p class="eyebrow">Catálogo de productos</p><h2>Producto nuevo</h2></div><small>Al guardarlo aparecerá automáticamente en Caja.</small></header>
+      <ion-item lines="none"><ion-label position="stacked">Empresa / proveedor</ion-label><ion-select [(ngModel)]="proveedorNuevoId" (ionChange)="cambiarProveedorNuevo()" placeholder="Selecciona Bimbo, Sabritas, etc."><ion-select-option [value]="null">Sin proveedor</ion-select-option><ion-select-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">{{proveedor.empresa}}</ion-select-option></ion-select></ion-item>
+      <ion-item lines="none" *ngIf="proveedorNuevoId && productosDelProveedor.length"><ion-label position="stacked">Producto de {{productosDelProveedor.length ? 'este proveedor' : 'catálogo'}}</ion-label><ion-select [(ngModel)]="productoProveedorId" (ionChange)="seleccionarProductoProveedor()" placeholder="Doritos, Cheetos, Medias Noches…"><ion-select-option *ngFor="let producto of productosDelProveedor" [value]="producto.id">{{producto.nombre}}</ion-select-option></ion-select></ion-item>
+      <ion-item lines="none" *ngIf="proveedorNuevoId"><ion-label position="stacked">Código del proveedor (opcional)</ion-label><ion-input [(ngModel)]="numeroProveedorNuevo"></ion-input></ion-item>
+      <p class="supplier-help" *ngIf="proveedorNuevoId && productosDelProveedor.length">Si eliges un producto que ya existe, se abrirá “Registrar entrada” para sumar la mercancía sin duplicarlo.</p>
       <ion-item lines="none"><ion-label position="stacked">Código de barras (opcional)</ion-label><ion-input [(ngModel)]="nuevoProducto.codigo" inputmode="numeric"></ion-input></ion-item>
       <ion-item lines="none"><ion-label position="stacked">Nombre *</ion-label><ion-input [(ngModel)]="nuevoProducto.nombre"></ion-input></ion-item>
       <ion-item lines="none"><ion-label position="stacked">Categoría *</ion-label><ion-input [(ngModel)]="nuevoProducto.categoria"></ion-input></ion-item>

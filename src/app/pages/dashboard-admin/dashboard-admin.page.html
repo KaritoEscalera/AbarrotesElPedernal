@@ -14,12 +14,16 @@
 
     <nav class="quick-actions" aria-label="Accesos rápidos">
       <ion-button routerLink="/usuarios">Usuarios</ion-button>
-      <ion-button routerLink="/productos">Productos</ion-button>
+      <ion-button routerLink="/productos">Productos y venta</ion-button>
       <ion-button routerLink="/inventario">Inventario</ion-button>
+      <ion-button [routerLink]="['/proveedores']" [queryParams]="{ nuevo: 1 }">Agregar proveedor</ion-button>
       <ion-button routerLink="/caja">Caja</ion-button>
       <ion-button routerLink="/clientes">Clientes</ion-button>
       <ion-button routerLink="/reportes">Reportes</ion-button>
     </nav>
+
+    <p *ngIf="cargando">Cargando información del negocio...</p>
+    <p *ngIf="error" role="alert">{{ error }}</p>
 
     <section class="cards" aria-label="Resumen de negocio">
 
@@ -33,10 +37,10 @@
 
       <ion-card>
         <ion-card-header>
-          <ion-card-title>Ventas del mes</ion-card-title>
+          <ion-card-title>Ventas de la semana</ion-card-title>
         </ion-card-header>
 
-        <ion-card-content>{{ ventasMes }}</ion-card-content>
+        <ion-card-content>{{ ventasSemana }}</ion-card-content>
       </ion-card>
 
       <ion-card>
@@ -49,10 +53,10 @@
 
       <ion-card>
         <ion-card-header>
-          <ion-card-title>Clientes registrados</ion-card-title>
+          <ion-card-title>Fiados pendientes</ion-card-title>
         </ion-card-header>
 
-        <ion-card-content>{{ clientes }}</ion-card-content>
+        <ion-card-content>{{ fiadosPendientes }}</ion-card-content>
       </ion-card>
 
     </section>
