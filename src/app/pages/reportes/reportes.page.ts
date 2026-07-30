@@ -13,6 +13,7 @@ import {
 
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
+import { descargarPdf } from '../../services/document-download';
 import { BusinessApi } from '../../services/business-api';
 
 type PeriodoReporte =
@@ -562,7 +563,7 @@ export class ReportesPage implements OnInit {
     ).format(fecha);
   }
 
-  generarPDF(): void {
+  async generarPDF(): Promise<void> {
 
     const documento = new jsPDF({
       orientation: 'landscape',
@@ -634,7 +635,7 @@ export class ReportesPage implements OnInit {
     const nombreArchivo =
       `reporte-${this.tipoReporteSeleccionado}-${this.periodoSeleccionado}.pdf`;
 
-    documento.save(nombreArchivo);
+    await descargarPdf(documento, nombreArchivo);
   }
 
   private generarPDFVentas(

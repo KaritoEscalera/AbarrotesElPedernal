@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { IonButton, IonContent, IonInput, IonItem, IonLabel, IonSelect, IonSelectOption } from '@ionic/angular/standalone';
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
+import { descargarPdf } from '../../services/document-download';
 import { BusinessApi } from '../../services/business-api';
 
 type Periodo = 'hoy' | 'ayer' | 'semana' | 'mes' | 'anio' | 'personalizado';
@@ -126,14 +127,14 @@ export class EstadisticasPage implements OnInit {
     URL.revokeObjectURL(enlace.href);
   }
 
-  exportarPdf(): void {
+  async exportarPdf(): Promise<void> {
     const pdf = new jsPDF();
     pdf.setFontSize(17);
     pdf.text('Estadísticas - Abarrotes El Pedernal', 14, 18);
     pdf.setFontSize(10);
     pdf.text(`Ventas: ${this.moneda(this.totalVentas)} | Utilidad: ${this.moneda(this.utilidad)} | Margen: ${this.margen.toFixed(1)}%`, 14, 27);
     autoTable(pdf, { startY: 34, head: [['Producto', 'Categoría', 'Unidades', 'Stock', 'Margen']], body: this.productosMasVendidos.map((p) => [p.producto, p.categoria, p.vendidos, p.stock, `${(((p.precio - p.costo) / p.precio) * 100).toFixed(1)}%`]) });
-    pdf.save('estadisticas-pedernal.pdf');
+    await descargarPdf(pdf, 'estadisticas-pedernal.pdf');
   }
 
   claseVariacion(valor: number): string { return valor >= 0 ? 'positive' : 'negative'; }

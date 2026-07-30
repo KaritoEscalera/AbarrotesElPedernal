@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { IonButton, IonContent, IonInput, IonItem, IonLabel, IonSelect, IonSelectOption } from '@ionic/angular/standalone';
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
+import { descargarPdf } from '../../services/document-download';
 import { BusinessApi } from '../../services/business-api';
 
 type Periodo = 'mensual' | 'anual' | 'personalizado';
@@ -118,10 +119,10 @@ export class SatPage implements OnInit {
 
   cambiarEstado(documento: DocumentoFiscal): void { documento.estado = documento.estado === 'Pendiente' ? 'Vigente' : documento.estado === 'Vigente' ? 'Cancelado' : 'Pendiente'; this.guardarDocumentos(); this.registrarBitacora(`Cambió estado local del CFDI ${documento.uuid || documento.folio} a ${documento.estado}`); }
 
-  exportarResumen(): void {
+  async exportarResumen(): Promise<void> {
     const pdf = new jsPDF(); pdf.setFontSize(17); pdf.text('Control fiscal - Abarrotes El Pedernal', 14, 18); pdf.setFontSize(9); pdf.text('Documento de trabajo. No es declaración, CFDI ni acuse del SAT.', 14, 25);
     pdf.text(`RFC: ${this.configuracion.rfc || 'Sin configurar'} | Ingresos: ${this.moneda(this.ingresos)} | IVA estimado a cargo: ${this.moneda(this.ivaEstimadoCargo)}`, 14, 32);
-    autoTable(pdf, { startY: 39, head: [['Fecha', 'Tipo', 'Concepto', 'Referencia', 'Total']], body: this.movimientosFiltrados.map((m) => [m.fecha, m.tipo, m.concepto, m.referencia, this.moneda(m.total)]) }); pdf.save('control-fiscal-pedernal.pdf');
+    autoTable(pdf, { startY: 39, head: [['Fecha', 'Tipo', 'Concepto', 'Referencia', 'Total']], body: this.movimientosFiltrados.map((m) => [m.fecha, m.tipo, m.concepto, m.referencia, this.moneda(m.total)]) }); await descargarPdf(pdf, 'control-fiscal-pedernal.pdf');
   }
 
   exportarContabilidadXml(): void {
