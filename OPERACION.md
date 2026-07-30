@@ -20,6 +20,43 @@ correcto. Si pierde internet:
 WhatsApp, timbrado fiscal, respaldos remotos y recargas requieren internet. No borres
 los datos de la aplicación ni desinstales el APK cuando existan ventas pendientes.
 
+## Infraestructura en la nube y costo operativo
+
+Para la operación real se utiliza **Railway** como plataforma de alojamiento. Dentro
+del proyecto existen dos servicios:
+
+- **API AbarrotesElPedernal:** ejecuta el backend desarrollado con Node.js y Express,
+  autentica usuarios, valida las operaciones y coordina ventas, caja, inventario,
+  compras, clientes, fiados, reportes y respaldos.
+- **MySQL:** conserva permanentemente la información del negocio. La API se comunica
+  con esta base mediante la red privada de Railway; las credenciales se almacenan
+  como variables protegidas y no se incluyen en el código ni en la aplicación.
+
+La tablet se conecta mediante HTTPS al dominio público de la API. La API procesa la
+solicitud y consulta o actualiza MySQL. Este diseño evita depender de una computadora
+encendida dentro del establecimiento y permite utilizar el sistema desde cualquier
+red con acceso a Internet.
+
+Cuando la conexión se interrumpe, la tablet mantiene disponibles el usuario
+previamente validado, el catálogo, los clientes y el estado de caja. Las ventas se
+guardan localmente con un identificador único y se sincronizan al recuperar conexión,
+evitando su registro duplicado. Las funciones externas, como WhatsApp, recargas y
+operaciones fiscales, esperan hasta que vuelva Internet.
+
+Railway ofrece actualmente una prueba limitada por tiempo o crédito. Al concluirla,
+la empresa deberá mantener un plan activo para conservar la API, MySQL y la
+sincronización en línea. Antes de la entrega deben acordarse:
+
+1. El responsable y propietario de la cuenta de Railway.
+2. El método de pago y el plan autorizado por la empresa.
+3. El resguardo de las credenciales administrativas.
+4. La supervisión del consumo y disponibilidad de los servicios.
+5. La programación y revisión periódica de respaldos.
+
+Si el servicio se suspende, la tablet puede conservar temporalmente las ventas
+offline, pero no podrá sincronizarlas ni utilizar las funciones que requieren el
+servidor hasta que Railway vuelva a estar activo.
+
 ### Despliegue recomendado
 
 El backend incluye `Dockerfile` y `railway.json`. En Railway:
