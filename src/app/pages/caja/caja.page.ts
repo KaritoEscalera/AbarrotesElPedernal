@@ -370,11 +370,10 @@ export class CajaPage implements OnInit, OnDestroy {
         return;
       }throw e;}
       const cambio = this.cambio;
+      this.mensaje = `Venta ${venta.folio} registrada por $${Number(venta.total).toFixed(2)}${cambio ? `; cambio $${cambio.toFixed(2)}` : ''}.`;
+      await this.imprimirTicket(venta.id,cambio);
       this.limpiarCobro();
       await this.cargarTodo();
-      this.mensaje = `Venta ${venta.folio} registrada por $${Number(venta.total).toFixed(2)}${cambio ? `; cambio $${cambio.toFixed(2)}` : ''}.`;
-      await this.cargarHistorial();
-      await this.imprimirTicket(venta.id,cambio);
     });
   }
 
