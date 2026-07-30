@@ -288,7 +288,7 @@ businessRouter.get('/backups/export', requireRole('Administrador'), async (req, 
     const name = `abarrotes-pedernal-${new Date().toISOString().replace(/[:.]/g,'-')}.sql`;
     const [record] = await pool.execute(`INSERT INTO respaldos(usuario_id,nombre_archivo,tipo,version_esquema,estado) VALUES(?,?,'MANUAL','1','CREANDO')`, [req.user.sub, name]);
     backupId = record.insertId;
-    const dump = await mysqlProcess('mysqldump', ['--single-transaction','--routines','--triggers','--set-gtid-purged=OFF','--default-character-set=utf8mb4', config.database.database]);
+    const dump = await mysqlProcess('mysqldump', ['--single-transaction','--routines','--triggers','--default-character-set=utf8mb4', config.database.database]);
     const checksum=createHash('sha256').update(dump).digest('hex');
     await pool.execute("UPDATE respaldos SET tamanio_bytes=?,checksum=?,estado='COMPLETADO' WHERE id=?", [dump.length,checksum, backupId]);
     await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Respaldos','EXPORTAR',?,'RESPALDO',?)`, [req.user.sub, name, backupId]);
