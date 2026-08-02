@@ -62,7 +62,7 @@
             </div>
             <div class="totals"><span>Subtotal <b>{{ subtotal | currency:'MXN' }}</b></span><span *ngIf="descuento">Promociones <b>-{{ descuento | currency:'MXN' }}</b></span><span>IVA <b>{{ impuestos | currency:'MXN' }}</b></span><span class="grand">Total <b>{{ total | currency:'MXN' }}</b></span></div>
             <ion-button expand="block" fill="outline" [disabled]="!carrito.length" (click)="suspenderVenta()">Suspender venta</ion-button>
-            <ion-item><ion-label position="stacked">Forma de pago</ion-label><ion-select [(ngModel)]="metodo"><ion-select-option value="EFECTIVO">Efectivo</ion-select-option><ion-select-option value="TARJETA">Cobro directo con terminal (tarjeta)</ion-select-option><ion-select-option value="TRANSFERENCIA">Transferencia</ion-select-option><ion-select-option value="FIADO">Fiado</ion-select-option><ion-select-option value="SALDO_FAVOR">Saldo a favor del cliente</ion-select-option><ion-select-option value="MIXTO">Pago mixto</ion-select-option></ion-select></ion-item>
+            <ion-item><ion-label position="stacked">Forma de pago</ion-label><ion-select [(ngModel)]="metodo"><ion-select-option value="EFECTIVO">Efectivo</ion-select-option><ion-select-option value="TARJETA">Terminal</ion-select-option><ion-select-option value="TRANSFERENCIA">Transferencia</ion-select-option><ion-select-option value="FIADO">Fiado</ion-select-option><ion-select-option value="MIXTO">Pago mixto</ion-select-option></ion-select></ion-item>
             <section class="cash-payment" *ngIf="metodo === 'EFECTIVO'">
               <div class="cash-total"><span>Total a cobrar</span><strong>{{ total | currency:'MXN' }}</strong></div>
               <ion-item><ion-label position="stacked">El cliente pagó con</ion-label><ion-input type="number" min="0" inputmode="decimal" placeholder="0.00" [(ngModel)]="efectivoRecibido"></ion-input></ion-item>
@@ -79,7 +79,6 @@
               <ion-item><ion-label position="stacked">Parte en tarjeta</ion-label><ion-input type="number" min="0" [(ngModel)]="pagoMixtoTarjeta"></ion-input></ion-item>
               <ion-item><ion-label position="stacked">Parte en transferencia</ion-label><ion-input type="number" min="0" [(ngModel)]="pagoMixtoTransferencia"></ion-input></ion-item>
               <ion-item><ion-label position="stacked">Parte a fiado</ion-label><ion-input type="number" min="0" [(ngModel)]="pagoMixtoFiado"></ion-input></ion-item>
-              <ion-item><ion-label position="stacked">Saldo a favor</ion-label><ion-input type="number" min="0" [max]="clienteSeleccionado?.saldoFavor || 0" [(ngModel)]="pagoMixtoSaldoFavor"></ion-input></ion-item>
               <div class="change-box" [class.pending]="diferenciaPagoMixto !== 0" [class.ready]="diferenciaPagoMixto === 0"><span>{{ diferenciaPagoMixto >= 0 ? 'Falta distribuir' : 'Monto excedido' }}</span><strong>{{ (diferenciaPagoMixto < 0 ? -diferenciaPagoMixto : diferenciaPagoMixto) | currency:'MXN' }}</strong><small>Capturado: {{ totalPagoMixto | currency:'MXN' }}</small></div>
             </section>
             <section class="credit-client" *ngIf="metodo === 'FIADO' || (metodo === 'MIXTO' && (pagoMixtoFiado || 0) > 0)">
@@ -104,7 +103,6 @@
               </div>
             </section>
             <ion-item *ngIf="metodo === 'FIADO' || (metodo === 'MIXTO' && (pagoMixtoFiado || 0) > 0)"><ion-label position="stacked">Plazo del fiado</ion-label><ion-select [(ngModel)]="plazoCredito"><ion-select-option [value]="7">7 días</ion-select-option><ion-select-option [value]="15">15 días</ion-select-option><ion-select-option [value]="30">30 días</ion-select-option><ion-select-option [value]="45">45 días</ion-select-option></ion-select></ion-item>
-            <ion-item *ngIf="metodo === 'SALDO_FAVOR' || (metodo === 'MIXTO' && (pagoMixtoSaldoFavor || 0) > 0)"><ion-label position="stacked">Cliente con saldo a favor</ion-label><ion-select [(ngModel)]="clienteId"><ion-select-option *ngFor="let cliente of clientes" [value]="cliente.id" [disabled]="cliente.saldoFavor <= 0">{{cliente.nombre}} · Disponible {{cliente.saldoFavor | currency:'MXN'}}</ion-select-option></ion-select></ion-item>
             <ion-item *ngIf="metodo === 'TARJETA' || metodo === 'TRANSFERENCIA' || metodo === 'MIXTO'"><ion-label position="stacked">Referencia de tarjeta/transferencia</ion-label><ion-input [(ngModel)]="referencia"></ion-input></ion-item>
             <ion-button expand="block" [disabled]="procesando || !carrito.length || (metodo === 'EFECTIVO' && efectivoFaltante > 0) || (metodo === 'MIXTO' && diferenciaPagoMixto !== 0)" (click)="abrirConfirmacionCobro()">Revisar cobro de {{ total | currency:'MXN' }}</ion-button>
           </ion-card-content>
@@ -131,15 +129,6 @@
           <ion-item><ion-label position="stacked">Comisión ganada por la tienda</ion-label><ion-input type="number" min="0" step="0.01" [(ngModel)]="recargaComision"></ion-input></ion-item>
           <p class="helper">La operación se guardará pendiente. Márcala exitosa únicamente cuando el proveedor entregue un folio.</p>
           <ion-button fill="outline" [disabled]="procesando || !telefonoRecargaValido" (click)="registrarRecarga()">Crear recarga pendiente</ion-button>
-        </ion-card-content></ion-card>
-        <ion-card><ion-card-header><ion-card-title>Cambio pendiente a clientes</ion-card-title></ion-card-header><ion-card-content>
-          <p class="helper">Guarda los $2 o $3 que la tienda queda debiendo para entregarlos después.</p>
-          <ion-item><ion-label position="stacked">Cliente</ion-label><ion-select [(ngModel)]="cambioClienteId"><ion-select-option *ngFor="let cliente of clientes" [value]="cliente.id">{{cliente.nombre}} · {{cliente.telefono || 'sin teléfono'}}</ion-select-option></ion-select></ion-item>
-          <ion-item><ion-label position="stacked">Nuevo cliente genérico (referencia)</ion-label><ion-input [(ngModel)]="cambioClienteGenerico" placeholder="Ej. señora de la casa azul"></ion-input></ion-item>
-          <ion-button size="small" fill="clear" [disabled]="procesando" (click)="crearClienteGenericoCambio()">Crear y seleccionar cliente genérico</ion-button>
-          <ion-item><ion-label position="stacked">Cambio pendiente</ion-label><ion-input type="number" min="0.01" step="0.01" [(ngModel)]="cambioPendienteMonto"></ion-input></ion-item>
-          <ion-button fill="outline" [disabled]="procesando" (click)="guardarCambioPendiente()">Guardar a favor</ion-button>
-          <div class="pending-change" *ngFor="let item of cambiosPendientes"><div><strong>{{item.cliente}}</strong><small>{{item.fecha | date:'short'}}</small></div><b>{{item.monto | currency:'MXN'}}</b><button type="button" (click)="entregarCambio(item)">Entregado</button></div>
         </ion-card-content></ion-card>
         <ion-card><ion-card-header><ion-card-title>Entrada o salida</ion-card-title></ion-card-header><ion-card-content>
           <ion-item><ion-label position="stacked">Tipo</ion-label><ion-select [(ngModel)]="movimientoTipo"><ion-select-option value="INGRESO">Ingreso</ion-select-option><ion-select-option value="SALIDA">Salida</ion-select-option></ion-select></ion-item>

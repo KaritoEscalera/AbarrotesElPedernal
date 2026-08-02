@@ -1,56 +1,66 @@
 :root {
-  /* Naranja de acción con contraste AA sobre texto blanco. */
-  --ion-color-primary: #A9470B;
-  --ion-color-primary-rgb: 169, 71, 11;
+  /* Paleta tomada del logotipo de Abarrotes El Pedernal. */
+  --ion-color-primary: #007C78;
+  --ion-color-primary-rgb: 0, 124, 120;
   --ion-color-primary-contrast: #FFFFFF;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #953E0A;
-  --ion-color-primary-tint: #B35923;
+  --ion-color-primary-shade: #006D6A;
+  --ion-color-primary-tint: #1A8986;
 
-  --ion-color-secondary: #F4A259;
-  --ion-color-secondary-rgb: 244, 162, 89;
+  --ion-color-secondary: #078FD1;
+  --ion-color-secondary-rgb: 7, 143, 209;
+  --ion-color-secondary-contrast: #FFFFFF;
+  --ion-color-secondary-shade: #067EB8;
+  --ion-color-secondary-tint: #209AD6;
 
-  --ion-color-tertiary: #4A2C1D;
-  --ion-color-tertiary-rgb: 74, 44, 29;
+  --ion-color-tertiary: #FFC21A;
+  --ion-color-tertiary-rgb: 255, 194, 26;
+  --ion-color-tertiary-contrast: #263400;
+  --ion-color-tertiary-shade: #E0AB17;
+  --ion-color-tertiary-tint: #FFC831;
 
   --ion-background-color: #FFFFFF;
-  --ion-card-background: #FFF8F1;
+  --ion-card-background: #FFFFFF;
 
-  --ion-text-color: #2E2E2E;
-  --ion-color-medium: #7A4E2D;
+  --ion-text-color: #173B3A;
+  --ion-color-medium: #58716F;
 
-  --ion-color-success: #6BBF59;
-  --ion-color-danger: #D9534F;
+  --ion-color-success: #4F8F00;
+  --ion-color-danger: #D7193F;
 
-  --pedernal-beige: #F5E6D3;
-  --pedernal-crema: #FFF8F1;
-  --pedernal-arena: #D9C2A3;
-  --pedernal-gris: #E8E3DC;
-  --pedernal-acento: #A9470B;
-  --pedernal-acento-texto: #8A3D10;
-  --pedernal-cafe: #4A2C1D;
+  --pedernal-beige: #E9F8F6;
+  --pedernal-crema: #F7FCFB;
+  --pedernal-arena: #FFE49A;
+  --pedernal-gris: #DCECEB;
+  --pedernal-acento: #007C78;
+  --pedernal-acento-texto: #006561;
+  --pedernal-cafe: #064E52;
+  --pedernal-azul: #078FD1;
+  --pedernal-verde: #78B900;
+  --pedernal-amarillo: #FFC21A;
+  --pedernal-rojo: #D7193F;
 }
 
 html.theme-dark {
-  --ion-background-color: #171310;
-  --ion-background-color-rgb: 23, 19, 16;
-  --ion-card-background: #241d19;
-  --ion-text-color: #f7ede5;
-  --ion-text-color-rgb: 247, 237, 229;
-  --ion-color-step-50: #221c18;
-  --ion-color-step-100: #2d2520;
-  --ion-color-step-150: #382e28;
-  --ion-color-step-200: #433730;
-  --ion-color-step-300: #594a40;
-  --ion-color-step-400: #705d50;
-  --ion-color-step-500: #877164;
-  --ion-color-step-600: #9f897d;
-  --ion-color-step-700: #b8a399;
-  --ion-color-step-800: #d0bdb5;
-  --ion-color-step-900: #eadbd4;
-  --ion-color-medium: #c9a994;
-  --pedernal-beige: #171310;
-  --pedernal-crema: #241d19;
-  --pedernal-arena: #5d4638;
-  --pedernal-gris: #342a25;
+  --ion-background-color: #061c22;
+  --ion-background-color-rgb: 6, 28, 34;
+  --ion-card-background: #0d2930;
+  --ion-text-color: #eefcff;
+  --ion-text-color-rgb: 238, 252, 255;
+  --ion-color-step-50: #0d272e;
+  --ion-color-step-100: #123139;
+  --ion-color-step-150: #173c44;
+  --ion-color-step-200: #1d464f;
+  --ion-color-step-300: #2d5c65;
+  --ion-color-step-400: #47737b;
+  --ion-color-step-500: #638a91;
+  --ion-color-step-600: #80a2a8;
+  --ion-color-step-700: #9ebac0;
+  --ion-color-step-800: #bed3d7;
+  --ion-color-step-900: #deebed;
+  --ion-color-medium: #9cc3c6;
+  --pedernal-beige: #061c22;
+  --pedernal-crema: #0d2930;
+  --pedernal-arena: #5f5217;
+  --pedernal-gris: #173c44;
 }

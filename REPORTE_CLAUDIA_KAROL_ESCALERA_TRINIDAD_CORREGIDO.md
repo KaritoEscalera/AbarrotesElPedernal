@@ -1,45 +1,203 @@
 # INFORME DEL PROYECTO DE ESTADÍA
 
-## Sistema de Gestión para Comercios
+## Sistema de Gestión para Abarrotes El Pedernal
 
 **Desarrollado en la empresa:** Abarrotes El Pedernal  
 **Presentado por:** Claudia Karol Escalera Trinidad  
 **Para obtener el título de:** Técnico Superior Universitario en Tecnologías de la Información, área Desarrollo de Software Multiplataforma  
-**Asesor empresarial:** Ing. Alejandro Figueroa  
+**Asesor empresarial:** Ing. Alejandro Figueroa
+**Asesor académico:** Ing. Jorge de Lara Hernández
+**Lugar y fecha:** Calvillo, Aguascalientes, agosto de 2026  
 
-> Nota de revisión: antes de entregar, sustituir los textos marcados entre corchetes y actualizar el índice automático, la numeración de páginas, las figuras y los anexos.
+---
+
+# Contenido
+
+DEDICATORIAS ........................................................................ 4
+
+AGRADECIMIENTOS ................................................................... 5
+
+INTRODUCCIÓN ........................................................................ 6
+
+CAPÍTULO 1. MARCO REFERENCIAL ...................................................... 7
+
+1.1 PERFIL DE LA EMPRESA ........................................................... 8
+
+Nombre o Razón Social ............................................................... 8
+
+Giro .................................................................................. 8
+
+Domicilio ............................................................................. 8
+
+Teléfono(s) ........................................................................... 8
+
+Correo Electrónico .................................................................... 8
+
+Página Web ............................................................................. 8
+
+1.2 ANTECEDENTES HISTÓRICOS ........................................................ 9
+
+1.3 ADMINISTRACIÓN ORGANIZACIONAL .................................................. 10
+
+Misión ................................................................................ 10
+
+Visión ................................................................................ 10
+
+Objetivos Estratégicos ................................................................ 10
+
+Normas y Políticas ..................................................................... 11
+
+Política de Calidad .................................................................... 11
+
+Valores ................................................................................ 11
+
+Estructura Orgánica .................................................................... 12
+
+1.4 ANÁLISIS FODA ..................................................................... 13
+
+Fortalezas ............................................................................. 13
+
+Oportunidades .......................................................................... 13
+
+Debilidades ............................................................................ 13
+
+Amenazas ............................................................................... 14
+
+CAPÍTULO 2. PLANIFICACIÓN DEL PROYECTO ............................................ 15
+
+2.1 DESCRIPCIÓN DEL PROBLEMA ........................................................ 16
+
+2.2 OBJETIVOS DEL PROYECTO .......................................................... 17
+
+Objetivo General ....................................................................... 17
+
+Objetivos Específicos .................................................................. 17
+
+Requisitos del Proyecto ................................................................ 18
+
+Requisitos del Producto ................................................................ 18
+
+2.3 CRONOGRAMA ......................................................................... 19
+
+2.4 JUSTIFICACIÓN ....................................................................... 20
+
+2.5 ENUNCIADO DEL ALCANCE ............................................................ 21
+
+2.6 METODOLOGÍA ......................................................................... 22
+
+CAPÍTULO 3. MARCO TEÓRICO ........................................................... 23
+
+3.1 SISTEMAS DE GESTIÓN COMERCIAL Y PUNTO DE VENTA ................................. 24
+
+3.2 INVENTARIOS, COMPRAS, CLIENTES Y CRÉDITO ........................................ 25
+
+3.3 BASES DE DATOS RELACIONALES Y ARQUITECTURA CLIENTE-SERVIDOR ..................... 26
+
+3.4 ANGULAR, IONIC, NODE.JS, EXPRESS Y MYSQL ........................................ 27
+
+3.5 SEGURIDAD, DESARROLLO ITERATIVO Y CONTINUIDAD OPERATIVA ........................ 28
+
+CAPÍTULO 4. DESARROLLO DEL PROYECTO ................................................ 29
+
+4.1 LEVANTAMIENTO DE REQUERIMIENTOS
+
+4.2 DISEÑO GENERAL DE LA SOLUCIÓN
+
+4.3 DESARROLLO E INTEGRACIÓN DE MÓDULOS
+
+4.4 ARQUITECTURA DEL SISTEMA
+
+4.5 DISEÑO DE LA BASE DE DATOS
+
+4.6 FLUJO TÉCNICO DE UNA VENTA
+
+4.7 SEGURIDAD IMPLEMENTADA
+
+4.8 DECISIONES DE DISEÑO Y DIFICULTADES
+
+4.9 ESTRATEGIA DE PRUEBAS
+
+4.10 IMPLEMENTACIÓN Y OPERACIÓN
+
+4.11 MANUAL RESUMIDO DE USUARIO
+
+4.12 EVIDENCIAS
+
+4.13 CASOS DE USO
+
+4.14 REGLAS DEL NEGOCIO
+
+4.15 COMPARACIÓN DEL PROCESO ANTERIOR Y PROPUESTO
+
+CAPÍTULO 5. CIERRE DEL PROYECTO
+
+5.1 CRONOGRAMA FINAL
+
+5.2 EVALUACIÓN DE RESULTADOS
+
+5.3 RECOMENDACIONES
+
+5.4 CONCLUSIONES
+
+Conclusiones del Proyecto
+
+Conclusiones Personales
+
+GLOSARIO
+
+BIBLIOGRAFÍA
+
+LIBROS
+
+REVISTAS
+
+PÁGINAS DE INTERNET
+
+ANEXOS
+
+ANEXO A. ORGANIGRAMA DE ABARROTES EL PEDERNAL
 
 ---
 
 # Dedicatorias
 
-Dedico este trabajo a mis padres, por su apoyo incondicional, sus enseñanzas y por brindarme las herramientas necesarias para alcanzar mis metas académicas y personales. Gracias por confiar siempre en mí y por impulsarme a continuar aun en los momentos de mayor dificultad.
+Dedico este trabajo a mis padres, por su apoyo incondicional, sus enseñanzas y por brindarme las herramientas necesarias para alcanzar mis metas académicas y personales. Gracias por confiar siempre en mí, por impulsarme a continuar aun en los momentos de mayor dificultad y por recordarme que cada esfuerzo tiene una recompensa. Su ejemplo, cariño y dedicación han sido fundamentales durante toda mi formación.
 
-A mi esposo, por su comprensión, paciencia y apoyo constante durante este proceso. Gracias por acompañarme en cada etapa, por escucharme y por motivarme a seguir adelante cuando más lo necesitaba.
+A mi esposo, por su comprensión, paciencia y apoyo constante durante este proceso. Gracias por acompañarme en cada etapa, por escucharme, por motivarme a seguir adelante cuando más lo necesitaba y por comprender el tiempo y la dedicación que requirió la realización de este proyecto. Su compañía me dio fortaleza para enfrentar los retos que se presentaron.
 
-A mi familia, por estar presente durante mi formación y por celebrar conmigo cada avance alcanzado.
+A mi familia, por estar presente durante mi formación, por sus palabras de ánimo y por celebrar conmigo cada avance alcanzado. Cada muestra de confianza y afecto contribuyó a que pudiera concluir esta etapa tan importante de mi vida.
+
+Finalmente, dedico este logro a todas las personas que, de alguna manera, formaron parte de mi crecimiento académico y personal. Este trabajo representa no solo el cumplimiento de una meta profesional, sino también el resultado del apoyo, la confianza y las enseñanzas que recibí a lo largo del camino.
 
 # Agradecimientos
 
-Agradezco a Abarrotes El Pedernal por permitirme realizar mi estadía profesional dentro del negocio y por brindarme la oportunidad de desarrollar una solución orientada a necesidades reales. La disposición para explicar los procesos diarios de la tienda fue fundamental para comprender la problemática y proponer un sistema adecuado a su forma de trabajo.
+Agradezco sinceramente a Abarrotes El Pedernal por permitirme realizar mi estadía profesional dentro del negocio y por brindarme la oportunidad de desarrollar una solución orientada a necesidades reales. La disposición para explicar los procesos diarios de la tienda, compartir información y señalar las dificultades existentes fue fundamental para comprender la problemática y proponer un sistema adecuado a su forma de trabajo.
 
-De manera especial, agradezco al Ing. Alejandro Figueroa, asesor empresarial, por compartir su conocimiento sobre la operación del negocio, revisar los avances y aportar observaciones que ayudaron a mejorar las funciones del sistema.
+De manera especial, agradezco al Ing. Alejandro Figueroa, asesor empresarial, por compartir su conocimiento sobre la operación del negocio, revisar los avances y aportar observaciones que ayudaron a mejorar las funciones del sistema. Su orientación permitió que el proyecto se mantuviera enfocado en las necesidades reales de la empresa y que cada módulo fuera evaluado desde una perspectiva práctica.
 
-Finalmente, agradezco a mis docentes, compañeros y familiares, quienes contribuyeron a mi formación y me apoyaron durante esta etapa.
+Agradezco de manera especial a mi docente Artemiza; a mi docente, el Ing. Axel; a mi docente Bañuelos; al psicólogo de la universidad; y a la maestra Carmen, por los conocimientos, la orientación y el apoyo que me brindaron durante mi formación académica.
+
+Asimismo, agradezco al Ing. Alejandro Figueroa por las enseñanzas que compartió conmigo durante el periodo en que fue mi docente. Su experiencia y sus aportaciones contribuyeron a mi crecimiento académico y profesional.
 
 # Introducción
 
-El presente informe describe el proyecto de estadía profesional realizado en Abarrotes El Pedernal, negocio dedicado a la venta al por menor de productos básicos, alimentos, bebidas y artículos de uso cotidiano. El proyecto consistió en el análisis, diseño y desarrollo de un sistema de gestión que concentra procesos que anteriormente se realizaban mediante libretas, comprobantes impresos y archivos separados.
+El presente documento describe el desarrollo del proyecto de estadía profesional enfocado en la creación de un sistema de gestión para Abarrotes El Pedernal. El sistema integra los procesos de ventas, caja, inventario, compras, proveedores, clientes, fiados, reportes y respaldos mediante una aplicación multiplataforma.
 
-La necesidad del sistema surgió a partir del crecimiento de la operación y de la dificultad para consultar información confiable sobre ventas, existencias, movimientos de caja, cuentas de clientes y relación con proveedores. El registro manual permitía mantener la actividad diaria, pero exigía invertir tiempo en localizar datos, realizar cálculos y reconstruir movimientos cuando era necesario revisar una cuenta o tomar una decisión.
+Dicho proyecto surge ante la necesidad de la empresa de mejorar el control de sus operaciones y sustituir los registros distribuidos en libretas, comprobantes y archivos separados por una herramienta que concentre información confiable y actualizada.
 
-La solución desarrollada integra funciones de punto de venta, control de caja, inventario, compras, proveedores, clientes, fiados, usuarios, reportes, estadísticas y respaldos. También considera características propias de una tienda de abarrotes, como la venta de productos por pieza o a granel, el registro de pagos mediante distintos métodos, la suspensión de ventas y el seguimiento de cambio pendiente a favor de clientes.
+El informe se estructura de la siguiente manera:
 
-El propósito no fue sustituir la dinámica cercana y flexible del establecimiento, sino ofrecer una herramienta que se adaptara a ella. Por esta razón, se diseñó una interfaz sencilla, utilizable desde computadora o tableta, con controles de acceso según las responsabilidades de cada usuario.
+**Capítulo 1. Marco Referencial:** presenta la información general de Abarrotes El Pedernal, sus antecedentes, misión, visión, objetivos, normas, políticas, valores, estructura organizacional y análisis FODA.
 
-Para conocer la operación se utilizaron entrevistas semiestructuradas, observación directa y revisiones periódicas con el asesor empresarial. A partir de la información obtenida se diseñó una solución con arquitectura cliente-servidor, integrada por una aplicación desarrollada con Angular e Ionic, una API construida con Node.js y Express, y una base de datos MySQL. Como resultado se obtuvo una base funcional que centraliza los procesos definidos dentro del alcance y conserva trazabilidad sobre las operaciones. La medición de beneficios económicos y tiempos de atención deberá realizarse después de un periodo continuo de uso en el establecimiento.
+**Capítulo 2. Planificación del Proyecto:** describe el problema identificado, los objetivos general y específicos, los requisitos, el cronograma, la justificación, el alcance y la metodología utilizada.
 
-El informe se organiza en cinco capítulos. El primero presenta el contexto de la empresa y su estructura organizacional. El segundo expone la problemática, los objetivos, requisitos, alcance y metodología. El tercero reúne los conceptos que sustentan la solución. El cuarto describe las actividades realizadas durante el desarrollo. Finalmente, el quinto presenta la evaluación de resultados, recomendaciones y conclusiones.
+**Capítulo 3. Marco Teórico:** expone los conceptos necesarios para comprender la solución, como los sistemas de gestión comercial, el punto de venta, el control de inventarios, las bases de datos relacionales, la arquitectura cliente-servidor, las tecnologías utilizadas y la seguridad.
+
+**Capítulo 4. Desarrollo del Proyecto:** describe las actividades realizadas durante el levantamiento de requerimientos, diseño, programación e integración de los módulos, así como la arquitectura, la base de datos, las pruebas y la implementación del sistema.
+
+**Capítulo 5. Cierre del Proyecto:** presenta el cronograma final, la evaluación de resultados, las recomendaciones y las conclusiones del proyecto y personales.
+
+El objetivo principal del proyecto es desarrollar un sistema de gestión flexible que permita registrar, organizar y consultar los movimientos operativos y administrativos de Abarrotes El Pedernal, con la finalidad de mejorar el control de la información, apoyar la toma de decisiones y reducir la dependencia de registros manuales.
 
 ---
 
@@ -51,9 +209,9 @@ El informe se organiza en cinco capítulos. El primero presenta el contexto de l
 **Giro:** Comercio al por menor de abarrotes, alimentos, bebidas, frutas, verduras, carnes y artículos de consumo básico.  
 **Domicilio:** López Mateos s/n, carretera Calvillo km 22.5, Jesús María, Aguascalientes.  
 **Teléfono:** 449 437 7355  
-**Correo electrónico:** [CONFIRMAR CORREO; el número telefónico no corresponde a un correo]  
+**Correo electrónico:** No disponible  
 **Redes sociales:** Facebook: El Pedernal – Abarrotes; Instagram: Pedernal – Abarrotes.  
-**Página web:** El negocio no cuenta actualmente con un sitio web propio.
+**Página web:** El negocio no cuenta actualmente con un sitio web propio; mantiene presencia en Facebook e Instagram.
 
 ## 1.2 Antecedentes Históricos
 
@@ -65,16 +223,13 @@ Actualmente, la operación y administración del negocio se encuentra coordinada
 
 ## 1.3 ADMINISTRACIÓN ORGANIZACIONAL
 
-
 ### Misión
 
 Brindar a la comunidad y a sus visitantes una experiencia de compra cercana, confiable y accesible, mediante la oferta de productos básicos y artículos de consumo diario, acompañada de un trato amable y familiar. Mantener la esencia de una tienda tradicional y, al mismo tiempo, mejorar sus procesos administrativos y tecnológicos para responder a las necesidades de sus clientes.
 
-
 ### Visión
 
 Consolidarse como una tienda de preferencia en la región, reconocida por la cercanía con sus clientes, la variedad de productos y la calidad del servicio. Profesionalizar de manera continua sus procesos sin perder el trato humano que distingue al negocio y generar condiciones para un crecimiento futuro.
-
 
 ### Objetivos Estratégicos
 
@@ -84,7 +239,6 @@ Consolidarse como una tienda de preferencia en la región, reconocida por la cer
 - Reducir errores en el registro de ventas, inventarios y cuentas pendientes.
 - Contar con información útil para planear compras y tomar decisiones.
 - Fortalecer la organización del trabajo y la asignación de responsabilidades.
-
 
 ### Normas Y Políticas
 
@@ -97,11 +251,9 @@ Consolidarse como una tienda de preferencia en la región, reconocida por la cer
 - Realizar respaldos periódicos de la información.
 - Mantener un trato respetuoso con clientes, proveedores y colaboradores.
 
-
 ### Política De Calidad
 
 En Abarrotes El Pedernal se busca satisfacer las necesidades de los clientes mediante productos en condiciones adecuadas, precios claros y atención personalizada. El negocio mantiene el compromiso de mejorar sus procesos, organizar la información y utilizar herramientas que permitan ofrecer un servicio confiable sin perder la cercanía con la comunidad.
-
 
 ### Valores
 
@@ -115,7 +267,6 @@ En Abarrotes El Pedernal se busca satisfacer las necesidades de los clientes med
 
 **Servicio.** Mantener disposición para orientar al cliente y resolver sus necesidades de compra.
 
-
 ### Estructura Orgánica
 
 La empresa utiliza una estructura vertical y lineal. Las decisiones generales recaen en la administración, mientras que el personal operativo se encarga de la atención al cliente, registro de ventas, recepción de mercancía y actividades de apoyo.
@@ -127,10 +278,7 @@ La empresa utiliza una estructura vertical y lineal. Las decisiones generales re
 3. Gerencia o responsable de turno.
 4. Personal de caja y atención.
 
-> Insertar como Figura 1 el organigrama autorizado por la empresa.
-
 ## 1.4 Análisis FODA.
-
 
 ### Fortalezas
 
@@ -141,7 +289,6 @@ La empresa utiliza una estructura vertical y lineal. Las decisiones generales re
 - Participación directa de la familia en la operación.
 - Capacidad para adaptar rápidamente el surtido.
 
-
 ### Oportunidades
 
 - Digitalizar procesos que actualmente se realizan de forma manual.
@@ -151,7 +298,6 @@ La empresa utiliza una estructura vertical y lineal. Las decisiones generales re
 - Implementar promociones basadas en información de ventas.
 - Ampliar el uso de pagos electrónicos y servicios complementarios.
 
-
 ### Debilidades
 
 - Información distribuida entre libretas, tickets y archivos separados.
@@ -160,7 +306,6 @@ La empresa utiliza una estructura vertical y lineal. Las decisiones generales re
 - Seguimiento manual de fiados y pagos parciales.
 - Ausencia de indicadores consolidados para apoyar decisiones.
 - Riesgo de errores al transcribir o calcular información.
-
 
 ### Amenazas
 
@@ -191,11 +336,9 @@ A partir de estas observaciones se planteó desarrollar un sistema de gestión f
 
 ## 2.2 Objetivos Del Proyecto
 
-
 ### Objetivo General
 
 Desarrollar un sistema de gestión flexible para Abarrotes El Pedernal que permita registrar, organizar y consultar los movimientos operativos y administrativos del negocio, con la finalidad de mejorar el control de la información, apoyar la toma de decisiones y reducir la dependencia de registros manuales.
-
 
 ### Objetivos Específicos
 
@@ -212,7 +355,6 @@ Desarrollar un sistema de gestión flexible para Abarrotes El Pedernal que permi
 - Diseñar una interfaz adaptable a computadoras y dispositivos móviles.
 - Verificar el funcionamiento mediante pruebas de los procesos principales.
 
-
 ### Requisitos del Proyecto
 
 - Contar con acceso a la información necesaria sobre los procesos del negocio.
@@ -222,7 +364,6 @@ Desarrollar un sistema de gestión flexible para Abarrotes El Pedernal que permi
 - Realizar pruebas antes de incorporar funciones a la operación.
 - Proteger la información mediante autenticación, roles y respaldos.
 
-
 ### Requisitos del Producto
 
 **Requisitos funcionales.**
@@ -231,7 +372,7 @@ Desarrollar un sistema de gestión flexible para Abarrotes El Pedernal que permi
 - RF02. Restringir funciones de acuerdo con el rol del usuario.
 - RF03. Registrar apertura y cierre de caja.
 - RF04. Registrar ventas con uno o varios productos.
-- RF05. Aceptar pagos en efectivo, tarjeta, transferencia, fiado, saldo a favor o modalidad mixta.
+- RF05. Aceptar pagos en efectivo, terminal, transferencia, fiado o modalidad mixta.
 - RF06. Calcular subtotal, descuentos, impuestos, total y cambio.
 - RF07. Vender productos por pieza y a granel.
 - RF08. Descontar automáticamente las existencias al confirmar una venta.
@@ -243,7 +384,6 @@ Desarrollar un sistema de gestión flexible para Abarrotes El Pedernal que permi
 - RF14. Generar reportes e indicadores.
 - RF15. Mantener una bitácora de acciones importantes.
 - RF16. Crear respaldos de la base de datos.
-
 
 **Requisitos no funcionales.**
 
@@ -262,18 +402,16 @@ El proyecto se organizó en las siguientes etapas:
 
 | Etapa | Actividades principales | Periodo planeado | Periodo real |
 |---|---|---|---|
-| Inducción | Conocimiento de la empresa y observación de procesos | [FECHA] | [FECHA] |
-| Análisis | Entrevistas, problemas, requisitos y alcance | [FECHA] | [FECHA] |
-| Diseño | Prototipos, arquitectura y base de datos | [FECHA] | [FECHA] |
-| Desarrollo 1 | Autenticación, usuarios y estructura inicial | [FECHA] | [FECHA] |
-| Desarrollo 2 | Caja, ventas e inventario | [FECHA] | [FECHA] |
-| Desarrollo 3 | Clientes, fiados, proveedores y compras | [FECHA] | [FECHA] |
-| Desarrollo 4 | Reportes, estadísticas, respaldos y ajustes | [FECHA] | [FECHA] |
-| Pruebas | Validación funcional y correcciones | [FECHA] | [FECHA] |
-| Implementación | Preparación del entorno y capacitación | [FECHA] | [FECHA] |
-| Cierre | Documentación y entrega | [FECHA] | [FECHA] |
-
-> Sustituir esta tabla por la gráfica de Gantt solicitada por la institución.
+| Inducción | Conocimiento de la empresa y observación de procesos | Marzo-agosto de 2026 | Marzo-agosto de 2026 |
+| Análisis | Entrevistas, problemas, requisitos y alcance | Marzo-agosto de 2026 | Marzo-agosto de 2026 |
+| Diseño | Prototipos, arquitectura y base de datos | Marzo-agosto de 2026 | Marzo-agosto de 2026 |
+| Desarrollo 1 | Autenticación, usuarios y estructura inicial | Marzo-agosto de 2026 | Marzo-agosto de 2026 |
+| Desarrollo 2 | Caja, ventas e inventario | Marzo-agosto de 2026 | Marzo-agosto de 2026 |
+| Desarrollo 3 | Clientes, fiados, proveedores y compras | Marzo-agosto de 2026 | Marzo-agosto de 2026 |
+| Desarrollo 4 | Reportes, estadísticas, respaldos y ajustes | Marzo-agosto de 2026 | Marzo-agosto de 2026 |
+| Pruebas | Validación funcional y correcciones | Marzo-agosto de 2026 | Marzo-agosto de 2026 |
+| Implementación | Preparación del entorno y capacitación | Marzo-agosto de 2026 | Marzo-agosto de 2026 |
+| Cierre | Documentación y entrega | Marzo-agosto de 2026 | Marzo-agosto de 2026 |
 
 ## 2.4 Justificación
 
@@ -330,7 +468,6 @@ Las etapas generales fueron:
 7. Realizar pruebas y corregir errores.
 8. Preparar documentación, respaldos y entrega.
 
-
 **Factibilidad del proyecto.**
 
 **Factibilidad técnica.**
@@ -339,20 +476,17 @@ El proyecto fue técnicamente viable porque pudo desarrollarse con herramientas 
 
 La aplicación puede utilizarse desde un navegador y cuenta con preparación para Android. Esto permite aprovechar computadoras o tabletas existentes y evita depender de un dispositivo especializado para comenzar las pruebas.
 
-
 **Factibilidad operativa.**
 
 La factibilidad operativa se evaluó considerando que el personal está acostumbrado a una atención rápida. La interfaz concentra en Caja las acciones necesarias para vender, mientras que la configuración se encuentra en módulos administrativos. De este modo, el sistema no exige que la persona en caja gestione catálogos o proveedores durante una venta.
 
 La adopción requiere capacitación y un periodo de acompañamiento. Durante los primeros días es conveniente comparar los registros digitales con el procedimiento anterior para detectar omisiones sin detener la operación.
 
-
 **Factibilidad económica.**
 
 El desarrollo utiliza tecnologías que no requieren pago de licencias para las funciones implementadas. Los costos posibles corresponden principalmente al equipo, mantenimiento, red local, impresión y, si se decide publicar el sistema, alojamiento y certificados.
 
 No se afirma un ahorro económico específico porque todavía se necesita medir la operación durante un periodo representativo. Sin embargo, la reducción de registros duplicados y el acceso más rápido a la información representan beneficios potenciales.
-
 
 **Análisis de riesgos.**
 
@@ -368,7 +502,6 @@ No se afirma un ahorro económico específico porque todavía se necesita medir 
 | Pérdida de base de datos | Baja | Muy alta | Respaldos automáticos y pruebas de restauración |
 | Precio desactualizado | Media | Media | Revisión al recibir mercancía |
 | Uso de funciones sin autorización | Baja | Alta | Roles, middleware y bitácora |
-
 
 **Matriz de trazabilidad.**
 
@@ -392,211 +525,59 @@ La trazabilidad de requisitos permite relacionar cada necesidad con su implement
 
 # Capítulo 3. Marco Teórico
 
-## 3.1 Sistemas de Gestión para Tiendas de Abarrotes
+El desarrollo de un sistema para una tienda de abarrotes requiere comprender tanto los procesos comerciales como las tecnologías que permiten representarlos. En este capítulo se presentan los conceptos que sustentan la solución implementada. La selección se limita a los temas directamente relacionados con el proyecto y evita describir herramientas que no participaron en su construcción.
 
-Un sistema de gestión comercial es una solución informática diseñada para registrar, organizar, procesar y consultar la información generada durante la operación de un negocio. Su propósito no se limita a sustituir registros escritos por formularios digitales. Un sistema de este tipo debe relacionar los procesos de venta, inventario, caja, compras, clientes y proveedores para que la información producida en una actividad pueda utilizarse de manera inmediata en las demás.
+## 3.1 Sistemas de gestión comercial y punto de venta
 
-En los pequeños comercios es común que cada proceso se controle por separado. Las ventas pueden registrarse en tickets, los fiados en una libreta, las compras en facturas y las existencias mediante conteos ocasionales. Estos métodos permiten mantener la operación cuando el volumen de información es reducido; sin embargo, conforme aumenta la cantidad de productos y transacciones, también se incrementa el tiempo necesario para localizar datos, comparar registros y corregir diferencias.
+Un sistema de gestión comercial reúne en una sola plataforma la información generada por ventas, inventarios, compras, proveedores, clientes y caja. Su finalidad es sustituir registros aislados por datos relacionados que puedan consultarse de forma oportuna. En una tienda de abarrotes esta integración resulta importante porque una sola venta produce varios efectos: registra el ingreso, descuenta existencias, identifica el método de pago, genera un comprobante y, cuando se vende a crédito, crea una cuenta por cobrar.
 
-La principal aportación de un sistema de gestión es la centralización de la información. Cuando una venta se confirma, el sistema puede registrar el ingreso, disminuir la existencia de los productos, actualizar el saldo del cliente cuando se trata de una venta a crédito y conservar los datos necesarios para elaborar reportes. De esta manera, una sola captura genera efectos coordinados y evita repetir el mismo registro en distintos medios.
+El punto de venta es el componente utilizado para capturar los productos que adquiere el cliente y calcular el importe de la operación. Un punto de venta adecuado debe permitir localizar artículos mediante código o nombre, modificar cantidades, aplicar las reglas autorizadas y registrar el pago. También debe impedir operaciones incompletas, por ejemplo vender sin una caja abierta, confirmar cantidades mayores que las existencias o finalizar un cobro cuya distribución no coincide con el total.
 
-La centralización también favorece la consistencia. Si cada área conserva su propia versión de la información, pueden existir cantidades distintas para un mismo producto o saldo. En cambio, una base de datos compartida establece una fuente principal de consulta. Esto permite que caja, inventario y administración trabajen con los mismos datos, siempre que los movimientos sean capturados correctamente y las reglas del sistema se apliquen de forma uniforme.
+La operación de Abarrotes El Pedernal exige considerar productos por pieza y a granel. En el primer caso la cantidad debe ser entera; en el segundo puede expresarse en gramos o kilogramos. Para evitar inconsistencias se conserva el kilogramo como unidad base y la interfaz convierte los gramos antes de enviar la operación. De esta manera, una venta de 500 gramos se almacena como 0.500 kilogramos y el importe se calcula con el precio correspondiente.
 
-En una tienda de abarrotes, el sistema debe adaptarse a una operación dinámica. Durante una jornada pueden presentarse ventas continuas, cambios de precio, recepción de mercancía, productos vendidos por peso, pagos mediante diferentes métodos, devoluciones, mermas y ventas a crédito. Por ello, la solución debe responder con rapidez y al mismo tiempo conservar suficiente detalle para revisar posteriormente lo ocurrido.
+El control de caja relaciona las ventas con un turno de trabajo. La apertura registra el fondo inicial y el cierre compara el efectivo esperado con el dinero contado. Los pagos mediante terminal, transferencia y fiado deben conservarse por separado, ya que no forman parte del efectivo físico. Esta clasificación facilita el arqueo, la revisión de diferencias y la elaboración de reportes.
 
-Otro aspecto importante es la generación de información para la toma de decisiones. Los datos operativos pueden transformarse en indicadores como ventas por periodo, productos con mayor movimiento, artículos con baja existencia, cuentas pendientes de cobro, compras por proveedor y diferencias de caja. Estos indicadores no sustituyen la experiencia de la administración, pero ofrecen evidencia que facilita identificar problemas, planear compras y evaluar resultados.
+## 3.2 Inventarios, compras, clientes y crédito
 
-La implementación de un sistema no elimina la necesidad de supervisión ni garantiza por sí sola que la información sea correcta. La calidad de los resultados depende de la calidad de los datos capturados. Si una entrada de mercancía no se registra o se utiliza una unidad incorrecta, la existencia mostrada dejará de coincidir con la cantidad física. Por esta razón, un sistema de gestión debe complementarse con procedimientos de operación, capacitación, validaciones automáticas y revisiones periódicas.
+El inventario representa las existencias disponibles de cada producto. Su control no consiste únicamente en guardar una cantidad actual, sino en conservar los movimientos que explican cómo cambió. Entre estos movimientos se encuentran entradas por compra, salidas por venta, mermas, ajustes y correcciones autorizadas. La trazabilidad permite conocer la cantidad anterior, la cantidad posterior, el motivo, la fecha y la persona responsable.
 
-También debe considerarse que la digitalización modifica responsabilidades. Cada usuario necesita conocer qué actividades puede realizar, qué información debe verificar y qué procedimiento seguir ante una excepción. El control de acceso por roles, la bitácora de operaciones y los respaldos permiten reducir riesgos, pero deben acompañarse de políticas claras para el uso de contraseñas, cancelaciones, ajustes de inventario y recuperación de información.
+El nivel mínimo sirve como referencia para detectar artículos que requieren reposición. Cuando la existencia es igual o inferior a dicho nivel, el sistema puede mostrar una alerta. Esta señal no reemplaza la decisión del responsable de compras, pero ayuda a ordenar prioridades y reduce la posibilidad de olvidar productos de rotación frecuente. Los conteos físicos siguen siendo necesarios, pues permiten comparar la mercancía real con la registrada y corregir diferencias justificadas.
 
-En consecuencia, un sistema de gestión para una tienda de abarrotes puede entenderse como una herramienta integral de control operativo y administrativo. Su valor se encuentra tanto en automatizar cálculos como en mantener relaciones confiables entre los movimientos del negocio. Para Abarrotes El Pedernal, esta perspectiva permitió plantear una solución que no se concentrara únicamente en cobrar productos, sino que integrara los procesos que intervienen antes, durante y después de cada venta.
+Las compras relacionan proveedores, productos, costos y recepción de mercancía. Registrar el costo resulta relevante para revisar cambios de precio y estimar márgenes. La recepción debe incrementar el inventario únicamente cuando la operación se confirma; si ocurre un error, los cambios deben cancelarse como una unidad. Esta condición evita que una compra quede registrada sin actualizar existencias o que el inventario aumente sin un documento que explique el movimiento.
 
-## 3.2 Sistema de Gestión para Tiendas de Abarrotes
+La gestión de clientes permite identificar a las personas que utilizan crédito. Un fiado crea una cuenta por cobrar con importe original, saldo y fecha. Los abonos reducen el saldo sin borrar el historial, de modo que pueda reconstruirse el estado de la cuenta. También se aplican límites y restricciones para evitar nuevos créditos cuando existen adeudos vencidos o cuando el monto solicitado supera la cantidad autorizada.
 
-### 3.2.1 Punto de venta
+## 3.3 Bases de datos relacionales y arquitectura cliente-servidor
 
-El punto de venta es el conjunto de funciones que permite registrar una transacción entre el comercio y el cliente. Normalmente incluye la identificación o selección de productos, captura de cantidades, cálculo de importes, aplicación de descuentos, elección de la forma de pago y generación de un comprobante. Aunque el cobro es su función más visible, también representa el origen de información utilizada por caja, inventario, clientes y reportes.
+Una base de datos relacional organiza la información en tablas vinculadas mediante claves. La clave primaria identifica cada registro y la clave foránea mantiene la relación con otra tabla. En el proyecto, una venta se relaciona con sus detalles, pagos, cliente, usuario y sesión de caja. Esta estructura reduce duplicidad y permite consultar una operación completa sin repetir todos los datos en un solo registro.
 
-Un punto de venta debe reducir el tiempo de atención sin omitir validaciones importantes. La interfaz necesita permitir la búsqueda rápida de artículos, lectura de códigos de barras, modificación de cantidades y eliminación de partidas antes de confirmar. El sistema también debe mostrar con claridad el subtotal, descuentos, total recibido y cambio para que la persona encargada pueda revisar la operación antes de finalizarla.
+La integridad referencial impide relaciones inválidas, como asociar un detalle con una venta inexistente. Los índices aceleran búsquedas frecuentes por código, fecha, estado o identificador. Las transacciones agrupan varias instrucciones y garantizan que se confirmen todas o se cancelen todas. Esta propiedad es esencial durante una venta, porque el encabezado, los productos, los pagos, el inventario y la caja deben mantenerse consistentes.
 
-En Abarrotes El Pedernal fue necesario considerar productos por pieza y productos a granel. Los artículos por pieza deben manejar cantidades enteras, mientras que los productos por peso requieren cantidades decimales. Para mantener uniformidad, el inventario conserva el kilogramo como unidad base y convierte los gramos capturados durante la venta. Por ejemplo, una captura de 500 gramos equivale a 0.500 kilogramos y una captura de 250 gramos equivale a 0.250 kilogramos.
+La arquitectura cliente-servidor separa la interfaz utilizada por el personal de la lógica que valida las reglas. La aplicación cliente envía solicitudes mediante HTTP a una API. El servidor comprueba permisos, cantidades y estados antes de acceder a MySQL. Esta separación evita que la interfaz se conecte directamente a la base de datos y permite reutilizar las mismas reglas desde navegador o dispositivo móvil.
 
-La solución también contempla diferentes formas de pago. Una venta puede liquidarse mediante efectivo, tarjeta, transferencia, crédito o una combinación de métodos. En un pago mixto, la suma de los importes debe coincidir con el total de la venta. Esta validación evita registrar una operación parcialmente pagada por un error de captura. Cuando el pago es en efectivo, el sistema calcula el cambio; cuando se utiliza tarjeta o transferencia, puede conservarse una referencia para facilitar aclaraciones.
+Una respuesta correcta debe indicar el resultado y proporcionar datos suficientes para actualizar la pantalla. Cuando la solicitud no puede completarse, el servidor devuelve un mensaje comprensible sin revelar información sensible. La interfaz presenta ese resultado al usuario y conserva el estado necesario para que la operación pueda corregirse.
 
-Las ventas suspendidas representan otra necesidad de la operación. Esta función permite guardar temporalmente un carrito sin afectar todavía la existencia ni la caja. Resulta útil cuando un cliente necesita buscar otro producto o cuando debe atenderse una segunda compra. Al recuperar la venta, las partidas se incorporan nuevamente a la pantalla de cobro y se validan antes de confirmar.
+## 3.4 Tecnologías utilizadas: Angular, Ionic, Node.js, Express y MySQL
 
-El comprobante o ticket sirve como evidencia para el cliente y como referencia para búsquedas posteriores. Debe incluir, entre otros datos, el identificador de la venta, fecha, productos, cantidades, precios, descuentos, total, forma de pago y persona que atendió. La posibilidad de reimprimir un ticket debe controlarse y quedar diferenciada de la emisión original para mantener claridad en la operación.
+Angular es el framework utilizado para organizar la interfaz en componentes, páginas, rutas y servicios. Los componentes representan elementos reutilizables; los servicios concentran la comunicación con la API; y las rutas determinan qué vista corresponde a cada dirección. Los formularios permiten validar datos antes de enviarlos y mostrar mensajes cuando falta información.
 
-### 3.2.2 Control de inventarios
+Ionic aporta componentes visuales adaptables y facilita preparar la aplicación para diferentes tamaños de pantalla. Junto con Capacitor permite empaquetar la solución como aplicación móvil y utilizar funciones del dispositivo. En este proyecto se empleó para ofrecer una experiencia consistente en computadora y tableta sin mantener aplicaciones completamente separadas.
 
-El inventario representa los productos disponibles para venta. Su control considera entradas, salidas, ajustes, mermas y conteos físicos. La existencia teórica se obtiene a partir de los movimientos registrados, mientras que el conteo físico permite comprobar la cantidad real.
+Node.js ejecuta JavaScript en el servidor. Express organiza la API mediante rutas y middleware. Las rutas reciben solicitudes; los controladores coordinan cada operación; y el middleware verifica autenticación, roles y datos comunes. La programación asíncrona permite esperar consultas y operaciones de entrada o salida sin bloquear innecesariamente el servicio.
 
-Las entradas pueden originarse por la recepción de una compra, una devolución o una corrección autorizada. Las salidas se producen principalmente por ventas, aunque también pueden existir mermas, caducidades, daños o ajustes. Cada tipo de movimiento tiene un significado diferente y debe registrarse de manera separada para evitar que una diferencia se interprete de forma incorrecta.
+MySQL almacena la información relacional. El motor InnoDB proporciona transacciones, claves foráneas y mecanismos de concurrencia. Las consultas parametrizadas separan las instrucciones de los datos y disminuyen el riesgo de inyección SQL. La configuración sensible, como credenciales y secretos, se conserva mediante variables de entorno y no dentro del código fuente.
 
-El uso de una existencia mínima permite detectar productos que necesitan reposición. Cuando la cantidad disponible es igual o inferior a este nivel, el sistema puede generar una alerta o incluir el artículo en un pedido sugerido. La existencia mínima debe definirse considerando la velocidad de venta, el tiempo de entrega del proveedor y el espacio disponible para almacenamiento.
+## 3.5 Seguridad, desarrollo iterativo y continuidad operativa
 
-Los conteos físicos son necesarios porque la existencia calculada puede separarse de la cantidad real debido a capturas omitidas, daños, errores de unidad o pérdidas. Durante un conteo se compara la existencia teórica con la cantidad observada. Si hay una diferencia, el ajuste debe solicitar un motivo y conservar los valores anterior y nuevo. Esto permite corregir el inventario sin perder evidencia.
+La seguridad se aplica en varias capas. Las contraseñas se protegen mediante una función hash de una sola vía; después del inicio de sesión, el servidor emite un token que identifica al usuario durante un periodo limitado. El control de acceso basado en roles restringe cada función de acuerdo con las responsabilidades de administración, gerencia o caja. La validación del servidor se mantiene aun cuando la interfaz ya haya revisado los datos, porque una solicitud puede enviarse fuera de la aplicación.
 
-La administración de lotes y fechas de caducidad agrega un nivel adicional de control. Dos unidades del mismo producto pueden haber ingresado en fechas distintas y tener diferentes vencimientos. Al conservar esta información es posible identificar mercancía próxima a caducar y priorizar su venta. Las alertas anticipadas ayudan a tomar medidas, como acomodar primero el lote más antiguo o aplicar una promoción autorizada.
+La bitácora conserva acciones relevantes como cancelaciones, ajustes, cambios de usuarios y generación de respaldos. Su propósito es aportar trazabilidad, no vigilar tareas ordinarias. Los registros con historial se desactivan de manera lógica en lugar de eliminarse físicamente, ya que una eliminación podría dejar ventas o auditorías sin referencia.
 
-La trazabilidad es esencial en el control de inventarios. No basta con conocer la existencia actual; también debe ser posible determinar qué operación la modificó, cuándo ocurrió, qué cantidad cambió y qué usuario la registró. Esta información facilita investigar diferencias y comprender la evolución de un artículo.
+El desarrollo iterativo divide el trabajo en ciclos cortos de análisis, construcción, prueba y revisión. Este enfoque permitió incorporar observaciones del negocio sin esperar hasta el final. Cada incremento se verificó con escenarios normales y negativos, por ejemplo credenciales incorrectas, pagos incompletos, existencias insuficientes o intentos de utilizar funciones sin autorización.
 
-### 3.2.3 Compras y proveedores
+La continuidad operativa contempla respaldos, restauración y respuesta ante fallas. Una copia solo es útil si puede verificarse y restaurarse. Por ello se recomienda mantener más de una ubicación, comprobar periódicamente la integridad y ensayar la recuperación en un entorno de prueba. También deben documentarse la dirección del servidor, el inicio de los servicios y las acciones básicas ante una interrupción de energía o red.
 
-El proceso de compras conecta las necesidades del inventario con la mercancía ofrecida por los proveedores. Una compra puede comenzar con la identificación de productos por debajo de su existencia mínima y continuar con la selección del proveedor, captura de cantidades, costos y recepción.
-
-El catálogo de proveedores debe conservar datos de identificación y contacto, así como los productos que suministra y, cuando sea útil, sus días habituales de entrega. Esta relación permite consultar alternativas de abastecimiento y facilita preparar pedidos. No obstante, el sistema constituye una herramienta de apoyo; la decisión final también depende de precios, calidad, disponibilidad, promociones y condiciones de pago.
-
-Al recibir una compra, las cantidades aceptadas deben incrementar el inventario. Además, puede actualizarse el último costo del producto para disponer de una referencia reciente. Esta modificación debe realizarse dentro de una operación controlada: no sería correcto registrar la compra sin actualizar las existencias, ni aumentar las existencias si la compra no quedó confirmada.
-
-El pedido sugerido utiliza información como existencia actual y nivel mínimo para proponer cantidades. Su finalidad es disminuir omisiones y agilizar la revisión del surtido. La propuesta debe poder modificarse, ya que la experiencia de la administración y las condiciones del proveedor pueden justificar comprar una cantidad diferente.
-
-### 3.2.4 Clientes, fiados y abonos
-
-El registro de clientes permite relacionar ventas, saldos y pagos con una persona identificable. En una tienda de abarrotes esta función resulta especialmente útil para administrar fiados, ya que reemplaza cálculos dispersos por un historial ordenado de cargos y abonos.
-
-Una venta a crédito aumenta el saldo pendiente del cliente. Antes de autorizarla, el sistema debe comprobar que el cliente esté activo, que disponga de crédito y que la operación no supere el límite establecido. También puede advertir sobre adeudos vencidos. Estas validaciones ayudan a aplicar de manera consistente las reglas definidas por el negocio.
-
-Un abono disminuye la deuda, pero debe conservarse como movimiento independiente. Si solo se reemplazara el saldo final, sería imposible conocer cuándo y cómo se realizaron los pagos. El historial debe incluir fecha, importe, forma de pago, usuario que registró el movimiento y saldo resultante.
-
-El saldo a favor se presenta cuando el cliente entrega una cantidad superior a la deuda o cuando una devolución genera crédito. Este importe debe distinguirse de un fiado, porque representa una obligación del negocio hacia el cliente. La separación entre deuda y saldo a favor evita confusiones al aplicarlos en ventas posteriores.
-
-### 3.2.5 Control de caja
-
-El control de caja organiza los movimientos monetarios asociados con un turno. La apertura registra el fondo inicial disponible para entregar cambio. Durante la jornada se acumulan cobros y pueden registrarse entradas o salidas autorizadas. Al finalizar se realiza un arqueo para comparar el efectivo esperado con el efectivo contado.
-
-El efectivo esperado se calcula a partir del fondo inicial, las ventas en efectivo y los demás movimientos de caja. Los pagos con tarjeta o transferencia forman parte de las ventas, pero no incrementan físicamente el dinero del cajón. Esta separación es necesaria para evitar diferencias aparentes.
-
-El corte X permite consultar el estado del turno sin cerrarlo. El corte Z representa el cierre definitivo y resume los importes del periodo. Si existe una diferencia entre el efectivo esperado y el contado, el sistema debe conservarla para revisión. Una diferencia no debe ocultarse modificando ventas; debe registrarse y explicarse conforme al procedimiento administrativo.
-
-La relación entre caja y usuarios permite conocer quién abrió, operó y cerró un turno. También evita que se registren ventas sin una caja activa o que se cierre cuando todavía existen operaciones pendientes de sincronización.
-
-### 3.2.6 Base de datos relacional
-
-Una base de datos relacional organiza la información en tablas vinculadas mediante identificadores. En este proyecto, una venta se relaciona con su usuario, cliente, detalles, pagos y movimientos de inventario.
-
-La organización en tablas evita repetir información innecesariamente. Por ejemplo, los datos principales de un producto se almacenan una sola vez y cada detalle de venta conserva una referencia a ese producto. De forma similar, un cliente puede relacionarse con varias ventas y abonos sin duplicar todos sus datos en cada movimiento.
-
-Las claves primarias identifican de manera única cada registro y las claves foráneas mantienen las relaciones entre tablas. Estas restricciones ayudan a impedir que se cree un detalle de venta asociado con una venta inexistente o que se pierdan referencias históricas por una eliminación incorrecta.
-
-Se utilizó MySQL con el motor InnoDB. Las transacciones permiten agrupar varias instrucciones y confirmar todas mediante `COMMIT` o cancelar sus cambios mediante `ROLLBACK`. Esta propiedad es fundamental para operaciones compuestas. Una venta debe registrar su encabezado, partidas, pagos y disminuciones de inventario como una sola unidad lógica. Si alguna validación falla, todos los cambios deben revertirse.
-
-La base de datos también aplica tipos y restricciones. Los importes requieren precisión decimal, las fechas deben conservar un formato consistente y las cantidades deben cumplir las reglas de su unidad. Estas medidas complementan las validaciones de la interfaz y del servidor.
-
-El diseño debe equilibrar la información actual con el historial. En lugar de borrar físicamente un producto o proveedor que ya participó en operaciones, se utiliza un estado activo o inactivo. Así se evita su uso en nuevas capturas, pero se conservan las relaciones necesarias para consultar ventas y compras anteriores.
-
-### 3.2.7 Arquitectura cliente-servidor
-
-La arquitectura cliente-servidor separa la interfaz que utiliza la persona del servicio encargado de validar reglas y acceder a la base de datos. En este proyecto, la aplicación cliente envía solicitudes a una API. El servidor verifica permisos y datos antes de consultar o modificar MySQL.
-
-La aplicación cliente se encarga de presentar formularios, recibir acciones y mostrar resultados. La API recibe solicitudes, valida la sesión y aplica las reglas del negocio. La base de datos almacena la información de forma persistente. Esta distribución asigna responsabilidades claras y evita que la aplicación móvil contenga credenciales directas de MySQL.
-
-La comunicación se realiza mediante solicitudes HTTP. Los métodos pueden representar operaciones como consultar, crear, actualizar o desactivar registros. La API devuelve códigos de estado y mensajes que permiten a la interfaz distinguir entre una solicitud correcta, datos inválidos, falta de autorización o una falla interna.
-
-Centralizar las reglas en el servidor evita depender únicamente de la interfaz. Aunque un formulario impida capturar una cantidad negativa, la API debe validar nuevamente el dato, porque una solicitud podría originarse desde otra versión de la aplicación. Esta validación en varias capas reduce el riesgo de almacenar información incorrecta.
-
-La separación también facilita el mantenimiento. Es posible modificar la presentación sin cambiar la estructura de la base de datos, o ampliar la API para admitir otro tipo de cliente. Sin embargo, esta arquitectura depende de la disponibilidad de la red y del servidor, por lo que requiere monitoreo, arranque automático y procedimientos para atender interrupciones.
-
-### 3.2.8 Aplicaciones multiplataforma
-
-Una aplicación multiplataforma utiliza una misma base de desarrollo para operar en más de un entorno. El proyecto fue construido con Angular e Ionic. Angular organiza la interfaz mediante componentes y servicios, mientras que Ionic proporciona elementos visuales adaptables y herramientas para preparar aplicaciones móviles.
-
-Angular permite dividir la solución en páginas, componentes, servicios y rutas. Esta organización favorece la reutilización y separa la lógica de presentación de la comunicación con la API. Los servicios compartidos concentran tareas como autenticación, consulta de productos e impresión.
-
-Ionic proporciona controles adaptados a interacción táctil y estilos que pueden utilizarse en navegador y dispositivos móviles. Capacitor permite empaquetar la aplicación web como una aplicación nativa y acceder a capacidades del equipo mediante complementos. En este proyecto, esta posibilidad es importante para el uso en tabletas y la integración con impresión.
-
-Una base de código compartida reduce la duplicación, pero no elimina la necesidad de pruebas específicas. El tamaño de pantalla, orientación, permisos, acceso a red y comportamiento del teclado pueden variar entre computadora, tableta y teléfono. Por ello, el diseño adaptable y las pruebas en dispositivos reales forman parte del desarrollo multiplataforma.
-
-### 3.2.9 Seguridad y control de acceso
-
-El control de acceso basado en roles asigna permisos según las responsabilidades del usuario. En el sistema se definieron tres perfiles:
-
-- **Administrador:** configuración general, usuarios, auditoría y acceso completo.
-- **Gerente:** operación, inventario, proveedores y consulta de indicadores.
-- **Cajera:** ventas y funciones necesarias para la atención.
-
-El principio de privilegio mínimo establece que cada persona debe disponer solamente de las funciones necesarias para realizar su trabajo. De este modo, la persona en caja puede registrar ventas sin tener permiso para administrar usuarios o restaurar respaldos. La restricción debe aplicarse tanto en la navegación de la interfaz como en la API.
-
-Las contraseñas no se almacenan como texto legible. Se procesan mediante una función hash que genera una representación no reversible. Al iniciar sesión, el sistema compara la contraseña proporcionada con el hash almacenado. Si la autenticación es correcta, se genera un token temporal que identifica la sesión y acompaña las solicitudes protegidas.
-
-La seguridad también incluye medidas contra intentos repetidos, vencimiento de sesión y control de cuentas inactivas. Una cuenta desactivada no debe iniciar nuevas sesiones, aunque su historial debe mantenerse asociado con las operaciones efectuadas anteriormente.
-
-La bitácora registra acciones relevantes, como ajustes, cancelaciones, cambios de usuario y restauraciones. Su objetivo no es vigilar actividades ordinarias, sino conservar evidencia que facilite aclarar modificaciones sensibles. Para ser útil debe incluir usuario, fecha, acción y referencia del registro afectado.
-
-### 3.2.10 Desarrollo iterativo y Scrum
-
-Scrum es un marco de trabajo para desarrollar productos complejos mediante entregas incrementales. El trabajo se organiza en periodos cortos y el resultado de cada periodo se revisa para decidir los siguientes pasos.
-
-Para este proyecto se utilizó una adaptación de sus principios, debido a que el desarrollo fue realizado principalmente por una persona y dentro del periodo definido para la estadía. Las funciones pendientes se mantuvieron en una lista priorizada y el asesor empresarial participó como fuente de requisitos y revisor del producto.
-
-Cada ciclo incluyó selección de actividades, implementación, prueba y revisión. El resultado funcional permitió obtener observaciones más concretas que una descripción escrita. Por ejemplo, el uso del módulo de caja ayudó a detectar la necesidad de ventas suspendidas, pagos mixtos y captura de productos a granel.
-
-El desarrollo incremental disminuyó el riesgo de descubrir problemas únicamente al final. También permitió atender primero los procesos esenciales y agregar funciones complementarias después de contar con una base estable. La adaptación no se presenta como una aplicación completa de todos los eventos y roles de Scrum, sino como el uso de principios iterativos apropiados para el contexto.
-
-### 3.2.11 Ingeniería de requisitos
-
-La ingeniería de requisitos comprende las actividades utilizadas para descubrir, analizar, documentar y validar las necesidades que debe resolver un sistema. Esta disciplina es importante porque una petición inicial suele expresar solamente una parte del problema. El usuario puede solicitar una pantalla o una función específica, pero detrás de ella existen reglas, excepciones y relaciones con otros procesos.
-
-Los requisitos se clasifican comúnmente en funcionales y no funcionales. Los funcionales describen lo que el sistema debe hacer, por ejemplo, registrar una venta o descontar existencias. Los no funcionales establecen condiciones de calidad y operación, como seguridad, facilidad de uso, consistencia o adaptabilidad a diferentes dispositivos.
-
-El levantamiento puede utilizar entrevistas, observación directa, revisión de documentos y análisis de procesos. En un pequeño comercio, la observación es especialmente útil porque varias reglas se aplican por experiencia y no se encuentran escritas. Preguntar qué sucede durante una venta permite conocer el flujo común; observar la atención ayuda a identificar interrupciones y excepciones.
-
-Después del levantamiento, los requisitos deben analizarse para detectar contradicciones, dependencias y prioridades. Registrar una venta depende de que exista una caja abierta, productos activos y existencia suficiente. Una venta a crédito agrega la necesidad de identificar al cliente y comprobar su límite. Estas relaciones deben documentarse para evitar desarrollar funciones aisladas.
-
-Durante el proyecto, los requisitos no se consideraron definitivos después de la primera entrevista. Cada revisión permitió precisar reglas. Un ejemplo fue la venta a granel: no bastaba con aceptar números decimales, ya que la persona en caja necesitaba expresar la cantidad en gramos o kilogramos, mientras que el inventario debía conservar una unidad uniforme.
-
-La validación de requisitos consiste en comprobar que la función implementada resuelva la necesidad original. Para ello se preparan casos de prueba con condiciones normales y excepcionales. No solo debe verificarse que una venta correcta se registre, sino también que el sistema rechace cantidades superiores a la existencia, pagos incompletos o créditos no autorizados.
-
-### 3.2.12 Experiencia de usuario y accesibilidad
-
-La experiencia de usuario se refiere a la percepción que una persona tiene al interactuar con un producto. En una aplicación administrativa incluye la claridad de los textos, el orden de los elementos, el número de pasos necesarios y la respuesta que ofrece el sistema después de una acción.
-
-Para un punto de venta, la rapidez y la prevención de errores son prioritarias. Los controles deben poder utilizarse con poca capacitación y los mensajes deben explicar qué ocurrió. Una alerta que solamente indique “error” no ayuda a corregir una captura; en cambio, un mensaje como “la existencia disponible es menor que la cantidad solicitada” orienta al usuario.
-
-El diseño también debe considerar distintos tamaños de pantalla. La aplicación utiliza distribuciones que se reorganizan cuando el espacio disponible disminuye. Las tablas pueden desplazarse horizontalmente y los formularios cambian de varias columnas a una columna en dispositivos pequeños.
-
-La consistencia visual reduce el esfuerzo de aprendizaje. Botones con funciones semejantes deben mantener nombres, colores y ubicaciones previsibles. Las acciones destructivas o difíciles de revertir requieren confirmación y deben diferenciarse de las acciones ordinarias.
-
-La accesibilidad considera contraste, tamaño de texto, etiquetas comprensibles y áreas táctiles suficientes. El color no debe ser el único medio para comunicar un estado; una alerta de inventario puede combinar color, texto e icono. También es necesario indicar cuando una operación está en proceso para evitar que el usuario presione varias veces y genere solicitudes duplicadas.
-
-### 3.2.13 Integridad y trazabilidad de la información
-
-La integridad consiste en mantener datos válidos y coherentes. Puede protegerse mediante restricciones de base de datos, validaciones del servidor y reglas de interfaz. Por ejemplo, una existencia no debe ser negativa y una cantidad vendida debe ser mayor que cero.
-
-La trazabilidad permite reconstruir el origen y efecto de una operación. Para ello no es suficiente conocer la existencia actual de un producto; también se necesita saber qué movimientos la modificaron. El sistema registra usuario, fecha, tipo, cantidad anterior, cantidad nueva y motivo.
-
-En operaciones sensibles se utiliza eliminación lógica. Un producto que ya participó en ventas no se borra físicamente, porque esto dejaría detalles históricos sin referencia. En su lugar, se marca como inactivo y deja de mostrarse en la operación normal.
-
-La integridad también depende de la concurrencia. Dos dispositivos podrían intentar vender el último producto casi al mismo tiempo. Aunque ambos hayan mostrado existencia, el servidor debe verificarla nuevamente durante la transacción. Así, solamente una operación puede consumir la cantidad disponible y la otra recibe una respuesta indicando que ya no existe inventario suficiente.
-
-Las cancelaciones y devoluciones deben conservar el registro original y generar movimientos compensatorios. Modificar directamente una venta anterior dificultaría conocer qué ocurrió. Al conservar ambos eventos se mantiene un historial completo y se pueden explicar los cambios en caja e inventario.
-
-### 3.2.14 Respaldo, recuperación y continuidad
-
-Un respaldo es una copia de la información que puede utilizarse ante pérdida, daño o modificación incorrecta. La existencia de un archivo de respaldo no garantiza por sí sola la recuperación; también es necesario almacenarlo en un lugar seguro y comprobar periódicamente que pueda restaurarse.
-
-El proyecto contempla la generación de copias de MySQL y el registro de respaldos realizados. Para reducir riesgos, se recomienda conservar más de una copia, mantener al menos una fuera del equipo principal y restringir la restauración a usuarios autorizados.
-
-La frecuencia de respaldo debe relacionarse con la cantidad de información que el negocio puede permitirse perder. Una copia diaria reduce el periodo de pérdida frente a una copia semanal, pero todavía deben contemplarse las operaciones realizadas después del último respaldo. Por ello, es conveniente generar copias automáticas y respaldos adicionales antes de cambios importantes.
-
-La restauración es una operación sensible porque reemplaza información actual por el contenido de una copia. Debe requerir autorización, confirmación explícita y, de ser posible, la creación de un respaldo inmediato antes de comenzar. También es necesario realizar pruebas periódicas en un entorno controlado para comprobar que los archivos sean utilizables.
-
-La continuidad operativa incluye más elementos que la base de datos. El servidor debe iniciar automáticamente, reiniciarse ante fallas y permanecer disponible para los dispositivos de la red local. La computadora que aloja la API y MySQL necesita mantenerse encendida, conectada a la red y con una dirección estable. También debe existir un procedimiento para verificar el estado del servicio y actuar cuando falle la energía o el equipo.
-
-### 3.2.15 Operación ante interrupciones de conexión
-
-Una aplicación web puede enfrentar interrupciones temporales de red aun cuando el servidor se encuentre dentro del mismo establecimiento. En el módulo de caja se diseñó un mecanismo para conservar ventas pendientes en el dispositivo. Cada operación recibe un identificador único; al recuperar la conexión, el servidor verifica dicho identificador para evitar un registro duplicado.
-
-El identificador único permite aplicar idempotencia. Si el dispositivo envía una operación y pierde la conexión antes de recibir la respuesta, no puede saber inmediatamente si el servidor la guardó. Al repetir la solicitud con el mismo identificador, el servidor puede reconocerla y evitar una segunda venta.
-
-Las operaciones pendientes deben almacenarse localmente hasta obtener una confirmación. La interfaz necesita informar cuántas ventas esperan sincronización y distinguirlas de las ya registradas. Al recuperar la red, el sistema intenta enviarlas y comunica cualquier conflicto que requiera revisión.
-
-Esta estrategia no convierte toda la aplicación en un sistema completamente desconectado. Consultar información actual, administrar usuarios o realizar una restauración requiere comunicación con el servidor. El mecanismo se concentra en proteger una de las situaciones de mayor impacto: perder una venta ya capturada.
-
-Mientras existan operaciones pendientes, el cierre de caja debe bloquearse o realizarse con precaución, porque los totales del servidor todavía no incluyen esas ventas. De esta forma, la operación sin conexión se integra con las reglas de caja y no funciona como un registro aislado.
-
-En conjunto, los conceptos presentados en este marco teórico explican las decisiones principales del sistema desarrollado. La relación entre punto de venta, inventario, caja, compras, clientes y reportes exige una base de datos consistente y una API que centralice reglas. La seguridad, la trazabilidad, los respaldos y la tolerancia a interrupciones complementan las funciones visibles y permiten que la solución responda a las condiciones reales de Abarrotes El Pedernal.
+Estos fundamentos sustentan las decisiones descritas en el capítulo siguiente. La integración entre procesos comerciales, base de datos, arquitectura, tecnologías, seguridad y metodología permitió construir una solución congruente con las necesidades de Abarrotes El Pedernal.
 
 ---
 
@@ -619,7 +600,6 @@ Las preguntas se enfocaron en:
 - Responsabilidades de cada integrante del personal.
 
 El levantamiento permitió concluir que no era suficiente desarrollar únicamente una pantalla de cobro. La necesidad real era relacionar la venta con caja, inventario, clientes y reportes.
-
 
 ### 4.1.1 Técnicas utilizadas para obtener información
 
@@ -682,9 +662,6 @@ La interfaz se organizó en páginas independientes para caja, inventario, clien
 
 La base de datos se diseñó para conservar trazabilidad. En lugar de modificar únicamente el total de una existencia, se registra un movimiento con la cantidad anterior, cantidad nueva, usuario y motivo.
 
-> Insertar Figura 2: arquitectura general.  
-> Insertar Figura 3: diagrama entidad-relación.
-
 ### 4.2.1 Criterios de diseño
 
 El diseño se orientó por cinco criterios: claridad, consistencia, trazabilidad, seguridad y capacidad de crecimiento. La claridad se aplicó a la interfaz y los mensajes; la consistencia, a las reglas y transacciones; la trazabilidad, al historial; la seguridad, a sesiones y permisos; y la capacidad de crecimiento, a la separación modular.
@@ -705,6 +682,13 @@ El prototipo también consideró dispositivos táctiles. Los botones principales
 
 ## 4.3 Desarrollo e integración de módulos
 
+Para organizar el trabajo, los módulos se distribuyeron entre Karol y Mónica de acuerdo con las funciones principales de cada área. Esta asignación indica la responsabilidad principal de desarrollo; la integración y las pruebas generales se realizaron de manera conjunta.
+
+| Responsable | Módulos y actividades principales |
+|---|---|
+| Karol | Autenticación y usuarios; caja y ventas; venta de productos a granel; inventario; clientes, fiados y abonos; compras; respaldos y auditoría; integración general y corrección de errores. |
+| Mónica | Catálogo de proveedores; apoyo en reportes y estadísticas; organización de evidencias y pruebas básicas de funcionamiento. |
+| Ambas | Revisión final y validación del sistema. |
 
 ### 4.3.1 Autenticación y usuarios
 
@@ -718,7 +702,7 @@ La administración de usuarios contempla creación, cambio de datos, activación
 
 ### 4.3.2 Caja y ventas
 
-El módulo de caja permite abrir un turno con fondo inicial, registrar ventas, seleccionar forma de pago y calcular cambio. También admite pagos mixtos, referencias de tarjeta o transferencia y ventas a crédito.
+El módulo de caja permite abrir un turno con fondo inicial, registrar ventas, seleccionar forma de pago y calcular cambio. También admite pagos mixtos, referencias de terminal o transferencia y ventas a crédito.
 
 Se incorporaron ventas suspendidas para atender otra operación sin perder el carrito. Además, el sistema conserva temporalmente ventas cuando se pierde la conexión y evita duplicarlas al sincronizar.
 
@@ -726,7 +710,7 @@ La apertura de caja solicita el fondo inicial y relaciona el turno con el usuari
 
 Durante la captura, el carrito mantiene producto, cantidad, unidad, precio e importe preliminar. El total mostrado en la interfaz sirve como referencia; al confirmar, la API consulta nuevamente precios, promociones y existencias. Esto evita que una pantalla con información desactualizada determine por sí sola el resultado final.
 
-El cobro separa los métodos de pago y valida sus condiciones. Efectivo requiere una cantidad suficiente; tarjeta y transferencia pueden solicitar referencia; fiado necesita un cliente elegible; y saldo a favor no puede exceder el importe disponible. En pagos mixtos se aplican simultáneamente las reglas de cada método.
+El cobro separa los métodos de pago y valida sus condiciones. Efectivo requiere una cantidad suficiente; terminal y transferencia solicitan referencia; y fiado necesita un cliente elegible. En pagos mixtos se aplican simultáneamente las reglas de cada método.
 
 Después de confirmar, el servidor devuelve el folio y los importes definitivos. La interfaz limpia el carrito únicamente al recibir una respuesta satisfactoria. Si la respuesta indica un problema, los productos permanecen para que la persona corrija la causa sin capturar nuevamente toda la venta.
 
@@ -810,13 +794,9 @@ Las pruebas se realizaron de forma progresiva. Se verificaron tanto validaciones
 | Registrar un abono | Saldo del fiado actualizado |
 | Desactivar un producto | Se retira de operación y conserva historial |
 
-> Agregar evidencias de las pruebas como capturas numeradas.
-
-
 ## 4.4 Arquitectura del sistema
 
 La arquitectura se planteó por capas para separar responsabilidades. Esta decisión evita concentrar en una sola parte la presentación, reglas de negocio y almacenamiento.
-
 
 ### 4.4.1 Capa de presentación
 
@@ -833,13 +813,11 @@ Entre las responsabilidades de esta capa se encuentran:
 
 Las validaciones de interfaz mejoran la experiencia, pero no sustituyen las del servidor. Un usuario podría enviar una solicitud fuera de la aplicación; por ello, las reglas importantes se verifican nuevamente en la API.
 
-
 ### 4.4.2 Capa de servicios
 
 Los servicios de Angular concentran funciones compartidas. El servicio de comunicación construye las solicitudes HTTP y agrega el token de sesión. El servicio de autenticación conserva los datos mínimos del usuario y determina su rol. Otros servicios atienden impresión, tema visual y notificaciones.
 
 Esta separación evita repetir código en cada pantalla. Si cambia la dirección de la API o la forma de procesar una sesión vencida, el ajuste puede realizarse en un solo lugar.
-
 
 ### 4.4.3 Capa de negocio
 
@@ -848,7 +826,6 @@ La API fue desarrollada con Node.js y Express. Su función es recibir solicitude
 Las rutas se agrupan por tema. La autenticación utiliza un grupo independiente, la administración de usuarios se restringe al perfil de administrador y las funciones del negocio se concentran en rutas protegidas.
 
 El servidor es responsable de cálculos que no deben depender del cliente. El total de una venta, descuentos, impuestos, crédito disponible y disminución de existencias se calculan o comprueban en esta capa.
-
 
 ### 4.4.4 Capa de datos
 
@@ -859,8 +836,6 @@ La arquitectura puede representarse mediante el siguiente flujo:
 **Usuario → Aplicación Angular/Ionic → API Express → MySQL**
 
 La respuesta regresa en sentido contrario y la interfaz actualiza la información mostrada.
-
-> Insertar Figura 4. Diagrama de arquitectura cliente-servidor.
 
 ```mermaid
 flowchart LR
@@ -895,7 +870,6 @@ El backend separa configuración, conexión a datos, middleware y rutas. La conf
 
 La organización modular también ayuda durante las pruebas. Un cambio en autenticación puede revisarse en su ruta y middleware, mientras que una modificación de inventario puede seguirse desde la página hasta el servicio y la operación correspondiente en la API.
 
-
 ## 4.5 Diseño de la base de datos
 
 La base de datos se diseñó de forma relacional. Se crearon 35 tablas para separar entidades y conservar los distintos tipos de movimiento. A continuación se describen los grupos principales.
@@ -906,11 +880,9 @@ Se aplicaron principios de normalización para disminuir redundancia y anomalía
 
 Algunos valores históricos sí deben conservarse en la operación aunque exista una referencia. El precio aplicado en una venta se almacena en el detalle porque el precio actual del producto puede cambiar posteriormente. De esta forma, consultar una venta anterior mantiene el importe realmente cobrado.
 
-
 ### 4.5.1 Seguridad y organización
 
 La tabla `roles` contiene los perfiles disponibles. La tabla `usuarios` almacena identidad, correo, hash de contraseña, rol, estado y control de sesión. La bitácora relaciona acciones administrativas con el usuario que las realizó.
-
 
 ### 4.5.2 Productos e inventario
 
@@ -920,11 +892,9 @@ La relación `proveedor_productos` permite asociar un producto con uno o varios 
 
 Para artículos que requieren seguimiento de caducidad se utilizan `producto_lotes` y `venta_detalle_lotes`. Este diseño permite asignar primero los lotes con fecha más próxima.
 
-
 ### 4.5.3 Compras
 
 La tabla `compras` representa el encabezado de una adquisición y `compra_detalles` almacena sus productos, cantidades y costos. La separación evita repetir datos generales del proveedor y fecha en cada partida.
-
 
 ### 4.5.4 Ventas
 
@@ -932,21 +902,17 @@ La tabla `compras` representa el encabezado de una adquisición y `compra_detall
 
 Los movimientos de dinero se conservan en `movimientos_caja`. Esta tabla registra ingresos y salidas y los relaciona con la sesión y, cuando corresponde, con la venta.
 
-
 ### 4.5.5 Caja
 
 `sesiones_caja` almacena apertura, fondo inicial, cierre, efectivo esperado, efectivo contado y diferencia. La separación por sesiones permite revisar el resultado de cada turno.
-
 
 ### 4.5.6 Clientes y crédito
 
 `clientes` contiene datos de contacto, información fiscal y límite de crédito. `fiados` representa cada deuda y `fiado_abonos` conserva los pagos parciales. `saldos_clientes` permite registrar cantidades que la tienda debe entregar posteriormente como cambio.
 
-
 ### 4.5.7 Funciones complementarias
 
 El modelo incluye promociones, recargas, documentos fiscales, movimientos contables, respaldos, devoluciones y operaciones pendientes de sincronización.
-
 
 ### 4.5.8 Diccionario resumido de datos
 
@@ -982,7 +948,6 @@ El uso de `COMMIT` indica que todos los pasos se completaron. `ROLLBACK` devuelv
 
 Las conexiones se obtienen de un conjunto o *pool*. Esto evita crear una conexión nueva para cada solicitud y permite reutilizar recursos. La conexión empleada en una transacción debe liberarse al finalizar, tanto si se confirma como si se revierte.
 
-
 ## 4.6 Flujo técnico de una venta
 
 La venta es uno de los procesos con mayor número de relaciones. Su flujo se diseñó de la siguiente manera:
@@ -1009,8 +974,6 @@ La venta es uno de los procesos con mayor número de relaciones. Su flujo se dis
 20. La aplicación limpia el carrito y permite imprimir el ticket.
 
 Si ocurre un error antes de la confirmación, la transacción se revierte. De esta manera se evita guardar una venta sin descontar inventario o disminuir existencias sin registrar el ingreso.
-
-> Insertar Figura 5. Diagrama de secuencia de una venta.
 
 ```mermaid
 sequenceDiagram
@@ -1050,36 +1013,29 @@ Las devoluciones parciales requieren identificar las partidas y cantidades devue
 
 El uso de movimientos compensatorios mantiene trazabilidad. Si se alteraran directamente los detalles anteriores, los reportes no podrían distinguir entre la operación inicial y la corrección.
 
-
 ## 4.7 Seguridad implementada
 
 La seguridad se trabajó en distintos niveles.
-
 
 ### 4.7.1 Protección de contraseñas
 
 Las contraseñas se transforman con bcrypt antes de almacenarse. Cuando una persona inicia sesión se compara la captura con el hash; la contraseña original no se recupera.
 
-
 ### 4.7.2 Sesiones
 
 Después de autenticar, el servidor emite un token firmado con vigencia limitada. Las solicitudes protegidas deben incluirlo. Una versión de sesión permite invalidar accesos anteriores cuando la cuenta cambia de contraseña o se desactiva.
-
 
 ### 4.7.3 Roles
 
 Las rutas sensibles utilizan validación de rol. Por ejemplo, la administración de usuarios corresponde al administrador, mientras que cancelaciones y ajustes de inventario se permiten a administración o gerencia.
 
-
 ### 4.7.4 Validación
 
 Los identificadores, importes, fechas, cantidades y estados se validan antes de ejecutar consultas. Las consultas utilizan parámetros en lugar de concatenar directamente los valores proporcionados por el usuario.
 
-
 ### 4.7.5 Auditoría
 
 Las acciones relevantes se registran en bitácora. Entre ellas se encuentran apertura y cierre de caja, cambios de usuario, cancelaciones y operaciones de inventario.
-
 
 ### 4.7.6 Medidas operativas recomendadas
 
@@ -1107,34 +1063,27 @@ MySQL y la API deben comprobarse mediante una ruta de salud. Los dispositivos ut
 
 Esta configuración mejora la continuidad local, pero no sustituye una estrategia ante fallas eléctricas, daño físico o pérdida del equipo. Los respaldos externos y un procedimiento documentado siguen siendo necesarios.
 
-
 ## 4.8 Decisiones de diseño y dificultades
-
 
 ### 4.8.1 Adaptación a la operación real
 
 Una de las primeras dificultades fue evitar que el sistema hiciera más lento el servicio. La respuesta no consistió en eliminar controles, sino en distribuirlos. Las validaciones frecuentes se presentan de forma inmediata y las operaciones administrativas se mantienen fuera de la pantalla de caja.
 
-
 ### 4.8.2 Productos a granel
 
 Inicialmente se consideró permitir cantidades decimales. Durante la revisión se comprendió que la persona piensa en expresiones como “500 gramos” o “cuatro kilos”. Se agregó un selector de unidad y una conversión interna. La base de datos utiliza tres decimales para representar hasta un gramo cuando la unidad base es kilogramo.
-
 
 ### 4.8.3 Conservación del historial
 
 La solicitud de eliminar productos, proveedores y usuarios podía entrar en conflicto con ventas y auditorías existentes. Se eligió una eliminación lógica. El registro deja de utilizarse, pero sigue disponible para explicar operaciones anteriores.
 
-
 ### 4.8.4 Pagos mixtos
 
-Una venta puede distribuirse entre efectivo, tarjeta, transferencia, fiado y saldo a favor. El servidor suma los pagos y compara el resultado con el total. Se utiliza tolerancia de centavos para evitar diferencias de representación decimal.
-
+Una venta puede distribuirse entre efectivo, terminal, transferencia y fiado. El servidor suma los pagos y compara el resultado con el total. Se utiliza tolerancia de centavos para evitar diferencias de representación decimal.
 
 ### 4.8.5 Operación sin conexión
 
 Una venta enviada dos veces podría duplicar ingresos y salidas. Para reducir este riesgo se genera un identificador UUID. Si la misma operación se recibe nuevamente, el servidor devuelve la venta ya creada.
-
 
 ### 4.8.6 Impresión
 
@@ -1156,54 +1105,48 @@ También fue necesario generar recursos de icono en distintas densidades. La apl
 
 La preparación móvil se realizó mediante la compilación productiva, sincronización con Capacitor y generación del paquete Android. Este procedimiento copia los recursos web, configuración y complementos al proyecto nativo.
 
-
 ## 4.9 Estrategia de pruebas
 
 Las pruebas se organizaron en niveles.
-
 
 ### 4.9.1 Pruebas de validación
 
 Se verificó el rechazo de campos vacíos, cantidades negativas, correos inválidos, referencias faltantes y contraseñas que no cumplen condiciones.
 
-
 ### 4.9.2 Pruebas de autorización
 
 Se intentó acceder a funciones con roles distintos. La protección se revisó tanto en la navegación como en el servidor. Ocultar un botón no se consideró una medida suficiente.
-
 
 ### 4.9.3 Pruebas de integración
 
 Se comprobaron procesos que modifican varias tablas. En una venta se revisó encabezado, detalles, pagos, movimientos de caja e inventario. En una cancelación se verificó la restauración.
 
-
 ### 4.9.4 Pruebas de consistencia
 
 Se compararon totales calculados en interfaz y servidor. También se revisaron límites de crédito, abonos y cierre de caja.
-
 
 ### 4.9.5 Matriz de pruebas
 
 | ID | Módulo | Escenario | Datos | Resultado esperado | Evidencia |
 |---|---|---|---|---|---|
-| CP-01 | Acceso | Inicio correcto | Usuario activo | Acceso según rol | [CAPTURA] |
-| CP-02 | Acceso | Contraseña incorrecta | Clave inválida | Mensaje y acceso rechazado | [CAPTURA] |
-| CP-03 | Usuarios | Desactivar cuenta propia | Administrador actual | Operación rechazada | [CAPTURA] |
-| CP-04 | Caja | Abrir turno | Fondo válido | Sesión abierta | [CAPTURA] |
-| CP-05 | Caja | Fondo negativo | -100 | Operación rechazada | [CAPTURA] |
-| CP-06 | Venta | Producto por pieza | Cantidad 2 | Venta registrada | [CAPTURA] |
-| CP-07 | Venta | Pieza fraccionaria | Cantidad 1.5 | Operación rechazada | [CAPTURA] |
-| CP-08 | Granel | Venta en gramos | 500 g | Descuento de 0.500 kg | [CAPTURA] |
-| CP-09 | Inventario | Existencia insuficiente | Cantidad superior | Operación rechazada | [CAPTURA] |
-| CP-10 | Pagos | Efectivo suficiente | Monto mayor | Cambio calculado | [CAPTURA] |
-| CP-11 | Pagos | Pago mixto incorrecto | Suma menor | Confirmación bloqueada | [CAPTURA] |
-| CP-12 | Fiados | Cliente con vencidos | Nuevo crédito | Operación rechazada | [CAPTURA] |
-| CP-13 | Fiados | Abono parcial | Monto menor al saldo | Saldo actualizado | [CAPTURA] |
-| CP-14 | Inventario | Registrar entrada | Cantidad y costo | Existencia incrementada | [CAPTURA] |
-| CP-15 | Inventario | Merma | Cantidad y motivo | Existencia reducida y movimiento | [CAPTURA] |
-| CP-16 | Ventas | Cancelación autorizada | Motivo válido | Venta cancelada y stock restaurado | [CAPTURA] |
-| CP-17 | Proveedores | Retirar proveedor | Con historial | Archivado sin perder compras | [CAPTURA] |
-| CP-18 | Respaldos | Generar copia | Usuario autorizado | Archivo disponible | [CAPTURA] |
+| CP-01 | Acceso | Inicio correcto | Usuario activo | Acceso según rol | Evidencia documental |
+| CP-02 | Acceso | Contraseña incorrecta | Clave inválida | Mensaje y acceso rechazado | Evidencia documental |
+| CP-03 | Usuarios | Desactivar cuenta propia | Administrador actual | Operación rechazada | Evidencia documental |
+| CP-04 | Caja | Abrir turno | Fondo válido | Sesión abierta | Evidencia documental |
+| CP-05 | Caja | Fondo negativo | -100 | Operación rechazada | Evidencia documental |
+| CP-06 | Venta | Producto por pieza | Cantidad 2 | Venta registrada | Evidencia documental |
+| CP-07 | Venta | Pieza fraccionaria | Cantidad 1.5 | Operación rechazada | Evidencia documental |
+| CP-08 | Granel | Venta en gramos | 500 g | Descuento de 0.500 kg | Evidencia documental |
+| CP-09 | Inventario | Existencia insuficiente | Cantidad superior | Operación rechazada | Evidencia documental |
+| CP-10 | Pagos | Efectivo suficiente | Monto mayor | Cambio calculado | Evidencia documental |
+| CP-11 | Pagos | Pago mixto incorrecto | Suma menor | Confirmación bloqueada | Evidencia documental |
+| CP-12 | Fiados | Cliente con vencidos | Nuevo crédito | Operación rechazada | Evidencia documental |
+| CP-13 | Fiados | Abono parcial | Monto menor al saldo | Saldo actualizado | Evidencia documental |
+| CP-14 | Inventario | Registrar entrada | Cantidad y costo | Existencia incrementada | Evidencia documental |
+| CP-15 | Inventario | Merma | Cantidad y motivo | Existencia reducida y movimiento | Evidencia documental |
+| CP-16 | Ventas | Cancelación autorizada | Motivo válido | Venta cancelada y stock restaurado | Evidencia documental |
+| CP-17 | Proveedores | Retirar proveedor | Con historial | Archivado sin perder compras | Evidencia documental |
+| CP-18 | Respaldos | Generar copia | Usuario autorizado | Archivo disponible | Evidencia documental |
 
 ### 4.9.6 Preparación y ejecución de las pruebas
 
@@ -1222,7 +1165,6 @@ Además de las revisiones manuales se incluyeron pruebas de componentes y servic
 La prueba del servidor ejecuta procesos representativos contra MySQL, como autenticación y operaciones del negocio. También se comprueba la sintaxis de los archivos principales. Estas verificaciones no reemplazan las pruebas en dispositivo, pero ofrecen una forma repetible de detectar regresiones.
 
 La ruta `/api/health` se utiliza para comprobar que la API está disponible y puede comunicarse con MySQL. Esta prueba ayuda a separar un problema de aplicación móvil de una falla del servidor o de la base de datos.
-
 
 ## 4.10 Implementación y operación
 
@@ -1285,9 +1227,7 @@ Durante la recepción de mercancía se recomienda comparar cantidades físicas c
 
 Al terminar la jornada, además del cierre de caja, debe revisarse el estado del respaldo. La copia debe transferirse periódicamente a un medio diferente de la computadora servidor para que continúe disponible si el equipo se daña.
 
-
 ## 4.11 Manual resumido de usuario
-
 
 ### 4.11.1 Inicio de sesión
 
@@ -1297,7 +1237,6 @@ Al terminar la jornada, además del cierre de caja, debe revisarse el estado del
 4. Verificar que aparezca el panel correspondiente.
 
 Si la cuenta está inactiva o la contraseña es incorrecta, el sistema no permite continuar. Después de varios intentos fallidos puede aplicarse un bloqueo temporal.
-
 
 ### 4.11.2 Registrar un producto
 
@@ -1309,7 +1248,6 @@ Si la cuenta está inactiva o la contraseña es incorrecta, el sistema no permit
 
 Los productos a granel deben configurarse por kilogramo. La captura en gramos se realiza posteriormente desde Caja.
 
-
 ### 4.11.3 Registrar una entrada
 
 1. Ingresar a Inventario.
@@ -1318,7 +1256,6 @@ Los productos a granel deben configurarse por kilogramo. La captura en gramos se
 4. Capturar cantidad y costo.
 5. Agregar lote y caducidad cuando corresponda.
 6. Confirmar.
-
 
 ### 4.11.4 Realizar una venta
 
@@ -1332,7 +1269,6 @@ Los productos a granel deben configurarse por kilogramo. La captura en gramos se
 8. Revisar total y confirmar.
 9. Entregar cambio e imprimir ticket.
 
-
 ### 4.11.5 Registrar un fiado
 
 1. Agregar productos.
@@ -1343,7 +1279,6 @@ Los productos a granel deben configurarse por kilogramo. La captura en gramos se
 
 El cliente debe estar activo y cumplir las condiciones de crédito.
 
-
 ### 4.11.6 Registrar un abono
 
 1. Ingresar al módulo de fiados.
@@ -1351,7 +1286,6 @@ El cliente debe estar activo y cumplir las condiciones de crédito.
 3. Capturar monto y método.
 4. Confirmar.
 5. Verificar el nuevo saldo.
-
 
 ### 4.11.7 Cerrar caja
 
@@ -1362,14 +1296,12 @@ El cliente debe estar activo y cumplir las condiciones de crédito.
 5. Agregar observaciones.
 6. Confirmar el cierre.
 
-
 ### 4.11.8 Consultar reportes
 
 1. Ingresar con rol autorizado.
 2. Seleccionar periodo o tipo de información.
 3. Revisar ventas, inventario, caja o fiados.
 4. Exportar o imprimir cuando la función esté disponible.
-
 
 ### 4.11.9 Generar respaldo
 
@@ -1378,7 +1310,6 @@ El cliente debe estar activo y cumplir las condiciones de crédito.
 3. Seleccionar la generación o descarga.
 4. Conservar el archivo en un medio distinto.
 5. Registrar la fecha y responsable.
-
 
 ## 4.12 Evidencias sugeridas
 
@@ -1412,7 +1343,6 @@ Para ampliar el valor documental y alcanzar la extensión requerida sin utilizar
 26. Evidencias de pruebas.
 
 Cada figura debe incluir número, título, fuente y una explicación en el texto. Una captura no debe colocarse únicamente para ocupar espacio; debe demostrar una decisión, proceso o resultado.
-
 
 ## 4.13 Casos de uso
 
@@ -1454,7 +1384,6 @@ flowchart TB
 
 **Figura 6. Casos de uso generales por rol.** Los perfiles superiores pueden realizar funciones operativas, mientras que las acciones administrativas permanecen restringidas. Fuente: elaboración propia.
 
-
 ### 4.13.1 CU-01. Registrar una venta
 
 | Elemento | Descripción |
@@ -1467,7 +1396,6 @@ flowchart TB
 | Excepciones | Existencia insuficiente, pago incompleto o referencia faltante |
 | Postcondición | Venta, pago, movimiento de caja e inventario registrados |
 
-
 ### 4.13.2 CU-02. Registrar una entrada de inventario
 
 | Elemento | Descripción |
@@ -1477,7 +1405,6 @@ flowchart TB
 | Flujo principal | Elegir producto; capturar cantidad, costo, lote y caducidad; confirmar |
 | Excepciones | Cantidad inválida, costo negativo o producto inexistente |
 | Postcondición | Existencia incrementada y movimiento de entrada registrado |
-
 
 ### 4.13.3 CU-03. Registrar un fiado
 
@@ -1489,7 +1416,6 @@ flowchart TB
 | Excepciones | Cliente con vencidos o crédito insuficiente |
 | Postcondición | Venta registrada y cuenta por cobrar creada |
 
-
 ### 4.13.4 CU-04. Cerrar caja
 
 | Elemento | Descripción |
@@ -1498,7 +1424,6 @@ flowchart TB
 | Precondición | Caja abierta y ventas pendientes sincronizadas |
 | Flujo principal | Contar denominaciones; capturar observaciones; revisar diferencia; confirmar |
 | Postcondición | Sesión cerrada con efectivo esperado, contado y diferencia |
-
 
 ### 4.13.5 CU-05. Cancelar una venta
 
@@ -1509,7 +1434,6 @@ flowchart TB
 | Flujo principal | Consultar venta; escribir motivo; confirmar cancelación |
 | Excepciones | Usuario sin permiso o venta previamente cancelada |
 | Postcondición | Estado actualizado, inventario restaurado y acción auditada |
-
 
 ## 4.14 Reglas del negocio
 
@@ -1524,7 +1448,7 @@ flowchart TB
 | RN-07 | Tarjetas y transferencias requieren una referencia. |
 | RN-08 | Un fiado debe relacionarse con un cliente. |
 | RN-09 | Un cliente con adeudos vencidos no recibe un nuevo crédito. |
-| RN-10 | El saldo a favor utilizado no puede superar el disponible. |
+| RN-10 | La suma de un pago mixto debe coincidir con el total de la venta. |
 | RN-11 | Las cancelaciones y devoluciones requieren un motivo. |
 | RN-12 | Solo administración o gerencia pueden cancelar ventas. |
 | RN-13 | Una merma requiere cantidad y explicación. |
@@ -1533,7 +1457,6 @@ flowchart TB
 | RN-16 | Una venta pendiente utiliza un UUID para evitar duplicidad. |
 | RN-17 | No debe cerrarse la caja mientras existan ventas sin sincronizar. |
 | RN-18 | Las contraseñas nuevas deben cumplir la política de complejidad. |
-
 
 ## 4.15 Comparación del proceso anterior y propuesto
 
@@ -1567,8 +1490,6 @@ flowchart TD
 
 El cronograma final deberá mostrar las fechas reales de cada actividad y las diferencias respecto de la planeación. Algunos ajustes surgieron por requerimientos identificados durante las revisiones, especialmente en ventas a granel, impresión, inventario y permisos.
 
-> Insertar aquí la gráfica de Gantt final con los periodos reales en color verde.
-
 ## 5.2 Evaluación De Resultados
 
 El sistema centraliza la información que antes se encontraba distribuida. Las ventas se relacionan con caja e inventario, por lo que la administración puede revisar una operación y sus efectos sin reconstruir datos de diferentes medios.
@@ -1583,7 +1504,6 @@ Los reportes y estadísticas presentan información consolidada para apoyar deci
 
 Los objetivos principales se consideran cumplidos a nivel de desarrollo y validación funcional. La medición de beneficios a largo plazo, como reducción de tiempos o incremento de rentabilidad, requiere un periodo de operación continua.
 
-
 **Resultados técnicos verificables.**
 
 | Indicador | Resultado |
@@ -1593,28 +1513,20 @@ Los objetivos principales se consideran cumplidos a nivel de desarrollo y valida
 | Productos activos en el catálogo de demostración | 110 |
 | Casos incluidos en la matriz principal de pruebas | 18 |
 | Unidades de captura para granel en Caja | gramos y kilogramos |
-| Métodos contemplados en ventas | efectivo, tarjeta, transferencia, fiado, saldo a favor y mixto |
+| Métodos contemplados en ventas | efectivo, terminal, transferencia, fiado y mixto |
 | Plataformas objetivo | navegador, Android e iOS |
 
 El número de tablas no se presenta como un beneficio por sí mismo, sino como evidencia de la amplitud de procesos relacionados. El catálogo de demostración fue preparado para validar búsquedas, inventario y ventas; antes de una implementación definitiva deben verificarse códigos, precios, costos y existencias físicas.
 
 La compilación de TypeScript y las comprobaciones de sintaxis del servidor se utilizaron durante el desarrollo para detectar errores antes de la ejecución. También se comprobó la conexión con MySQL y la inicialización del esquema.
 
-
 **Medición de tiempos antes y después.**
 
 Para evitar presentar cifras sin evidencia, se propone realizar cinco repeticiones de cada actividad y calcular el promedio.
 
-| Actividad | Medición 1 | Medición 2 | Medición 3 | Medición 4 | Medición 5 | Promedio anterior | Promedio con sistema |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| Consultar saldo de un fiado | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| Registrar un abono | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| Consultar existencia | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| Preparar un cierre de caja | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
-| Localizar una venta anterior | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+La comparación cuantitativa de tiempos deberá realizarse después de un periodo estable de uso. En esta entrega se documenta la línea base cualitativa y se propone medir la consulta de fiados, el registro de abonos, la revisión de existencias, el cierre de caja y la localización de ventas anteriores.
 
 Las pruebas deben realizarse con condiciones comparables. El tiempo se mide desde el inicio de la búsqueda hasta obtener el dato o completar la actividad. Se recomienda que el asesor empresarial valide la tabla mediante nombre, firma y fecha.
-
 
 **Relación entre objetivos y resultados.**
 
@@ -1667,7 +1579,6 @@ Aprendí a escuchar con mayor atención. Varias mejoras surgieron de comentarios
 
 Finalmente, la experiencia fortaleció mi confianza profesional. Comprobé que puedo integrar conocimientos de distintas materias, aprender herramientas nuevas y entregar una solución que responde a una necesidad concreta.
 
-
 **Limitaciones.**
 
 El proyecto presenta limitaciones que deben considerarse al interpretar sus resultados:
@@ -1685,7 +1596,6 @@ El proyecto presenta limitaciones que deben considerarse al interpretar sus resu
 
 Reconocer estas limitaciones permite diferenciar las funciones implementadas de aquellas que requieren infraestructura, validación prolongada o una etapa posterior.
 
-
 **Trabajo futuro.**
 
 Como continuación del proyecto se propone:
@@ -1702,7 +1612,6 @@ Como continuación del proyecto se propone:
 - Crear un plan de recuperación ante desastres.
 - Evaluar accesibilidad con usuarios y dispositivos reales.
 
-
 **Acta de aceptación propuesta.**
 
 Al finalizar la estadía se recomienda incorporar una hoja de aceptación con el siguiente contenido:
@@ -1711,16 +1620,16 @@ Al finalizar la estadía se recomienda incorporar una hoja de aceptación con el
 
 | Dato | Información |
 |---|---|
-| Fecha de presentación | [FECHA] |
-| Versión entregada | [VERSIÓN O COMMIT] |
+| Fecha de presentación | Marzo-agosto de 2026 |
+| Versión entregada | Versión de entrega 1.0 |
 | Nombre del asesor empresarial | Ing. Alejandro Figueroa |
-| Funciones validadas | [DESCRIBIR] |
-| Observaciones pendientes | [DESCRIBIR O INDICAR NINGUNA] |
+| Funciones validadas | Funciones principales del sistema |
+| Observaciones pendientes | Observaciones registradas en la revisión |
 | Firma de aceptación | __________________________ |
 
 ---
 
-# Glosario (Opcional)
+# Glosario
 
 **API:** Conjunto de reglas que permite la comunicación entre la aplicación cliente y el servidor.
 
@@ -1748,11 +1657,11 @@ Al finalizar la estadía se recomienda incorporar una hoja de aceptación con el
 
 ### LIBROS
 
-[AGREGAR LOS LIBROS CONSULTADOS, EN CASO DE HABERLOS UTILIZADO.]
+Sommerville, I. (2005). Ingeniería del software (7.ª ed.). Pearson Educación.
 
 ### REVISTAS
 
-[AGREGAR LOS ARTÍCULOS DE REVISTAS CONSULTADOS, EN CASO DE HABERLOS UTILIZADO.]
+No se consultaron artículos de revistas para el desarrollo del proyecto.
 
 ### PÁGINAS DE INTERNET
 
@@ -1772,7 +1681,7 @@ Express. (2026). *Express web framework documentation*. https://expressjs.com/. 
 
 # Anexos
 
-## ANEXO A. NOMBRE DEL ANEXO A
+## ANEXO A. Organigrama de Abarrotes El Pedernal
 
 En este apartado se incorporarán las evidencias complementarias autorizadas por la empresa y solicitadas por la institución. El nombre definitivo del anexo deberá sustituirse en el encabezado cuando se seleccione el material que formará parte de la entrega.
 

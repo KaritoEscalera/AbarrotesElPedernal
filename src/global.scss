@@ -1,8 +1,8 @@
 body {
   margin: 0;
-  background: #ffffff;
-  color: #2e2e2e;
-  font-family: "Segoe UI", sans-serif;
+  background: #f4fbfa;
+  color: #173b3a;
+  font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
 * {
@@ -17,7 +17,7 @@ ion-button,
 
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid #f0a15f;
+  outline: 3px solid #ffc21a;
   outline-offset: 3px;
 }
 
@@ -25,12 +25,13 @@ ion-button {
   min-height: 44px;
   font-weight: 700;
   text-transform: none;
+  letter-spacing: .01em;
 }
 
 ion-button:not([fill]):not([color]) {
   --background: var(--pedernal-acento);
-  --background-hover: #953e0a;
-  --background-activated: #803507;
+  --background-hover: #006d69;
+  --background-activated: #005b58;
   --color: #fff;
 }
 
@@ -39,12 +40,12 @@ html:not(.theme-dark) .eyebrow {
 }
 
 html:not(.theme-dark) ion-card-title {
-  color: #66371f;
+  color: #064e52;
 }
 
 ion-content {
-  --background: #ffffff !important;
-  --color: #2e2e2e;
+  --background: linear-gradient(145deg, #effbf9 0%, #fff 48%, #eef8ff 82%, #fff9df 100%) !important;
+  --color: #173b3a;
   --padding-top: clamp(1rem, 3vw, 2rem);
   --padding-bottom: clamp(1rem, 3vw, 2rem);
   --padding-start: clamp(1rem, 4vw, 2.5rem);
@@ -52,16 +53,38 @@ ion-content {
 }
 
 .pedernal-card {
-  background: #fff8f1;
+  background: #ffffff;
+  border: 1px solid #bfe5e2;
   border-radius: 15px;
   padding: 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 28px rgba(0, 96, 93, 0.10);
+}
+
+html:not(.theme-dark) ion-card {
+  background: #fff !important;
+  border: 1px solid #bfe5e2;
+  box-shadow: 0 10px 30px rgba(0, 96, 93, .10) !important;
+}
+
+html:not(.theme-dark) ion-item {
+  --background: #f7fcfb;
+  --color: #173b3a;
+  --border-color: #bfe5e2;
+  --highlight-color-focused: var(--pedernal-acento);
+  border-radius: 10px;
+}
+
+html:not(.theme-dark) ion-input,
+html:not(.theme-dark) ion-select,
+html:not(.theme-dark) ion-searchbar {
+  --color: #173b3a;
+  --placeholder-color: #68817f;
 }
 
 .pedernal-button {
   --background: var(--pedernal-acento);
-  --background-hover: #953e0a;
-  --background-activated: #803507;
+  --background-hover: #006d69;
+  --background-activated: #005b58;
   --color: #fff;
   --border-radius: 12px;
   height: 45px;
@@ -69,41 +92,51 @@ ion-content {
 }
 
 .pedernal-sidebar {
-  --background: #4a2c1d;
+  --background: #006b68;
   color: white;
 }
 
 .pedernal-title {
-  color: #2e2e2e;
+  color: #064e52;
   font-weight: bold;
   font-size: 24px;
 }
 
 .pedernal-subtitle {
-  color: #7a4e2d;
+  color: #287573;
 }
 
 .pedernal-success {
-  color: #6bbf59;
+  color: #4f8f00;
 }
 
 .pedernal-danger {
-  color: #d9534f;
+  color: #d7193f;
+}
+
+html:not(.theme-dark) h1,
+html:not(.theme-dark) h2,
+html:not(.theme-dark) h3 {
+  color: #064e52;
+}
+
+html:not(.theme-dark) .eyebrow {
+  color: #007c78 !important;
 }
 
 html.theme-dark body {
-  background: #171310;
-  color: #f7ede5;
+  background: #061c22;
+  color: #eefcff;
 }
 
 html.theme-dark ion-content {
-  --background: #171310 !important;
-  --color: #f7ede5;
+  --background: radial-gradient(circle at 82% 5%, rgba(7, 143, 209, .13), transparent 28%), linear-gradient(145deg, #061c22 0%, #08252b 55%, #063137 100%) !important;
+  --color: #eefcff;
 }
 
 html.theme-dark .routed-content {
-  color: #f7ede5 !important;
-  background: #171310 !important;
+  color: #eefcff !important;
+  background: #061c22 !important;
 }
 
 html.theme-dark ion-card,
@@ -124,10 +157,10 @@ html.theme-dark .history,
 html.theme-dark .grid > article,
 html.theme-dark .alerts-panel,
 html.theme-dark .pedernal-card {
-  color: #f7ede5 !important;
-  background: #241d19 !important;
-  border-color: #4b3a31 !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .3) !important;
+  color: #eefcff !important;
+  background: linear-gradient(145deg, #0d2930 0%, #10343b 100%) !important;
+  border-color: #24515a !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .28) !important;
 }
 
 html.theme-dark h1,
@@ -137,7 +170,7 @@ html.theme-dark ion-card-title,
 html.theme-dark .pedernal-title,
 html.theme-dark .summary-card strong,
 html.theme-dark .alerts-panel strong {
-  color: #fff5ed !important;
+  color: #f5feff !important;
 }
 
 html.theme-dark p,
@@ -146,7 +179,7 @@ html.theme-dark .subtitle,
 html.theme-dark .pedernal-subtitle,
 html.theme-dark .alerts-panel p,
 html.theme-dark .alerts-panel small {
-  color: #cdb8aa;
+  color: #a9c9cc;
 }
 
 html.theme-dark .welcome,
@@ -162,7 +195,7 @@ html.theme-dark .empty-state,
 html.theme-dark header > span,
 html.theme-dark .summary-grid span,
 html.theme-dark .summary-grid small {
-  color: #cdb8aa !important;
+  color: #a9c9cc !important;
 }
 
 html.theme-dark .product-row,
@@ -174,47 +207,47 @@ html.theme-dark ion-card-content,
 html.theme-dark .summary-grid article,
 html.theme-dark .insight-card dd,
 html.theme-dark .reconciliation-card strong {
-  color: #f7ede5 !important;
+  color: #eefcff !important;
 }
 
 html.theme-dark .product-row {
-  border-color: #514037 !important;
+  border-color: #24515a !important;
 }
 
 html.theme-dark ion-item {
-  --background: #2c231e !important;
-  --color: #f7ede5 !important;
-  --border-color: #514037 !important;
-  --placeholder-color: #a99283;
+  --background: #12343c !important;
+  --color: #eefcff !important;
+  --border-color: #285861 !important;
+  --placeholder-color: #88aeb2;
 }
 
 html.theme-dark ion-input,
 html.theme-dark ion-select,
 html.theme-dark ion-searchbar {
-  --color: #f7ede5;
-  --placeholder-color: #a99283;
-  color: #f7ede5;
+  --color: #eefcff;
+  --placeholder-color: #88aeb2;
+  color: #eefcff;
 }
 
 html.theme-dark ion-searchbar {
-  --background: #2c231e !important;
-  --icon-color: #d4b7a3;
-  --clear-button-color: #d4b7a3;
+  --background: #12343c !important;
+  --icon-color: #8ddbd6;
+  --clear-button-color: #8ddbd6;
 }
 
 html.theme-dark table {
-  color: #f4e8df;
-  background: #241d19;
+  color: #eefcff;
+  background: #0d2930;
 }
 
 html.theme-dark td {
-  color: #eadbd1;
-  border-color: #49382f !important;
-  background: #241d19;
+  color: #dceff1;
+  border-color: #24515a !important;
+  background: #0d2930;
 }
 
 html.theme-dark tr:nth-child(even) td {
-  background: #2a211d;
+  background: #10343b;
 }
 
 html.theme-dark .product,
@@ -222,34 +255,259 @@ html.theme-dark .totals,
 html.theme-dark .cash-payment,
 html.theme-dark .movement-list article,
 html.theme-dark .user-card {
-  color: #f7ede5 !important;
-  background: #2c231e !important;
-  border-color: #574338 !important;
+  color: #eefcff !important;
+  background: #12343c !important;
+  border-color: #285861 !important;
 }
 
 html.theme-dark .cash-total,
 html.theme-dark .product small,
 html.theme-dark .cart-line small {
-  color: #cfb6a5;
+  color: #a9c9cc;
 }
 
 html.theme-dark .cash-shortcuts button {
-  color: #ffe7d2;
-  background: #3b2c24;
-  border-color: #73513e;
+  color: #e7ffff;
+  background: #16434c;
+  border-color: #34717b;
 }
 
 html.theme-dark .change-box:not(.ready):not(.pending) {
-  color: #f7ede5;
-  background: #352b26;
+  color: #eefcff;
+  background: #143a42;
 }
 
 html.theme-dark input,
 html.theme-dark select,
 html.theme-dark textarea {
-  color: #f7ede5;
-  background: #2c231e;
-  border-color: #574338;
+  color: #eefcff;
+  background: #12343c;
+  border-color: #285861;
+}
+
+html.theme-dark .eyebrow {
+  color: #ffc21a !important;
+}
+
+html.theme-dark .activity-list,
+html.theme-dark .activity-list li {
+  color: #b9d7da !important;
+  border-color: #2b5962 !important;
+}
+
+html.theme-dark .quick-actions ion-button {
+  --box-shadow: 0 7px 18px rgba(0, 124, 120, .24);
+}
+
+html.theme-dark .cards ion-card {
+  border-top: 3px solid #00a7a0 !important;
+}
+
+html.theme-dark .cards ion-card:nth-child(2) {
+  border-top-color: #078fd1 !important;
+}
+
+html.theme-dark .cards ion-card:nth-child(3) {
+  border-top-color: #78b900 !important;
+}
+
+html.theme-dark .cards ion-card:nth-child(4) {
+  border-top-color: #ffc21a !important;
+}
+
+html.theme-dark .alerts-card .activity-list li::before {
+  color: #ffc21a;
+}
+
+/* Caja: evita que sobrevivan los textos café/naranja del tema claro. */
+html.theme-dark .product strong,
+html.theme-dark .price,
+html.theme-dark .totals .grand,
+html.theme-dark .cash-total strong,
+html.theme-dark .confirmation-total strong,
+html.theme-dark .count-total strong,
+html.theme-dark .recharge-amount strong {
+  color: #ffd45a !important;
+}
+
+html.theme-dark .product,
+html.theme-dark .product strong,
+html.theme-dark .cart-line,
+html.theme-dark .cart-line strong,
+html.theme-dark .totals,
+html.theme-dark .totals span,
+html.theme-dark .cash-payment,
+html.theme-dark .cash-payment label,
+html.theme-dark .credit-client,
+html.theme-dark .confirmation-data,
+html.theme-dark .operation-panel {
+  text-shadow: none !important;
+}
+
+html.theme-dark .product small,
+html.theme-dark .cart-line small,
+html.theme-dark .cash-total,
+html.theme-dark .helper,
+html.theme-dark .scanner-help,
+html.theme-dark .confirmation-data small,
+html.theme-dark .credit-client-heading small {
+  color: #9fc4c8 !important;
+}
+
+html.theme-dark .product:hover {
+  border-color: #24c6bd !important;
+  box-shadow: 0 8px 22px rgba(0, 199, 190, .18) !important;
+}
+
+html.theme-dark .totals,
+html.theme-dark .cash-payment,
+html.theme-dark .credit-client,
+html.theme-dark .confirmation-data span,
+html.theme-dark .count-total {
+  color: #eefcff !important;
+  background: #11363e !important;
+  border-color: #2c6570 !important;
+}
+
+html.theme-dark ion-button[fill="outline"] {
+  --color: #67e2da;
+  --border-color: #20bdb5;
+  --background-hover: rgba(32, 189, 181, .12);
+}
+
+html.theme-dark button:not(.cash-shortcuts button):not(.menu-trigger):not(.alerts-trigger) {
+  color: #dffbfc;
+}
+
+/* Lenguaje visual compartido por el resto de los módulos. */
+html.theme-dark {
+  color-scheme: dark;
+}
+
+html.theme-dark main,
+html.theme-dark form,
+html.theme-dark section {
+  color: #eefcff;
+}
+
+html.theme-dark main h1,
+html.theme-dark main h2,
+html.theme-dark main h3,
+html.theme-dark main h4,
+html.theme-dark main label,
+html.theme-dark main legend,
+html.theme-dark main th,
+html.theme-dark main dt {
+  color: #f5feff !important;
+}
+
+html.theme-dark main a,
+html.theme-dark .link-button,
+html.theme-dark .edit-button,
+html.theme-dark .stock-button.edit {
+  color: #67e2da !important;
+}
+
+html.theme-dark .welcome,
+html.theme-dark .description,
+html.theme-dark .helper,
+html.theme-dark .hint,
+html.theme-dark .meta,
+html.theme-dark .empty,
+html.theme-dark .empty-state,
+html.theme-dark .table-heading,
+html.theme-dark main article > small,
+html.theme-dark main td small,
+html.theme-dark main header small {
+  color: #9fc4c8 !important;
+}
+
+html.theme-dark [class$="-card"],
+html.theme-dark [class*="-card "],
+html.theme-dark [class$="-panel"],
+html.theme-dark [class*="-panel "] {
+  border-color: #285861 !important;
+}
+
+html.theme-dark .summary-grid article,
+html.theme-dark .insight-card,
+html.theme-dark .metric-card,
+html.theme-dark .stat-card,
+html.theme-dark .client,
+html.theme-dark .user,
+html.theme-dark .supplier,
+html.theme-dark .provider,
+html.theme-dark .movement-list article,
+html.theme-dark .calendar-list article,
+html.theme-dark .suggestions-grid article {
+  color: #eefcff !important;
+  background: #12343c !important;
+  border-color: #285861 !important;
+  box-shadow: none !important;
+}
+
+html.theme-dark .summary-grid strong,
+html.theme-dark .insight-card dd,
+html.theme-dark .metric-card strong,
+html.theme-dark .stat-card strong,
+html.theme-dark [class*="total"] strong,
+html.theme-dark [class*="amount"] strong,
+html.theme-dark .balance,
+html.theme-dark .price {
+  color: #ffd45a !important;
+}
+
+html.theme-dark table th {
+  color: #e9ffff !important;
+  background: #0a555b !important;
+  border-color: #34717b !important;
+}
+
+html.theme-dark table tr:hover td {
+  background: #16434c !important;
+}
+
+html.theme-dark .status,
+html.theme-dark .badge,
+html.theme-dark [class*="-state"] {
+  text-shadow: none !important;
+}
+
+html.theme-dark .status:not(.inactive):not(.danger):not(.error),
+html.theme-dark .badge.success,
+html.theme-dark [class*="-state"].success,
+html.theme-dark .success-message {
+  color: #c9ff91 !important;
+  background: #254b31 !important;
+  border-color: #4f8f58 !important;
+}
+
+html.theme-dark .status.inactive,
+html.theme-dark .badge.warning,
+html.theme-dark [class*="-state"].pending,
+html.theme-dark .warning-message {
+  color: #ffe48b !important;
+  background: #4b421c !important;
+  border-color: #8e7b2a !important;
+}
+
+html.theme-dark .status.danger,
+html.theme-dark .status.error,
+html.theme-dark .badge.danger,
+html.theme-dark [class*="-state"].failed,
+html.theme-dark .error-message {
+  color: #ffb7c4 !important;
+  background: #512532 !important;
+  border-color: #9b4058 !important;
+}
+
+html.theme-dark ::-webkit-scrollbar-thumb {
+  background: #34717b;
+  border-radius: 999px;
+}
+
+html.theme-dark ::-webkit-scrollbar-track {
+  background: #0a272e;
 }
 
 html.theme-dark ::-webkit-calendar-picker-indicator {
