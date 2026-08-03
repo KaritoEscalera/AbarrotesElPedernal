@@ -19,12 +19,14 @@ CREATE TABLE IF NOT EXISTS usuarios (
   password_hash VARCHAR(255) NOT NULL COMMENT 'Hash bcrypt o Argon2; nunca contraseña en texto plano',
   sesion_version INT UNSIGNED NOT NULL DEFAULT 0,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
+  eliminado_en DATETIME NULL,
   ultimo_acceso DATETIME NULL,
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT uq_usuarios_correo UNIQUE (correo),
   CONSTRAINT fk_usuarios_rol FOREIGN KEY (rol_id) REFERENCES roles(id),
-  INDEX idx_usuarios_rol_activo (rol_id, activo)
+  INDEX idx_usuarios_rol_activo (rol_id, activo),
+  INDEX idx_usuarios_eliminado (eliminado_en)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS categorias (

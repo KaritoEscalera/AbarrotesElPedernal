@@ -34,6 +34,13 @@ try {
   if (Number(sessionColumns[0].total) === 0) {
     await connection.query(`ALTER TABLE ${escapedDatabase}.usuarios ADD COLUMN sesion_version INT UNSIGNED NOT NULL DEFAULT 0 AFTER password_hash`);
   }
+  const [deletedUserColumns] = await connection.query(
+    "SELECT COUNT(*) AS total FROM information_schema.columns WHERE table_schema=? AND table_name='usuarios' AND column_name='eliminado_en'",
+    [databaseName],
+  );
+  if (Number(deletedUserColumns[0].total) === 0) {
+    await connection.query(`ALTER TABLE ${escapedDatabase}.usuarios ADD COLUMN eliminado_en DATETIME NULL AFTER activo, ADD INDEX idx_usuarios_eliminado (eliminado_en)`);
+  }
   await connection.query(`ALTER TABLE ${escapedDatabase}.compras MODIFY COLUMN metodo_pago ENUM('EFECTIVO','TARJETA','TRANSFERENCIA','CREDITO','MIXTO','OTRO') NOT NULL DEFAULT 'CREDITO'`);
   const [tables] = await connection.query(
     "SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema = ? AND table_type = 'BASE TABLE'",

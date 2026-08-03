@@ -42,7 +42,6 @@ import { BusinessApi } from '../../services/business-api';
   ],
 })
 export class UsuariosPage {
-  confirmandoEliminarId:number|null=null;
   private readonly api = inject(BusinessApi);
 
   usuarios: Usuario[] = [];
@@ -105,7 +104,7 @@ export class UsuariosPage {
     }
   }
 
-  async eliminarUsuario(usuario:Usuario):Promise<void>{if(this.confirmandoEliminarId!==usuario.id){this.confirmandoEliminarId=usuario.id;this.esError=false;this.mensaje=`Confirma la eliminación de ${usuario.nombre}. Su historial se conservará.`;return;}try{await this.api.delete(`users/${usuario.id}`);await this.cargarUsuarios();this.confirmandoEliminarId=null;this.esError=false;this.mensaje='Usuario eliminado; su historial se conservó.';}catch(error){this.esError=true;this.mensaje=error instanceof Error?error.message:'No fue posible eliminar el usuario.';}}
+  async eliminarUsuario(usuario:Usuario):Promise<void>{try{await this.api.delete(`users/${usuario.id}`);this.usuarios=this.usuarios.filter((item)=>item.id!==usuario.id);this.esError=false;this.mensaje=`${usuario.nombre} fue eliminado correctamente.`;}catch(error){this.esError=true;this.mensaje=error instanceof Error?error.message:'No fue posible eliminar el usuario.';}}
 
   async cambiarEstado(usuario: Usuario): Promise<void> {
     try {
