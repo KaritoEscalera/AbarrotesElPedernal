@@ -43,10 +43,10 @@ interface MovimientoCaja { id: number; tipo: string; descripcion: string; metodo
 
 interface EstadoCaja {
   session: SesionCaja | null;
-  totals: { ventas: number; efectivoEsperado: number; ventasEfectivo:number; ventasTarjeta:number; ventasTransferencia:number; ventasFiado:number } | null;
+  totals: { ventas: number; efectivoEsperado: number; ventasEfectivo:number; ventasTarjeta:number; ventasTransferencia:number; ventasFiado:number;comprasCaja?:number;comprasEfectivo?:number;comprasTarjeta?:number;comprasTerminal?:number;comprasTransferencia?:number } | null;
   movements: MovimientoCaja[];
 }
-interface CorteCaja { sesionId?:number; fondoInicial:number; efectivoEsperado:number; efectivoContado?:number; diferencia?:number; ventasEfectivo:number; ventasTarjeta:number; ventasTransferencia:number; ventasFiado:number; fechaCierre?:string; }
+interface CorteCaja { sesionId?:number; fondoInicial:number; efectivoEsperado:number; efectivoContado?:number; diferencia?:number; ventasEfectivo:number; ventasTarjeta:number; ventasTransferencia:number; ventasFiado:number;comprasCaja?:number;comprasEfectivo?:number;comprasTarjeta?:number;comprasTerminal?:number;comprasTransferencia?:number; fechaCierre?:string; }
 interface VentaPendiente { operacionUuid:string; payload:Record<string,unknown>; creada:string; intentos?:number; ultimoIntento?:string; ultimoError?:string; }
 interface VentaResumen { id:number; folio:string; fecha:string; estado:'COMPLETADA'|'CANCELADA'|'DEVUELTA'; total:number; usuario:string; cliente:string; metodo:string; }
 interface VentaDetalle extends VentaResumen { subtotal:number; descuento:number; impuestos:number; items:Array<{nombre:string;cantidad:number;precioUnitario:number;importe:number}>; pagos:Array<{metodo:string;monto:number;referencia:string|null}>; fiado:{monto:number;saldoPendiente:number;fechaLimite:string}|null; }
@@ -530,13 +530,15 @@ export class CajaPage implements OnInit, OnDestroy {
 
   imprimirCorteX(): void {
     if (!this.sesion) return;
-    this.imprimirCorte({ fondoInicial:this.sesion.fondoInicial,efectivoEsperado:this.efectivoEsperado,ventasEfectivo:this.ventasPorMetodo.EFECTIVO,ventasTarjeta:this.ventasPorMetodo.TARJETA,ventasTransferencia:this.ventasPorMetodo.TRANSFERENCIA,ventasFiado:this.ventasPorMetodo.FIADO }, 'X');
+    const compras=this.movimientos.filter(m=>m.tipo==='SALIDA'&&m.descripcion.startsWith('Pago a proveedor'));
+    const suma=(metodo?:string)=>compras.filter(m=>!metodo||m.metodo===metodo).reduce((total,m)=>total+Number(m.monto),0);
+    this.imprimirCorte({ fondoInicial:this.sesion.fondoInicial,efectivoEsperado:this.efectivoEsperado,ventasEfectivo:this.ventasPorMetodo.EFECTIVO,ventasTarjeta:this.ventasPorMetodo.TARJETA,ventasTransferencia:this.ventasPorMetodo.TRANSFERENCIA,ventasFiado:this.ventasPorMetodo.FIADO,comprasCaja:suma(),comprasEfectivo:suma('EFECTIVO'),comprasTarjeta:suma('TARJETA'),comprasTerminal:suma('TERMINAL'),comprasTransferencia:suma('TRANSFERENCIA') }, 'X');
   }
 
   private imprimirCorte(c:CorteCaja,tipo:'X'|'Z'):void {
     const w=window.open('','_blank','width=400,height=700'); if(!w){this.error='Permite ventanas emergentes para imprimir el corte.';return;}
     const row=(label:string,value:number|undefined)=>`<tr><td>${label}</td><td>$${Number(value??0).toFixed(2)}</td></tr>`;
-    w.document.write(`<html><head><title>Corte ${tipo}</title><style>body{font:14px monospace;width:300px;margin:20px auto}h2,p{text-align:center}table{width:100%}td{padding:5px}td:last-child{text-align:right}.total{font-weight:bold;border-top:1px dashed}</style></head><body><h2>Abarrotes El Pedernal</h2><p>CORTE ${tipo}<br>${new Date(c.fechaCierre??Date.now()).toLocaleString('es-MX')}</p><table>${row('Fondo inicial',c.fondoInicial)}${row('Ventas efectivo',c.ventasEfectivo)}${row('Ventas tarjeta',c.ventasTarjeta)}${row('Transferencias',c.ventasTransferencia)}${row('Fiado',c.ventasFiado)}${row('Efectivo esperado',c.efectivoEsperado)}${tipo==='Z'?row('Efectivo contado',c.efectivoContado)+row('Diferencia',c.diferencia):''}</table><p>${tipo==='X'?'Corte informativo; la caja continúa abierta.':'Corte definitivo de cierre.'}</p><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();
+    w.document.write(`<html><head><title>Corte ${tipo}</title><style>@page{size:80mm auto;margin:0}*{box-sizing:border-box}html,body{width:80mm;margin:0;padding:0}body{padding:4mm;font:12px/1.25 monospace;color:#000}h2{font-size:16px;margin:0 0 3px;text-align:center}p{text-align:center;margin:5px 0 10px}table{width:100%;border-collapse:collapse}td{padding:3px 0;vertical-align:top}td:first-child{padding-right:5px}td:last-child{text-align:right;white-space:nowrap}.footer{margin-top:10px;border-top:1px dashed #000;padding-top:8px}@media print{html,body{width:80mm}body{padding:3mm}}</style></head><body><h2>Abarrotes El Pedernal</h2><p>CORTE ${tipo}<br>${new Date(c.fechaCierre??Date.now()).toLocaleString('es-MX')}</p><table>${row('Fondo inicial',c.fondoInicial)}${row('Ventas efectivo',c.ventasEfectivo)}${row('Ventas tarjeta',c.ventasTarjeta)}${row('Transferencias',c.ventasTransferencia)}${row('Fiado',c.ventasFiado)}${row('Compras desde caja',-(c.comprasCaja??0))}${row('  Efectivo',-(c.comprasEfectivo??0))}${row('  Tarjeta',-(c.comprasTarjeta??0))}${row('  Terminal',-(c.comprasTerminal??0))}${row('  Transferencia',-(c.comprasTransferencia??0))}${row('Efectivo esperado',c.efectivoEsperado)}${tipo==='Z'?row('Efectivo contado',c.efectivoContado)+row('Diferencia',c.diferencia):''}</table><p class="footer">${tipo==='X'?'Corte informativo<br>La caja continúa abierta.':'Corte definitivo de cierre.'}</p><script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}<\/script></body></html>`);w.document.close();
   }
 
   private async cargarTodo(): Promise<void> {

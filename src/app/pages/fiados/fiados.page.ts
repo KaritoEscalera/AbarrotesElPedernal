@@ -80,6 +80,8 @@ export class FiadosPage implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await Promise.all([this.cargarFiados(), this.cargarClientes()]);
+    const estado=this.route.snapshot.queryParamMap.get('estado');
+    if(['todos','pendiente','vencido','liquidado'].includes(estado??''))this.filtroEstado=estado as 'todos'|'pendiente'|'vencido'|'liquidado';
     const clienteId = Number(this.route.snapshot.queryParamMap.get('cliente'));
     if (Number.isInteger(clienteId) && clienteId > 0) await this.enfocarCliente(clienteId);
   }

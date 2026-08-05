@@ -40,7 +40,7 @@
         <ion-card-content>{{ ventasSemana }}</ion-card-content>
       </ion-card>
 
-      <ion-card>
+      <ion-card class="summary-link" button routerLink="/inventario" [queryParams]="{estado:'bajo'}">
         <ion-card-header>
           <ion-card-title>Productos bajos</ion-card-title>
         </ion-card-header>
@@ -48,7 +48,7 @@
         <ion-card-content>{{ productosBajos }}</ion-card-content>
       </ion-card>
 
-      <ion-card>
+      <ion-card class="summary-link" button routerLink="/fiados" [queryParams]="{estado:'pendiente'}">
         <ion-card-header>
           <ion-card-title>Fiados pendientes</ion-card-title>
         </ion-card-header>
@@ -79,7 +79,6 @@
           <ul class="activity-list">
             <li *ngFor="let alerta of alertas">
               <span>{{ alerta.mensaje }}</span>
-              <a [routerLink]="alerta.enlace">{{ alerta.accion }}</a>
             </li>
           </ul>
         </ion-card-content>

@@ -7,7 +7,7 @@ import { BusinessApi } from '../../services/business-api';
 interface Proveedor { id: number; empresa: string; estado: string; }
 interface Producto { id: number; nombre: string; codigo: string | null; costo: number; tasaIva:number; proveedorId:number|null; proveedor:string|null; }
 interface Partida { productoId: number | null; cantidad: number | null; costoUnitario: number | null; lote: string; fechaCaducidad: string; }
-interface Compra { id: number; folio: string; fecha: string; proveedor: string; estado: string; metodoPago: string; total: number; saldoPendiente: number; }
+interface Compra { id: number; folio: string; fecha: string; proveedor: string; estado: string; metodoPago: string; pagoDetalle:string; total: number; saldoPendiente: number; }
 interface Sugerencia { productoId:number; nombre:string; stock:number; minimo:number; cantidadSugerida:number; costo:number; proveedorId:number|null; proveedor:string|null; }
 
 @Component({ selector: 'app-compras', templateUrl: './compras.page.html', styleUrls: ['./compras.page.scss'], standalone: true,
@@ -16,8 +16,8 @@ export class ComprasPage implements OnInit {
   private readonly api = inject(BusinessApi);
   proveedores: Proveedor[] = []; productos: Producto[] = []; compras: Compra[] = []; sugerencias:Sugerencia[]=[];
   proveedorId: number | null = null; folio = ''; metodoPago = 'CREDITO'; notas = '';
-  efectivoCompra:number|null=null; tarjetaCompra:number|null=null; transferenciaCompra:number|null=null;
-  efectivoDesdeCaja = false;
+  efectivoCompra:number|null=null; tarjetaCompra:number|null=null; terminalCompra:number|null=null; transferenciaCompra:number|null=null;
+  origenPago:'CAJA'|'EXTERNO'='EXTERNO';origenEfectivo:'CAJA'|'EXTERNO'='CAJA';origenTarjeta:'CAJA'|'EXTERNO'='EXTERNO';origenTerminal:'CAJA'|'EXTERNO'='CAJA';origenTransferencia:'CAJA'|'EXTERNO'='EXTERNO';
   partidas: Partida[] = [this.nuevaPartida()]; mensaje = ''; error = ''; guardando = false;
   confirmacionVisible = false;
 
@@ -25,7 +25,7 @@ export class ComprasPage implements OnInit {
   get subtotal(): number { return this.partidas.reduce((s, p) => s + Number(p.cantidad || 0) * Number(p.costoUnitario || 0), 0); }
   get impuestos():number{return this.partidas.reduce((s,p)=>{const producto=this.productos.find(x=>x.id===Number(p.productoId));return s+Number(p.cantidad||0)*Number(p.costoUnitario||0)*Number(producto?.tasaIva||0)/100;},0);}
   get totalCompra():number{return Math.round((this.subtotal+this.impuestos)*100)/100;}
-  get totalPagoMixto():number{return Number(this.efectivoCompra||0)+Number(this.tarjetaCompra||0)+Number(this.transferenciaCompra||0);}
+  get totalPagoMixto():number{return Number(this.efectivoCompra||0)+Number(this.tarjetaCompra||0)+Number(this.terminalCompra||0)+Number(this.transferenciaCompra||0);}
   get proveedorSeleccionado():Proveedor|undefined{return this.proveedores.find(item=>item.id===Number(this.proveedorId));}
   get productosDelProveedor():Producto[]{
     const proveedor=this.proveedorSeleccionado;if(!proveedor)return[];
@@ -59,9 +59,10 @@ export class ComprasPage implements OnInit {
     this.confirmacionVisible=false;
     this.guardando = true;
     try {
-      const result = await this.api.post<{ folio: string; total: number }>('purchases', { proveedorId: this.proveedorId, folio: this.folio, metodoPago: this.metodoPago, notas: this.notas, items: this.partidas,efectivoDesdeCaja:this.efectivoDesdeCaja,pagos:this.metodoPago==='MIXTO'?[{metodo:'EFECTIVO',monto:Number(this.efectivoCompra||0)},{metodo:'TARJETA',monto:Number(this.tarjetaCompra||0)},{metodo:'TRANSFERENCIA',monto:Number(this.transferenciaCompra||0)}]:undefined });
+      const pagos=this.metodoPago==='MIXTO'?[{metodo:'EFECTIVO',monto:Number(this.efectivoCompra||0),origen:this.origenEfectivo},{metodo:'TARJETA',monto:Number(this.tarjetaCompra||0),origen:this.origenTarjeta},{metodo:'TERMINAL',monto:Number(this.terminalCompra||0),origen:this.origenTerminal},{metodo:'TRANSFERENCIA',monto:Number(this.transferenciaCompra||0),origen:this.origenTransferencia}]:this.metodoPago==='CREDITO'?[]:[{metodo:this.metodoPago,monto:this.totalCompra,origen:this.origenPago}];
+      const result = await this.api.post<{ folio: string; total: number }>('purchases', { proveedorId: this.proveedorId, folio: this.folio, metodoPago: this.metodoPago, notas: this.notas, items: this.partidas,pagos });
       this.mensaje = `Compra ${result.folio} recibida por $${Number(result.total).toFixed(2)}. El inventario fue actualizado.`;
-      this.proveedorId = null; this.folio = ''; this.notas = ''; this.partidas = [this.nuevaPartida()];this.efectivoCompra=null;this.tarjetaCompra=null;this.transferenciaCompra=null;this.efectivoDesdeCaja=false; await this.cargar();
+      this.proveedorId = null; this.folio = ''; this.notas = ''; this.partidas = [this.nuevaPartida()];this.efectivoCompra=null;this.tarjetaCompra=null;this.terminalCompra=null;this.transferenciaCompra=null;this.origenPago='EXTERNO'; await this.cargar();
     } catch (e: unknown) { const x = e as { error?: { error?: { error?: string } } }; this.error = x.error?.error?.error ?? 'No fue posible registrar la compra.'; }
     finally { this.guardando = false; }
   }

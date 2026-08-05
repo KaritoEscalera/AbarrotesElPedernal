@@ -3,7 +3,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import {
-  IonButton, IonContent, IonInput, IonItem, IonLabel, IonSearchbar, IonSelect, IonSelectOption
+  IonButton, IonContent, IonInput, IonItem, IonLabel, IonSearchbar, IonSelect, IonSelectOption, IonToast
 } from '@ionic/angular/standalone';
 import type { Proveedor } from '../../models/proveedor';
 import { Auth } from '../../services/auth';
@@ -16,7 +16,7 @@ type ErroresFormulario = Partial<Record<'nombre' | 'empresa' | 'telefono' | 'cor
   templateUrl: './proveedores.page.html',
   styleUrls: ['./proveedores.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonContent, IonButton, IonInput, IonItem, IonLabel, IonSearchbar, IonSelect, IonSelectOption],
+  imports: [CommonModule, FormsModule, IonContent, IonButton, IonInput, IonItem, IonLabel, IonSearchbar, IonSelect, IonSelectOption, IonToast],
 })
 export class ProveedoresPage implements OnInit {
   confirmandoArchivarId:number|null=null;
@@ -30,6 +30,8 @@ export class ProveedoresPage implements OnInit {
   proveedorEditando: Proveedor | null = null;
   errores: ErroresFormulario = {};
   mensaje = '';
+  notificacion = '';
+  guardando = false;
   formulario: Proveedor = this.crearProveedorVacio();
   proveedores: Proveedor[] = [];
 
@@ -102,12 +104,14 @@ export class ProveedoresPage implements OnInit {
       telefono: this.formulario.telefono.trim(),
       correo: this.formulario.correo.trim().toLowerCase(),
     };
-    try { if (this.proveedorEditando) await this.api.put(`providers/${this.formulario.id}`, this.formulario); else await this.api.post('providers', this.formulario); await this.recargar(); this.mensaje = `Proveedor ${this.proveedorEditando ? 'actualizado' : 'registrado'} en MySQL.`; this.cancelarFormulario(); } catch { this.mensaje = 'No fue posible guardar el proveedor.'; }
+    const editando=!!this.proveedorEditando,empresa=this.formulario.empresa;
+    this.guardando=true;
+    try { if (editando) await this.api.put(`providers/${this.formulario.id}`, this.formulario); else await this.api.post('providers', this.formulario); await this.recargar(); this.cancelarFormulario();this.confirmar(`${empresa} fue ${editando ? 'actualizado' : 'registrado'} y guardado en MySQL.`); } catch { this.mensaje = 'No fue posible guardar el proveedor. Revisa que la empresa o el correo no estén repetidos.'; }finally{this.guardando=false;}
   }
 
   async cambiarEstado(proveedor: Proveedor): Promise<void> {
-    proveedor.estado = proveedor.estado === 'Activo' ? 'Inactivo' : 'Activo';
-    try { await this.api.put(`providers/${proveedor.id}`, proveedor); await this.recargar(); this.mensaje = 'Estado actualizado en MySQL.'; } catch { this.mensaje = 'No fue posible actualizar el estado.'; }
+    const estado = proveedor.estado === 'Activo' ? 'Inactivo' : 'Activo';
+    try { await this.api.put(`providers/${proveedor.id}`, {...proveedor,estado}); await this.recargar(); this.confirmar(`El estado de ${proveedor.empresa} cambió a ${estado}.`); } catch { this.mensaje = 'No fue posible actualizar el estado.'; }
   }
 
   async archivarProveedor(proveedor: Proveedor): Promise<void> {
@@ -121,6 +125,8 @@ export class ProveedoresPage implements OnInit {
     this.formulario = this.crearProveedorVacio();
     this.errores = {};
   }
+
+  confirmar(mensaje:string):void{this.mensaje=mensaje;this.notificacion=mensaje;}
 
   pedidoAtrasado(proveedor: Proveedor): boolean {
     const fecha = this.fechaLocal(proveedor.proximaEntrega);

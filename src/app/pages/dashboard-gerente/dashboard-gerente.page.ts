@@ -54,16 +54,19 @@ export class DashboardGerentePage implements OnInit {
 
   alertas = [
     {
+      id: 'stock-bajo',
       mensaje: '8 productos tienen existencias bajas',
       enlace: '/inventario',
       accion: 'Ver inventario',
     },
     {
+      id: 'fiados',
       mensaje: '4 clientes tienen adeudos pendientes',
       enlace: '/fiados',
       accion: 'Ver fiados',
     },
     {
+      id: 'proveedor',
       mensaje: 'Un proveedor tiene un pedido pendiente',
       enlace: '/proveedores',
       accion: 'Ver proveedores',

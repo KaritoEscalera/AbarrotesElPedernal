@@ -54,10 +54,10 @@ export class DashboardAdminPage implements OnInit {
 
   movimientos: string[] = [];
 
-  get alertas(): string[] {
+  get alertas(): Array<{id:string;mensaje:string;ruta:string;estado:string}> {
     return [
-      `${this.productosBajos} producto(s) con existencias bajas`,
-      `${this.fiadosPendientes} fiado(s) con saldo pendiente`,
+      {id:`stock-bajo-${this.productosBajos}`,mensaje:`${this.productosBajos} producto(s) con existencias bajas`,ruta:'/inventario',estado:'bajo'},
+      {id:`fiados-${this.fiadosPendientes}`,mensaje:`${this.fiadosPendientes} fiado(s) con saldo pendiente`,ruta:'/fiados',estado:'pendiente'},
     ];
   }
 

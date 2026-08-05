@@ -1,4 +1,5 @@
 <ion-content>
+  <ion-toast [isOpen]="!!notificacion" [message]="notificacion" position="middle" color="success" [duration]="0" [buttons]="[{text:'Aceptar',role:'cancel'}]" (didDismiss)="notificacion=''" aria-live="assertive"></ion-toast>
   <main class="page-container">
     <header class="page-header">
       <div><p class="eyebrow">Abastecimiento</p><h1>Proveedores</h1><p class="subtitle">Controla contactos, pedidos y próximas entregas.</p></div>
@@ -30,7 +31,7 @@
         <div><ion-item lines="none"><ion-label position="stacked">Estado del pedido</ion-label><ion-select [(ngModel)]="formulario.estadoPedido" interface="popover"><ion-select-option value="Sin pedido">Sin pedido</ion-select-option><ion-select-option value="Pendiente">Pendiente</ion-select-option><ion-select-option value="Recibido">Recibido</ion-select-option><ion-select-option value="Atrasado">Atrasado</ion-select-option></ion-select></ion-item></div>
         <div><ion-item lines="none"><ion-label position="stacked">Saldo pendiente</ion-label><ion-input [(ngModel)]="formulario.saldoPendiente" type="number" min="0" inputmode="decimal"></ion-input></ion-item></div>
       </div>
-      <div class="form-actions"><ion-button fill="outline" class="cancel-button" (click)="cancelarFormulario()">Cancelar</ion-button><ion-button class="primary-button" (click)="guardarProveedor()">Guardar proveedor</ion-button></div>
+      <div class="form-actions"><ion-button fill="outline" class="cancel-button" [disabled]="guardando" (click)="cancelarFormulario()">Cancelar</ion-button><ion-button class="primary-button" [disabled]="guardando" (click)="guardarProveedor()">{{guardando ? 'Guardando…' : 'Guardar proveedor'}}</ion-button></div>
     </section>
 
     <section class="providers-card">

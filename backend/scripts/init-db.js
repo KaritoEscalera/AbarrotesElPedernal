@@ -41,7 +41,21 @@ try {
   if (Number(deletedUserColumns[0].total) === 0) {
     await connection.query(`ALTER TABLE ${escapedDatabase}.usuarios ADD COLUMN eliminado_en DATETIME NULL AFTER activo, ADD INDEX idx_usuarios_eliminado (eliminado_en)`);
   }
-  await connection.query(`ALTER TABLE ${escapedDatabase}.compras MODIFY COLUMN metodo_pago ENUM('EFECTIVO','TARJETA','TRANSFERENCIA','CREDITO','MIXTO','OTRO') NOT NULL DEFAULT 'CREDITO'`);
+  const providerColumns = [
+    ['ultima_compra', 'DATE NULL AFTER dia_entrega'],
+    ['proxima_entrega', 'DATE NULL AFTER ultima_compra'],
+    ["estado_pedido", "ENUM('SIN_PEDIDO','PENDIENTE','RECIBIDO','ATRASADO') NOT NULL DEFAULT 'SIN_PEDIDO' AFTER proxima_entrega"],
+    ['saldo_pendiente', 'DECIMAL(14,2) NOT NULL DEFAULT 0.00 AFTER estado_pedido'],
+  ];
+  for (const [column, definition] of providerColumns) {
+    const [rows] = await connection.query(
+      "SELECT COUNT(*) AS total FROM information_schema.columns WHERE table_schema=? AND table_name='proveedores' AND column_name=?",
+      [databaseName, column],
+    );
+    if (Number(rows[0].total) === 0) await connection.query(`ALTER TABLE ${escapedDatabase}.proveedores ADD COLUMN ${column} ${definition}`);
+  }
+  await connection.query(`ALTER TABLE ${escapedDatabase}.compras MODIFY COLUMN metodo_pago ENUM('EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA','CREDITO','MIXTO','OTRO') NOT NULL DEFAULT 'CREDITO'`);
+  await connection.query(`ALTER TABLE ${escapedDatabase}.movimientos_caja MODIFY COLUMN metodo ENUM('EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA','FIADO','OTRO') NOT NULL`);
   const [tables] = await connection.query(
     "SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema = ? AND table_type = 'BASE TABLE'",
     [databaseName],
