@@ -535,10 +535,36 @@ export class CajaPage implements OnInit, OnDestroy {
     this.imprimirCorte({ fondoInicial:this.sesion.fondoInicial,efectivoEsperado:this.efectivoEsperado,ventasEfectivo:this.ventasPorMetodo.EFECTIVO,ventasTarjeta:this.ventasPorMetodo.TARJETA,ventasTransferencia:this.ventasPorMetodo.TRANSFERENCIA,ventasFiado:this.ventasPorMetodo.FIADO,comprasCaja:suma(),comprasEfectivo:suma('EFECTIVO'),comprasTarjeta:suma('TARJETA'),comprasTerminal:suma('TERMINAL'),comprasTransferencia:suma('TRANSFERENCIA') }, 'X');
   }
 
-  private imprimirCorte(c:CorteCaja,tipo:'X'|'Z'):void {
+  private async imprimirCorte(c:CorteCaja,tipo:'X'|'Z'):Promise<void> {
+    if(this.bluetoothPrinter.disponible){
+      try{
+        const impresora=await this.bluetoothPrinter.imprimir(this.construirCorteBluetooth(c,tipo));
+        this.mensaje=`${this.mensaje} Corte ${tipo} impreso como ticket en ${impresora}.`.trim();
+      }catch(error:unknown){
+        const detalle=error instanceof Error?error.message:String((error as{message?:string})?.message??'');
+        this.error=`No se pudo imprimir el Corte ${tipo}. ${detalle||'Revisa que “Bluetooth Printer” esté encendida y emparejada.'}`;
+      }
+      return;
+    }
     const w=window.open('','_blank','width=400,height=700'); if(!w){this.error='Permite ventanas emergentes para imprimir el corte.';return;}
     const row=(label:string,value:number|undefined)=>`<tr><td>${label}</td><td>$${Number(value??0).toFixed(2)}</td></tr>`;
     w.document.write(`<html><head><title>Corte ${tipo}</title><style>@page{size:80mm auto;margin:0}*{box-sizing:border-box}html,body{width:80mm;margin:0;padding:0}body{padding:4mm;font:12px/1.25 monospace;color:#000}h2{font-size:16px;margin:0 0 3px;text-align:center}p{text-align:center;margin:5px 0 10px}table{width:100%;border-collapse:collapse}td{padding:3px 0;vertical-align:top}td:first-child{padding-right:5px}td:last-child{text-align:right;white-space:nowrap}.footer{margin-top:10px;border-top:1px dashed #000;padding-top:8px}@media print{html,body{width:80mm}body{padding:3mm}}</style></head><body><h2>Abarrotes El Pedernal</h2><p>CORTE ${tipo}<br>${new Date(c.fechaCierre??Date.now()).toLocaleString('es-MX')}</p><table>${row('Fondo inicial',c.fondoInicial)}${row('Ventas efectivo',c.ventasEfectivo)}${row('Ventas tarjeta',c.ventasTarjeta)}${row('Transferencias',c.ventasTransferencia)}${row('Fiado',c.ventasFiado)}${row('Compras desde caja',-(c.comprasCaja??0))}${row('  Efectivo',-(c.comprasEfectivo??0))}${row('  Tarjeta',-(c.comprasTarjeta??0))}${row('  Terminal',-(c.comprasTerminal??0))}${row('  Transferencia',-(c.comprasTransferencia??0))}${row('Efectivo esperado',c.efectivoEsperado)}${tipo==='Z'?row('Efectivo contado',c.efectivoContado)+row('Diferencia',c.diferencia):''}</table><p class="footer">${tipo==='X'?'Corte informativo<br>La caja continúa abierta.':'Corte definitivo de cierre.'}</p><script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}<\/script></body></html>`);w.document.close();
+  }
+
+  private construirCorteBluetooth(c:CorteCaja,tipo:'X'|'Z'):string{
+    const ancho=32;
+    const centro=(texto:string)=>{const limpio=texto.slice(0,ancho);return ' '.repeat(Math.max(0,Math.floor((ancho-limpio.length)/2)))+limpio;};
+    const dinero=(valor:number|undefined)=>`$${Number(valor??0).toFixed(2)}`;
+    const fila=(etiqueta:string,valor:number|undefined)=>{const derecha=dinero(valor);const izquierda=etiqueta.slice(0,Math.max(1,ancho-derecha.length-1));return izquierda+' '.repeat(Math.max(1,ancho-izquierda.length-derecha.length))+derecha;};
+    const lineas=[
+      centro('ABARROTES EL PEDERNAL'),centro(`CORTE ${tipo}`),centro(new Date(c.fechaCierre??Date.now()).toLocaleString('es-MX')),
+      '-'.repeat(ancho),fila('Fondo inicial',c.fondoInicial),fila('Ventas efectivo',c.ventasEfectivo),fila('Ventas tarjeta',c.ventasTarjeta),fila('Transferencias',c.ventasTransferencia),fila('Fiado',c.ventasFiado),
+      '-'.repeat(ancho),fila('Compras desde caja',-(c.comprasCaja??0)),fila('  Efectivo',-(c.comprasEfectivo??0)),fila('  Tarjeta',-(c.comprasTarjeta??0)),fila('  Terminal',-(c.comprasTerminal??0)),fila('  Transferencia',-(c.comprasTransferencia??0)),
+      '-'.repeat(ancho),fila('Efectivo esperado',c.efectivoEsperado),
+    ];
+    if(tipo==='Z')lineas.push(fila('Efectivo contado',c.efectivoContado),fila('Diferencia',c.diferencia));
+    lineas.push('-'.repeat(ancho),centro(tipo==='X'?'CAJA CONTINUA ABIERTA':'CIERRE DEFINITIVO'),'\n\n');
+    return lineas.join('\n');
   }
 
   private async cargarTodo(): Promise<void> {
