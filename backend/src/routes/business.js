@@ -320,9 +320,8 @@ businessRouter.get('/cash/current', async (req, res, next) => {
   try {
     const [[session]] = await pool.execute(
       `SELECT id, estado, fondo_inicial AS fondoInicial, fecha_apertura AS fechaApertura
-       FROM sesiones_caja WHERE usuario_apertura_id=? AND estado='ABIERTA'
+       FROM sesiones_caja WHERE estado='ABIERTA'
        ORDER BY fecha_apertura DESC LIMIT 1`,
-      [req.user.sub],
     );
     if (!session) return res.json({ session: null, totals: null, movements: [] });
     const [totalsResult, movementsResult] = await Promise.all([
@@ -375,8 +374,8 @@ businessRouter.post('/cash/open', async (req, res, next) => {
   try {
     const fondoInicial = Number(req.body?.fondoInicial);
     if (!Number.isFinite(fondoInicial) || fondoInicial < 0) return res.status(400).json({ error: 'El fondo inicial no es válido.' });
-    const [[open]] = await pool.execute("SELECT id FROM sesiones_caja WHERE usuario_apertura_id=? AND estado='ABIERTA' LIMIT 1", [req.user.sub]);
-    if (open) return res.status(409).json({ error: 'Ya tienes una caja abierta.' });
+    const [[open]] = await pool.execute("SELECT id FROM sesiones_caja WHERE estado='ABIERTA' ORDER BY fecha_apertura DESC LIMIT 1");
+    if (open) return res.status(409).json({ error: 'La caja de la tienda ya está abierta.' });
     const [result] = await pool.execute('INSERT INTO sesiones_caja(usuario_apertura_id,fondo_inicial) VALUES(?,?)', [req.user.sub, fondoInicial]);
     await pool.execute(
       `INSERT INTO bitacora(usuario_id,modulo,accion,descripcion) VALUES(?,?,?,?)`,
@@ -392,7 +391,7 @@ businessRouter.post('/cash/movements', async (req, res, next) => {
     const tipo = String(req.body?.tipo ?? '').toUpperCase();
     const descripcion = String(req.body?.descripcion ?? '').trim();
     if (!['INGRESO', 'SALIDA'].includes(tipo) || !Number.isFinite(monto) || monto <= 0 || !descripcion) return res.status(400).json({ error: 'Movimiento de caja no válido.' });
-    const [[session]] = await pool.execute("SELECT id FROM sesiones_caja WHERE usuario_apertura_id=? AND estado='ABIERTA' LIMIT 1", [req.user.sub]);
+    const [[session]] = await pool.execute("SELECT id FROM sesiones_caja WHERE estado='ABIERTA' ORDER BY fecha_apertura DESC LIMIT 1");
     if (!session) return res.status(409).json({ error: 'Debes abrir la caja primero.' });
     const [result] = await pool.execute(
       `INSERT INTO movimientos_caja(sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto)
@@ -434,10 +433,9 @@ businessRouter.post('/cash/close', async (req, res, next) => {
     if (!Number.isFinite(efectivoContado) || efectivoContado < 0) return res.status(400).json({ error: 'El efectivo contado no es válido.' });
     await connection.beginTransaction();
     const [[session]] = await connection.execute(
-      "SELECT id,fondo_inicial FROM sesiones_caja WHERE usuario_apertura_id=? AND estado='ABIERTA' ORDER BY fecha_apertura DESC LIMIT 1 FOR UPDATE",
-      [req.user.sub],
+      "SELECT id,fondo_inicial FROM sesiones_caja WHERE estado='ABIERTA' ORDER BY fecha_apertura DESC LIMIT 1 FOR UPDATE",
     );
-    if (!session) { await connection.rollback(); return res.status(409).json({ error: 'No tienes una caja abierta.' }); }
+    if (!session) { await connection.rollback(); return res.status(409).json({ error: 'La caja de la tienda no está abierta.' }); }
     const [[totals]] = await connection.execute(
       `SELECT COALESCE(SUM(CASE WHEN tipo='INGRESO' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) ingresos,
               COALESCE(SUM(CASE WHEN tipo='SALIDA' AND (metodo='EFECTIVO' OR categoria='COMPRA') THEN monto ELSE 0 END),0) salidas,
@@ -485,8 +483,7 @@ businessRouter.post('/sales', async (req, res, next) => {
     await connection.beginTransaction();
     if(operacionUuid){const [[existing]]=await connection.execute('SELECT entidad_id FROM operaciones_sincronizacion WHERE operacion_uuid=?',[operacionUuid]);if(existing?.entidad_id){const [[saleExisting]]=await connection.execute('SELECT id,folio,subtotal,descuento,impuestos,total FROM ventas WHERE id=?',[existing.entidad_id]);await connection.rollback();return res.json({...saleExisting,repetida:true});}}
     const [[session]] = await connection.execute(
-      "SELECT id FROM sesiones_caja WHERE usuario_apertura_id=? AND estado='ABIERTA' ORDER BY fecha_apertura DESC LIMIT 1 FOR UPDATE",
-      [req.user.sub],
+      "SELECT id FROM sesiones_caja WHERE estado='ABIERTA' ORDER BY fecha_apertura DESC LIMIT 1 FOR UPDATE",
     );
     if (!session) { await connection.rollback(); return res.status(409).json({ error: 'Debes abrir la caja antes de cobrar.' }); }
 
@@ -679,6 +676,23 @@ businessRouter.get('/purchases', requireRole('Administrador','Gerente'), async (
               p.empresa AS proveedor,u.nombre AS usuario
        FROM compras c JOIN proveedores p ON p.id=c.proveedor_id JOIN usuarios u ON u.id=c.usuario_id
        ORDER BY c.fecha_compra DESC LIMIT 500`,
+    );
+    return res.json(rows);
+  } catch (error) { return next(error); }
+});
+businessRouter.get('/cash/purchase-history', async (_req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT c.id,c.folio,c.fecha_compra AS fecha,c.estado,c.metodo_pago AS metodoPago,c.total,
+              p.empresa AS proveedor,u.nombre AS usuario,
+              COALESCE(SUM(CASE WHEN cp.origen='CAJA' THEN cp.monto ELSE 0 END),0) AS montoCaja,
+              COALESCE(GROUP_CONCAT(CONCAT(cp.metodo,' ',cp.origen,' $',FORMAT(cp.monto,2)) ORDER BY cp.id SEPARATOR ' · '),IF(c.metodo_pago='CREDITO','CRÉDITO','Sin desglose')) AS pagoDetalle
+       FROM compras c
+       JOIN proveedores p ON p.id=c.proveedor_id
+       JOIN usuarios u ON u.id=c.usuario_id
+       LEFT JOIN compra_pagos cp ON cp.compra_id=c.id
+       GROUP BY c.id,c.folio,c.fecha_compra,c.estado,c.metodo_pago,c.total,p.empresa,u.nombre
+       ORDER BY c.fecha_compra DESC LIMIT 150`,
     );
     return res.json(rows);
   } catch (error) { return next(error); }

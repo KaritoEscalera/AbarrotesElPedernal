@@ -49,6 +49,7 @@ interface EstadoCaja {
 interface CorteCaja { sesionId?:number; fondoInicial:number; efectivoEsperado:number; efectivoContado?:number; diferencia?:number; ventasEfectivo:number; ventasTarjeta:number; ventasTransferencia:number; ventasFiado:number;comprasCaja?:number;comprasEfectivo?:number;comprasTarjeta?:number;comprasTerminal?:number;comprasTransferencia?:number; fechaCierre?:string; }
 interface VentaPendiente { operacionUuid:string; payload:Record<string,unknown>; creada:string; intentos?:number; ultimoIntento?:string; ultimoError?:string; }
 interface VentaResumen { id:number; folio:string; fecha:string; estado:'COMPLETADA'|'CANCELADA'|'DEVUELTA'; total:number; usuario:string; cliente:string; metodo:string; }
+interface CompraCajaResumen { id:number;folio:string;fecha:string;estado:string;metodoPago:string;total:number;proveedor:string;usuario:string;montoCaja:number;pagoDetalle:string; }
 interface VentaDetalle extends VentaResumen { subtotal:number; descuento:number; impuestos:number; items:Array<{nombre:string;cantidad:number;precioUnitario:number;importe:number}>; pagos:Array<{metodo:string;monto:number;referencia:string|null}>; fiado:{monto:number;saldoPendiente:number;fechaLimite:string}|null; }
 interface Denominacion { valor:number; etiqueta:string; cantidad:number|null; }
 interface Recarga {id:number;compania:string;telefono:string;monto:number;comision:number;estado:'PENDIENTE'|'EXITOSA'|'RECHAZADA'|'CANCELADA';folioProveedor:string|null;motivo:string|null;fecha:string;usuario:string;folioCaptura?:string;motivoCaptura?:string;validacion?:string;}
@@ -113,6 +114,7 @@ export class CajaPage implements OnInit, OnDestroy {
   ventasSuspendidas: Array<{ id: number; fecha: string; carrito: LineaCarrito[] }> = this.cargarSuspendidas();
   ventasPendientes:VentaPendiente[]=this.cargarPendientes();
   historialVentas:VentaResumen[]=[];
+  historialCompras:CompraCajaResumen[]=[];
   busquedaVentas='';
   ventaSeleccionada:VentaDetalle|null=null;
   motivoCancelacion='';
@@ -446,6 +448,7 @@ export class CajaPage implements OnInit, OnDestroy {
   }
 
   async cargarHistorial():Promise<void>{try{const datos=await this.api.get<VentaResumen[]>(`sales?q=${encodeURIComponent(this.busquedaVentas.trim())}`);this.historialVentas=datos.map(v=>({...v,total:Number(v.total)}));}catch{this.historialVentas=[];}}
+  async cargarHistorialCompras():Promise<void>{try{const datos=await this.api.get<CompraCajaResumen[]>('cash/purchase-history');this.historialCompras=datos.map(c=>({...c,total:Number(c.total),montoCaja:Number(c.montoCaja)}));}catch{this.historialCompras=[];}}
   async verVenta(id:number):Promise<void>{await this.ejecutar(async()=>{this.ventaSeleccionada=await this.obtenerVenta(id);});}
   cerrarDetalleVenta():void{this.ventaSeleccionada=null;this.motivoCancelacion='';}
   async cancelarVenta():Promise<void>{if(!this.ventaSeleccionada)return;const motivo=this.motivoCancelacion.trim();if(motivo.length<5)return this.fallar('Escribe un motivo de cancelación de al menos 5 caracteres.');await this.ejecutar(async()=>{await this.api.post(`sales/${this.ventaSeleccionada!.id}/cancel`,{motivo});this.cerrarDetalleVenta();await Promise.all([this.cargarHistorial(),this.cargarTodo()]);this.mensaje='Venta cancelada, inventario y caja actualizados.';});}
@@ -568,7 +571,7 @@ export class CajaPage implements OnInit, OnDestroy {
   }
 
   private async cargarTodo(): Promise<void> {
-    const resultados = await Promise.allSettled([this.cargarEstado(), this.cargarCatalogos(),this.cargarHistorial(),this.cargarRecargas()]);
+    const resultados = await Promise.allSettled([this.cargarEstado(), this.cargarCatalogos(),this.cargarHistorial(),this.cargarHistorialCompras(),this.cargarRecargas()]);
     if (resultados[0].status === 'rejected' || resultados[1].status === 'rejected') {
       this.error = 'Conéctate una vez para descargar productos y abrir la caja en esta tablet.';
     }

@@ -56,35 +56,6 @@ try {
   }
   await connection.query(`ALTER TABLE ${escapedDatabase}.compras MODIFY COLUMN metodo_pago ENUM('EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA','CREDITO','MIXTO','OTRO') NOT NULL DEFAULT 'CREDITO'`);
   await connection.query(`ALTER TABLE ${escapedDatabase}.movimientos_caja MODIFY COLUMN metodo ENUM('EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA','FIADO','OTRO') NOT NULL`);
-  // Corrección confirmada por la tienda: esta compra se pagó en efectivo de caja,
-  // pero una versión anterior del cliente omitió el desglose del pago.
-  await connection.query(`
-    INSERT INTO ${escapedDatabase}.compra_pagos(compra_id,origen,metodo,monto)
-    SELECT c.id,'CAJA','EFECTIVO',c.total
-    FROM ${escapedDatabase}.compras c
-    WHERE c.folio='C-1785957097705' AND c.total=50.00 AND c.metodo_pago='EFECTIVO'
-      AND NOT EXISTS (SELECT 1 FROM ${escapedDatabase}.compra_pagos cp WHERE cp.compra_id=c.id)
-  `);
-  // Si el reloj del dispositivo no coincidía con el del servidor, la sesión
-  // histórica no puede localizarse por fecha. Para esta compra confirmada,
-  // registra la salida en la caja abierta de la tienda para que figure en el corte.
-  await connection.query(`
-    INSERT INTO ${escapedDatabase}.movimientos_caja
-      (sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto,referencia,creado_en)
-    SELECT
-      (SELECT sc.id FROM ${escapedDatabase}.sesiones_caja sc
-       WHERE sc.estado='ABIERTA' ORDER BY sc.fecha_apertura DESC LIMIT 1),
-      c.usuario_id,'SALIDA','COMPRA',
-      CONCAT('Pago a proveedor ',c.proveedor_id,' · compra ',c.folio),
-      'EFECTIVO',c.total,c.folio,NOW()
-    FROM ${escapedDatabase}.compras c
-    WHERE c.folio='C-1785957097705' AND c.total=50.00 AND c.metodo_pago='EFECTIVO'
-      AND (SELECT COUNT(*) FROM ${escapedDatabase}.sesiones_caja sc WHERE sc.estado='ABIERTA')>0
-      AND NOT EXISTS (
-        SELECT 1 FROM ${escapedDatabase}.movimientos_caja mc
-        WHERE mc.categoria='COMPRA' AND mc.referencia=c.folio
-      )
-  `);
   const [reconciled] = await connection.query(`
     INSERT INTO ${escapedDatabase}.movimientos_caja
       (sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto,referencia,creado_en)
