@@ -902,3 +902,48 @@ html.theme-dark ion-searchbar input::placeholder {
   color: #a9c9cc !important;
   opacity: 1 !important;
 }
+
+html.theme-dark ion-alert {
+  --background: #102f37 !important;
+  --color: #eefcff !important;
+  --backdrop-opacity: .6;
+}
+
+html.theme-dark .alert-title,
+html.theme-dark .alert-radio-label,
+html.theme-dark .alert-checkbox-label,
+html.theme-dark .alert-input-group,
+html.theme-dark .alert-message {
+  color: #eefcff !important;
+}
+
+html.theme-dark .alert-radio-icon,
+html.theme-dark .alert-checkbox-icon {
+  border-color: #8bc7ca !important;
+}
+
+html.theme-dark .alert-radio-button[aria-checked="true"] .alert-radio-label,
+html.theme-dark .alert-button {
+  color: #70e7df !important;
+}
+
+html.theme-dark .suggestion strong,
+html.theme-dark .actions strong,
+html.theme-dark .catalog-heading strong,
+html.theme-dark .catalog-products strong {
+  color: #f5feff !important;
+}
+
+html.theme-dark .suggestion small,
+html.theme-dark .suggestion > span,
+html.theme-dark .catalog-heading small,
+html.theme-dark .catalog-products small {
+  color: #b7d5d8 !important;
+}
+
+html.theme-dark .supplier-catalog,
+html.theme-dark .catalog-products article {
+  color: #eefcff !important;
+  background: #12343c !important;
+  border-color: #39717a !important;
+}

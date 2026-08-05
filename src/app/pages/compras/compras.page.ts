@@ -17,7 +17,7 @@ export class ComprasPage implements OnInit {
   proveedores: Proveedor[] = []; productos: Producto[] = []; compras: Compra[] = []; sugerencias:Sugerencia[]=[];
   proveedorId: number | null = null; folio = ''; metodoPago = 'CREDITO'; notas = '';
   efectivoCompra:number|null=null; tarjetaCompra:number|null=null; terminalCompra:number|null=null; transferenciaCompra:number|null=null;
-  origenPago:'CAJA'|'EXTERNO'='EXTERNO';origenEfectivo:'CAJA'|'EXTERNO'='CAJA';origenTarjeta:'CAJA'|'EXTERNO'='EXTERNO';origenTerminal:'CAJA'|'EXTERNO'='CAJA';origenTransferencia:'CAJA'|'EXTERNO'='EXTERNO';
+  origenPago:'CAJA'|'EXTERNO'='CAJA';origenEfectivo:'CAJA'|'EXTERNO'='CAJA';origenTarjeta:'CAJA'|'EXTERNO'='EXTERNO';origenTerminal:'CAJA'|'EXTERNO'='CAJA';origenTransferencia:'CAJA'|'EXTERNO'='EXTERNO';
   partidas: Partida[] = [this.nuevaPartida()]; mensaje = ''; error = ''; guardando = false;
   confirmacionVisible = false;
 
@@ -41,6 +41,7 @@ export class ComprasPage implements OnInit {
   }
   agregarPartida(): void { this.partidas = [...this.partidas, this.nuevaPartida()]; }
   cambiarProveedor():void{this.partidas=[this.nuevaPartida()];this.mensaje='Selecciona los productos que llegaron de este proveedor.';this.error='';}
+  cambiarMetodoPago():void{this.origenPago=this.metodoPago==='EFECTIVO'||this.metodoPago==='TERMINAL'?'CAJA':'EXTERNO';}
   agregarProductoProveedor(producto:Producto):void{
     if(this.partidas.some(partida=>Number(partida.productoId)===producto.id)){this.error=`${producto.nombre} ya está agregado a esta compra.`;return;}
     const nueva={productoId:producto.id,cantidad:1,costoUnitario:producto.costo,lote:'',fechaCaducidad:''};
@@ -60,9 +61,9 @@ export class ComprasPage implements OnInit {
     this.guardando = true;
     try {
       const pagos=this.metodoPago==='MIXTO'?[{metodo:'EFECTIVO',monto:Number(this.efectivoCompra||0),origen:this.origenEfectivo},{metodo:'TARJETA',monto:Number(this.tarjetaCompra||0),origen:this.origenTarjeta},{metodo:'TERMINAL',monto:Number(this.terminalCompra||0),origen:this.origenTerminal},{metodo:'TRANSFERENCIA',monto:Number(this.transferenciaCompra||0),origen:this.origenTransferencia}]:this.metodoPago==='CREDITO'?[]:[{metodo:this.metodoPago,monto:this.totalCompra,origen:this.origenPago}];
-      const result = await this.api.post<{ folio: string; total: number }>('purchases', { proveedorId: this.proveedorId, folio: this.folio, metodoPago: this.metodoPago, notas: this.notas, items: this.partidas,pagos });
-      this.mensaje = `Compra ${result.folio} recibida por $${Number(result.total).toFixed(2)}. El inventario fue actualizado.`;
-      this.proveedorId = null; this.folio = ''; this.notas = ''; this.partidas = [this.nuevaPartida()];this.efectivoCompra=null;this.tarjetaCompra=null;this.terminalCompra=null;this.transferenciaCompra=null;this.origenPago='EXTERNO'; await this.cargar();
+      const result = await this.api.post<{ folio: string; total: number;cajaDescontada:number }>('purchases', { proveedorId: this.proveedorId, folio: this.folio, metodoPago: this.metodoPago, notas: this.notas, items: this.partidas,pagos });
+      this.mensaje = `Compra ${result.folio} recibida por $${Number(result.total).toFixed(2)}. Inventario actualizado.${Number(result.cajaDescontada)>0?` Se descontaron $${Number(result.cajaDescontada).toFixed(2)} de caja.`:' No se descontó dinero de caja.'}`;
+      this.proveedorId = null; this.folio = ''; this.notas = ''; this.partidas = [this.nuevaPartida()];this.efectivoCompra=null;this.tarjetaCompra=null;this.terminalCompra=null;this.transferenciaCompra=null;this.origenPago='CAJA'; await this.cargar();
     } catch (e: unknown) { const x = e as { error?: { error?: { error?: string } } }; this.error = x.error?.error?.error ?? 'No fue posible registrar la compra.'; }
     finally { this.guardando = false; }
   }

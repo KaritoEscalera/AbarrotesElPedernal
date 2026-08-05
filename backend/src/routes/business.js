@@ -329,7 +329,7 @@ businessRouter.get('/cash/current', async (req, res, next) => {
       pool.execute(
         `SELECT
           COALESCE(SUM(CASE WHEN tipo='INGRESO' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) AS ingresosEfectivo,
-          COALESCE(SUM(CASE WHEN tipo='SALIDA' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) AS salidasEfectivo,
+          COALESCE(SUM(CASE WHEN tipo='SALIDA' AND (metodo='EFECTIVO' OR categoria='COMPRA') THEN monto ELSE 0 END),0) AS salidasEfectivo,
           COALESCE(SUM(CASE WHEN categoria='VENTA' THEN monto ELSE 0 END),0) AS ventas,
           COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) AS ventasEfectivo,
           COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='TARJETA' THEN monto ELSE 0 END),0) AS ventasTarjeta,
@@ -440,7 +440,7 @@ businessRouter.post('/cash/close', async (req, res, next) => {
     if (!session) { await connection.rollback(); return res.status(409).json({ error: 'No tienes una caja abierta.' }); }
     const [[totals]] = await connection.execute(
       `SELECT COALESCE(SUM(CASE WHEN tipo='INGRESO' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) ingresos,
-              COALESCE(SUM(CASE WHEN tipo='SALIDA' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) salidas,
+              COALESCE(SUM(CASE WHEN tipo='SALIDA' AND (metodo='EFECTIVO' OR categoria='COMPRA') THEN monto ELSE 0 END),0) salidas,
               COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) ventasEfectivo,
               COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='TARJETA' THEN monto ELSE 0 END),0) ventasTarjeta,
               COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='TRANSFERENCIA' THEN monto ELSE 0 END),0) ventasTransferencia,
@@ -746,7 +746,7 @@ businessRouter.post('/purchases', requireRole('Administrador','Gerente'), async 
       [req.user.sub, `Compra ${folio} por $${total.toFixed(2)}`, purchase.insertId],
     );
     await connection.commit();
-    return res.status(201).json({ id: purchase.insertId, folio, total });
+    return res.status(201).json({ id: purchase.insertId, folio, total, cajaDescontada: pagosARegistrar.reduce((s,p)=>s+p.monto,0) });
   } catch (error) { await connection.rollback(); return next(error); }
   finally { connection.release(); }
 });
