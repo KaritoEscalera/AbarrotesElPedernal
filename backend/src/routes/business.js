@@ -737,8 +737,8 @@ businessRouter.post('/purchases', requireRole('Administrador','Gerente'), async 
     }
     const pagosARegistrar=pagosCompra.filter(p=>p.origen==='CAJA');
     if(pagosARegistrar.length){
-      const [[cashSession]]=await connection.execute("SELECT id FROM sesiones_caja WHERE usuario_apertura_id=? AND estado='ABIERTA' LIMIT 1",[req.user.sub]);
-      if(!cashSession){await connection.rollback();return res.status(409).json({error:'Abre la caja para usar dinero de caja, o cambia el origen del pago a externo.'});}
+      const [[cashSession]]=await connection.execute("SELECT id FROM sesiones_caja WHERE estado='ABIERTA' ORDER BY fecha_apertura DESC LIMIT 1 FOR UPDATE");
+      if(!cashSession){await connection.rollback();return res.status(409).json({error:'Abre la caja de la tienda para usar dinero de caja, o cambia el origen del pago a externo.'});}
       for(const pago of pagosARegistrar)await connection.execute(`INSERT INTO movimientos_caja(sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto,referencia) VALUES(?,?,'SALIDA','COMPRA',?,?,?,?)`,[cashSession.id,req.user.sub,`Pago a proveedor ${provider.id} · compra ${folio}`,pago.metodo,pago.monto,folio]);
     }
     await connection.execute(

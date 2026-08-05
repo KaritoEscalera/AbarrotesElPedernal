@@ -56,6 +56,32 @@ try {
   }
   await connection.query(`ALTER TABLE ${escapedDatabase}.compras MODIFY COLUMN metodo_pago ENUM('EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA','CREDITO','MIXTO','OTRO') NOT NULL DEFAULT 'CREDITO'`);
   await connection.query(`ALTER TABLE ${escapedDatabase}.movimientos_caja MODIFY COLUMN metodo ENUM('EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA','FIADO','OTRO') NOT NULL`);
+  const [reconciled] = await connection.query(`
+    INSERT INTO ${escapedDatabase}.movimientos_caja
+      (sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto,referencia,creado_en)
+    SELECT
+      (SELECT sc.id FROM ${escapedDatabase}.sesiones_caja sc
+       WHERE sc.fecha_apertura<=c.fecha_compra
+         AND (sc.fecha_cierre IS NULL OR sc.fecha_cierre>=c.fecha_compra)
+       ORDER BY sc.fecha_apertura DESC LIMIT 1),
+      c.usuario_id,'SALIDA','COMPRA',
+      CONCAT('Pago a proveedor ',c.proveedor_id,' · compra ',COALESCE(c.folio,c.id)),
+      cp.metodo,cp.monto,COALESCE(c.folio,CONCAT('C-',c.id)),c.fecha_compra
+    FROM ${escapedDatabase}.compra_pagos cp
+    JOIN ${escapedDatabase}.compras c ON c.id=cp.compra_id
+    WHERE cp.origen='CAJA'
+      AND (SELECT sc.id FROM ${escapedDatabase}.sesiones_caja sc
+           WHERE sc.fecha_apertura<=c.fecha_compra
+             AND (sc.fecha_cierre IS NULL OR sc.fecha_cierre>=c.fecha_compra)
+           ORDER BY sc.fecha_apertura DESC LIMIT 1) IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM ${escapedDatabase}.movimientos_caja mc
+        WHERE mc.categoria='COMPRA'
+          AND mc.referencia=COALESCE(c.folio,CONCAT('C-',c.id))
+          AND mc.metodo=cp.metodo AND mc.monto=cp.monto
+      )
+  `);
+  if (Number(reconciled.affectedRows) > 0) console.log(`Movimientos de compras desde caja recuperados: ${reconciled.affectedRows}`);
   const [tables] = await connection.query(
     "SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema = ? AND table_type = 'BASE TABLE'",
     [databaseName],
