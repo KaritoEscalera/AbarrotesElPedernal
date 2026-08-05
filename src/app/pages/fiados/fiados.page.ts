@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Auth } from '../../services/auth';
 import { BusinessApi } from '../../services/business-api';
 
@@ -51,6 +52,7 @@ interface EstadoCuenta { client:{id:number;nombre:string;telefono:string;limiteC
 export class FiadosPage implements OnInit {
   private readonly auth = inject(Auth);
   private readonly api = inject(BusinessApi);
+  private readonly route = inject(ActivatedRoute);
 
   busqueda = '';
   filtroEstado = 'todos';
@@ -76,7 +78,11 @@ export class FiadosPage implements OnInit {
   fiados: Fiado[] = [];
   clientes: ClienteCredito[] = [];
 
-  async ngOnInit(): Promise<void> { await Promise.all([this.cargarFiados(),this.cargarClientes()]); }
+  async ngOnInit(): Promise<void> {
+    await Promise.all([this.cargarFiados(), this.cargarClientes()]);
+    const clienteId = Number(this.route.snapshot.queryParamMap.get('cliente'));
+    if (Number.isInteger(clienteId) && clienteId > 0) await this.enfocarCliente(clienteId);
+  }
   seleccionarCliente():void{const c=this.clientes.find(x=>x.id===Number(this.nuevoFiadoForm.clienteId));if(c){this.nuevoFiadoForm.cliente=c.nombre;this.nuevoFiadoForm.telefono=c.telefono;}}
 
   get fiadosFiltrados(): Fiado[] {
@@ -225,12 +231,20 @@ export class FiadosPage implements OnInit {
     this.mensaje = '';
   }
 
-  async verEstadoCuenta(fiado:Fiado):Promise<void>{try{const cuenta=await this.api.get<EstadoCuenta>(`clients/${fiado.clienteId}/account`);this.cuentaSeleccionada={...cuenta,client:{...cuenta.client,limiteCredito:Number(cuenta.client.limiteCredito),adeudo:Number(cuenta.client.adeudo),saldoFavor:Number(cuenta.client.saldoFavor)},credits:cuenta.credits.map(x=>({...x,deudaOriginal:Number(x.deudaOriginal),saldoPendiente:Number(x.saldoPendiente)})),payments:cuenta.payments.map(x=>({...x,monto:Number(x.monto)})),balances:cuenta.balances.map(x=>({...x,monto:Number(x.monto),montoUsado:Number(x.montoUsado),disponible:Number(x.disponible)}))};}catch{this.mensaje='No fue posible consultar el estado de cuenta.';}}
+  async verEstadoCuenta(fiado:Fiado):Promise<void>{await this.cargarEstadoCuenta(fiado.clienteId);}
   cerrarEstadoCuenta():void{this.cuentaSeleccionada=null;}
   recordarPorWhatsApp(fiado:Fiado):void{const telefono=fiado.telefono.replace(/\D/g,'');const texto=`Hola ${fiado.cliente}, te recordamos que tienes un saldo pendiente de $${fiado.saldoPendiente.toFixed(2)} en Abarrotes El Pedernal, con fecha límite ${fiado.fechaLimite}. Gracias.`;window.open(`https://wa.me/52${telefono}?text=${encodeURIComponent(texto)}`,'_blank','noopener');}
   imprimirEstadoCuenta():void{const cuenta=this.cuentaSeleccionada;if(!cuenta)return;const w=window.open('','_blank','width=700,height=800');if(!w){this.mensaje='Permite ventanas emergentes para imprimir.';return;}const filas=cuenta.credits.map(x=>`<tr><td>${new Date(x.fechaRegistro).toLocaleDateString('es-MX')}</td><td>${this.escapar(x.folio||`Fiado #${x.id}`)}</td><td>$${x.deudaOriginal.toFixed(2)}</td><td>$${x.saldoPendiente.toFixed(2)}</td><td>${this.escapar(x.estado)}</td></tr>`).join('');w.document.write(`<html><head><title>Estado de cuenta</title><style>body{font:14px Arial;margin:30px;color:#222}h1{margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}.summary{display:flex;gap:25px}</style></head><body><h1>Abarrotes El Pedernal</h1><h2>Estado de cuenta · ${this.escapar(cuenta.client.nombre)}</h2><p>${this.escapar(cuenta.client.telefono)} · ${new Date().toLocaleString('es-MX')}</p><div class="summary"><b>Adeudo: $${cuenta.client.adeudo.toFixed(2)}</b><b>Límite de crédito: $${cuenta.client.limiteCredito.toFixed(2)}</b></div><table><thead><tr><th>Fecha</th><th>Folio</th><th>Importe</th><th>Pendiente</th><th>Estado</th></tr></thead><tbody>${filas}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();}
   private imprimirComprobante(fiado:Fiado,monto:number,metodo:string,referencia:string,saldo:number):void{const w=window.open('','_blank','width=400,height=650');if(!w){this.mensaje+=' Permite ventanas emergentes para imprimir el comprobante.';return;}w.document.write(`<html><head><title>Comprobante de abono</title><style>body{font:14px monospace;width:300px;margin:25px auto}h2,p{text-align:center}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed #aaa}</style></head><body><h2>Abarrotes El Pedernal</h2><p>COMPROBANTE DE ABONO<br>${new Date().toLocaleString('es-MX')}</p><div class="row"><span>Cliente</span><b>${this.escapar(fiado.cliente)}</b></div><div class="row"><span>Fiado</span><b>#${fiado.id}</b></div><div class="row"><span>Abono</span><b>$${monto.toFixed(2)}</b></div><div class="row"><span>Método</span><b>${this.escapar(metodo)}</b></div>${referencia?`<div class="row"><span>Referencia</span><b>${this.escapar(referencia)}</b></div>`:''}<div class="row"><span>Saldo restante</span><b>$${saldo.toFixed(2)}</b></div><p>Gracias por su pago</p><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();}
   private escapar(valor:unknown):string{return String(valor??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]??c));}
+
+  private async enfocarCliente(clienteId:number):Promise<void>{
+    const cliente=this.clientes.find(c=>c.id===clienteId);
+    if(cliente)this.busqueda=cliente.nombre;
+    await this.cargarEstadoCuenta(clienteId);
+  }
+
+  private async cargarEstadoCuenta(clienteId:number):Promise<void>{try{const cuenta=await this.api.get<EstadoCuenta>(`clients/${clienteId}/account`);this.cuentaSeleccionada={...cuenta,client:{...cuenta.client,limiteCredito:Number(cuenta.client.limiteCredito),adeudo:Number(cuenta.client.adeudo),saldoFavor:Number(cuenta.client.saldoFavor)},credits:cuenta.credits.map(x=>({...x,deudaOriginal:Number(x.deudaOriginal),saldoPendiente:Number(x.saldoPendiente)})),payments:cuenta.payments.map(x=>({...x,monto:Number(x.monto)})),balances:cuenta.balances.map(x=>({...x,monto:Number(x.monto),montoUsado:Number(x.montoUsado),disponible:Number(x.disponible)}))};}catch{this.mensaje='No fue posible consultar el estado de cuenta.';}}
 
   private async cargarFiados(): Promise<void> { try { const datos = await this.api.get<Fiado[]>('credits'); this.fiados = datos.map((f) => ({ ...f, deudaOriginal: Number(f.deudaOriginal), saldoPendiente: Number(f.saldoPendiente), ultimoAbono: Number(f.ultimoAbono), limite: Number(f.limite) })); } catch { this.mensaje = 'No fue posible consultar fiados en MySQL.'; } }
   private async cargarClientes():Promise<void>{try{this.clientes=(await this.api.get<ClienteCredito[]>('clients')).filter(c=>c.activo);}catch{this.clientes=[];}}

@@ -4,13 +4,8 @@
       <div>
         <p class="eyebrow">Atención al cliente</p>
         <h1>Clientes</h1>
-        <p class="welcome">Consulta los datos de contacto y da seguimiento a los adeudos.</p>
+        <p class="welcome">Selecciona un cliente para consultar sus fiados y estado de cuenta.</p>
       </div>
-
-      <ion-button type="button" (click)="alternarFormulario()">
-        {{ formularioVisible ? 'Cancelar' : 'Agregar cliente' }}
-      </ion-button>
-      <ion-button type="button" fill="outline" (click)="prepararGenerico()">Agregar cliente genérico</ion-button>
     </header>
 
     <section class="summary-grid" aria-label="Resumen de clientes">
@@ -19,27 +14,28 @@
       <article class="debt-summary"><span>Con adeudo</span><strong>{{ clientesConAdeudo }}</strong></article>
     </section>
 
-    <section class="client-form" *ngIf="formularioVisible" aria-label="Registrar cliente">
-      <ion-item lines="none"><ion-label position="stacked">Nombre</ion-label><ion-input [(ngModel)]="nuevoCliente.nombre"></ion-input></ion-item>
-      <ion-item lines="none"><ion-label position="stacked">Teléfono (opcional)</ion-label><ion-input [(ngModel)]="nuevoCliente.telefono" inputmode="tel" type="tel"></ion-input></ion-item>
-      <ion-item lines="none"><ion-label position="stacked">Dirección (opcional)</ion-label><ion-input [(ngModel)]="nuevoCliente.direccion"></ion-input></ion-item>
-      <ion-button type="button" (click)="guardarCliente()">Guardar cliente</ion-button>
-      <p aria-live="polite" *ngIf="mensajeFormulario">{{ mensajeFormulario }}</p>
-    </section>
-
     <ion-card>
       <ion-card-header><ion-card-title>Clientes registrados</ion-card-title></ion-card-header>
       <ion-card-content>
         <ion-searchbar [(ngModel)]="busqueda" placeholder="Buscar por nombre, teléfono o dirección"></ion-searchbar>
 
         <div class="client-list">
-          <article class="client" *ngFor="let cliente of clientesFiltrados">
+          <article
+            class="client"
+            *ngFor="let cliente of clientesFiltrados"
+            role="link"
+            tabindex="0"
+            [attr.aria-label]="'Ver fiados y estado de cuenta de ' + cliente.nombre"
+            (click)="abrirCliente(cliente)"
+            (keydown.enter)="abrirCliente(cliente)"
+            (keydown.space)="abrirCliente(cliente); $event.preventDefault()">
             <div><h2>{{ cliente.nombre }}</h2><p>{{ cliente.telefono }} · {{ cliente.direccion }}</p></div>
             <div class="client-meta">
               <span class="status" [class.inactive]="cliente.estado === 'Inactivo'">{{ cliente.estado }}</span>
               <strong [class.has-debt]="cliente.adeudo > 0">
                 {{ cliente.adeudo > 0 ? ('Adeudo: ' + (cliente.adeudo | currency:'MXN':'symbol':'1.2-2')) : 'Sin adeudo' }}
               </strong>
+              <span class="view-account">Ver en fiados <span aria-hidden="true">→</span></span>
             </div>
           </article>
           <p class="empty-state" *ngIf="clientesFiltrados.length === 0">No se encontraron clientes.</p>

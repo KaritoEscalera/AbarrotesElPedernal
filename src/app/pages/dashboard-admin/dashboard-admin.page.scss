@@ -1,5 +1,5 @@
 ion-content {
-  --background: #f5e6d3;
+  --background: transparent;
 }
 
 .dashboard-shell {
@@ -18,7 +18,7 @@ ion-content {
 
 .eyebrow {
   margin: 0 0 .25rem;
-  color: #f57c1f;
+  color: #007c78;
   font-weight: 700;
   letter-spacing: .05em;
   text-transform: uppercase;
@@ -27,13 +27,13 @@ ion-content {
 
 h1 {
   margin: 0;
-  color: #4a2c1d;
+  color: #064e52;
   font-size: clamp(1.7rem, 4vw, 2.4rem);
 }
 
 .welcome {
   margin: .5rem 0 0;
-  color: #7a4e2d;
+  color: #58716f;
 }
 
 .quick-actions {
@@ -68,12 +68,12 @@ ion-card {
 }
 
 ion-card-title {
-  color: #f57c1f;
+  color: #064e52;
   font-size: clamp(1rem, 2vw, 1.15rem);
 }
 
 .cards ion-card-content {
-  color: #4a2c1d;
+  color: #173b3a;
   font-size: clamp(1.5rem, 4vw, 1.9rem);
   font-weight: 700;
 }
@@ -84,13 +84,13 @@ ion-card-title {
   margin: 0;
   padding: 0;
   list-style: none;
-  color: #7a4e2d;
+  color: #486866;
   font-size: .95rem;
 }
 
 .activity-list li {
   padding-bottom: .75rem;
-  border-bottom: 1px solid #e8e3dc;
+  border-bottom: 1px solid #e0ece9;
 }
 
 .activity-list li:last-child {

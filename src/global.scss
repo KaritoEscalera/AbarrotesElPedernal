@@ -1,6 +1,6 @@
 body {
   margin: 0;
-  background: #f4fbfa;
+  background: #f6f4ee;
   color: #173b3a;
   font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
 }
@@ -44,7 +44,9 @@ html:not(.theme-dark) ion-card-title {
 }
 
 ion-content {
-  --background: linear-gradient(145deg, #effbf9 0%, #fff 48%, #eef8ff 82%, #fff9df 100%) !important;
+  --background:
+    radial-gradient(circle at 92% 4%, rgba(255, 194, 26, .13), transparent 22rem),
+    linear-gradient(145deg, #f4fbf9 0%, #fff 46%, #f8f4e9 100%) !important;
   --color: #173b3a;
   --padding-top: clamp(1rem, 3vw, 2rem);
   --padding-bottom: clamp(1rem, 3vw, 2rem);
@@ -55,15 +57,15 @@ ion-content {
 .pedernal-card {
   background: #ffffff;
   border: 1px solid #bfe5e2;
-  border-radius: 15px;
+  border-radius: 18px;
   padding: 20px;
   box-shadow: 0 10px 28px rgba(0, 96, 93, 0.10);
 }
 
 html:not(.theme-dark) ion-card {
   background: #fff !important;
-  border: 1px solid #bfe5e2;
-  box-shadow: 0 10px 30px rgba(0, 96, 93, .10) !important;
+  border: 1px solid #d9e8e4;
+  box-shadow: 0 10px 28px rgba(17, 74, 71, .08) !important;
 }
 
 html:not(.theme-dark) ion-item {
@@ -86,8 +88,8 @@ html:not(.theme-dark) ion-searchbar {
   --background-hover: #006d69;
   --background-activated: #005b58;
   --color: #fff;
-  --border-radius: 12px;
-  height: 45px;
+  --border-radius: 13px;
+  height: 48px;
   font-weight: bold;
 }
 
@@ -118,6 +120,194 @@ html:not(.theme-dark) h1,
 html:not(.theme-dark) h2,
 html:not(.theme-dark) h3 {
   color: #064e52;
+}
+
+/* Una jerarquía común para todas las pantallas del sistema. */
+.dashboard-shell {
+  width: min(100%, 75rem);
+}
+
+.dashboard-header h1 {
+  letter-spacing: -.035em;
+}
+
+.dashboard-header .welcome {
+  max-width: 42rem;
+  line-height: 1.55;
+}
+
+.quick-actions ion-button {
+  --border-radius: 12px;
+  min-height: 46px;
+}
+
+.cards ion-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.cards ion-card::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--pedernal-acento);
+  content: '';
+}
+
+.cards ion-card:nth-child(2)::before { background: var(--pedernal-azul); }
+.cards ion-card:nth-child(3)::before { background: var(--pedernal-amarillo); }
+.cards ion-card:nth-child(4)::before { background: var(--pedernal-rojo); }
+
+/* Normalización de las pantallas administrativas antiguas. */
+html:not(.theme-dark) .page-container .eyebrow {
+  color: var(--pedernal-acento) !important;
+}
+
+html:not(.theme-dark) .page-container h1,
+html:not(.theme-dark) .page-container h2,
+html:not(.theme-dark) .page-container h3,
+html:not(.theme-dark) .table-title h2,
+html:not(.theme-dark) .section-title h2 {
+  color: #064e52 !important;
+}
+
+html:not(.theme-dark) .page-container .subtitle,
+html:not(.theme-dark) .summary-card span,
+html:not(.theme-dark) .summary-card small,
+html:not(.theme-dark) .chart-card p,
+html:not(.theme-dark) .table-title p {
+  color: #607a77 !important;
+}
+
+html:not(.theme-dark) .summary-card strong,
+html:not(.theme-dark) .tax-card strong,
+html:not(.theme-dark) .reconciliation-card strong,
+html:not(.theme-dark) .insight-card dd {
+  color: #173b3a !important;
+}
+
+html:not(.theme-dark) .summary-card,
+html:not(.theme-dark) .report-card,
+html:not(.theme-dark) .bitacora-card,
+html:not(.theme-dark) .table-card,
+html:not(.theme-dark) .filters-card,
+html:not(.theme-dark) .calendar-card,
+html:not(.theme-dark) .chart-card,
+html:not(.theme-dark) .main-chart-card,
+html:not(.theme-dark) .products-card,
+html:not(.theme-dark) .fiados-card {
+  border-color: #d9e8e4 !important;
+  box-shadow: 0 10px 28px rgba(17, 74, 71, .08) !important;
+}
+
+html:not(.theme-dark) .summary-card::before {
+  background: var(--pedernal-acento) !important;
+}
+
+html:not(.theme-dark) .summary-card.success-card::before,
+html:not(.theme-dark) .success-card::before {
+  background: var(--pedernal-verde) !important;
+}
+
+html:not(.theme-dark) .summary-card.warning-card::before,
+html:not(.theme-dark) .warning-card::before {
+  background: var(--pedernal-amarillo) !important;
+}
+
+html:not(.theme-dark) .summary-card.danger-card::before,
+html:not(.theme-dark) .danger-card::before {
+  background: var(--pedernal-rojo) !important;
+}
+
+html:not(.theme-dark) .primary-button,
+html:not(.theme-dark) .pdf-button,
+html:not(.theme-dark) .save-entry,
+html:not(.theme-dark) .xml-button {
+  --background: var(--pedernal-acento) !important;
+  --background-hover: #006d69 !important;
+  --color: #fff !important;
+  background: var(--pedernal-acento) !important;
+}
+
+html:not(.theme-dark) .admin-badge,
+html:not(.theme-dark) .table-count,
+html:not(.theme-dark) .section-title > span {
+  color: #006561 !important;
+  background: #e6f5f2 !important;
+  border-color: #b9dfda !important;
+}
+
+html:not(.theme-dark) .filters,
+html:not(.theme-dark) .filters-grid ion-item,
+html:not(.theme-dark) .filter-select,
+html:not(.theme-dark) .entry-form,
+html:not(.theme-dark) .tax-card,
+html:not(.theme-dark) .compact-summary,
+html:not(.theme-dark) .chart-summary span,
+html:not(.theme-dark) .hour-grid > div,
+html:not(.theme-dark) .insight-card dl div,
+html:not(.theme-dark) .recharge-summary div {
+  --background: #f4f9f8 !important;
+  background: #f4f9f8 !important;
+  border-color: #d9e8e4 !important;
+}
+
+html:not(.theme-dark) table thead,
+html:not(.theme-dark) .account-table thead {
+  color: #fff !important;
+  background: #075f5d !important;
+}
+
+html:not(.theme-dark) table th {
+  color: #fff !important;
+}
+
+html:not(.theme-dark) table td,
+html:not(.theme-dark) table td strong {
+  color: #294b49 !important;
+}
+
+html:not(.theme-dark) table td a {
+  color: #007c78 !important;
+}
+
+html:not(.theme-dark) .secondary-button,
+html:not(.theme-dark) .abono-button,
+html:not(.theme-dark) .action-button.edit,
+html:not(.theme-dark) .stock-button.add {
+  --background: var(--pedernal-acento) !important;
+  --background-hover: #006d69 !important;
+  --color: #fff !important;
+  color: #fff !important;
+  background: var(--pedernal-acento) !important;
+}
+
+html:not(.theme-dark) .sale-column,
+html:not(.theme-dark) .bar-row i,
+html:not(.theme-dark) .hour-grid i {
+  background: linear-gradient(180deg, #24aaa4, #007c78) !important;
+}
+
+html:not(.theme-dark) .cost-column,
+html:not(.theme-dark) .category-bars .bar-row i {
+  background: linear-gradient(180deg, #41a8d6, #078fd1) !important;
+}
+
+html:not(.theme-dark) .sales-dot::before { background: #007c78 !important; }
+html:not(.theme-dark) .cost-dot::before { background: #078fd1 !important; }
+
+html:not(.theme-dark) .totals,
+html:not(.theme-dark) .cash-payment,
+html:not(.theme-dark) .credit-client,
+html:not(.theme-dark) .count-total,
+html:not(.theme-dark) .recharge-help {
+  background: #f1f8f6 !important;
+  border-color: #cfe5e1 !important;
+}
+
+html:not(.theme-dark) .totals .grand,
+html:not(.theme-dark) .cash-total strong {
+  color: #006d69 !important;
 }
 
 html:not(.theme-dark) .eyebrow {

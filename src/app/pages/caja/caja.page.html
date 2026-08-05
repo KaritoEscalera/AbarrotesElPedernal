@@ -37,11 +37,20 @@
           <ion-card-header><ion-card-title>Productos</ion-card-title></ion-card-header>
           <ion-card-content>
             <ion-item><ion-label position="stacked">Escanear código o buscar producto</ion-label><ion-input [(ngModel)]="busqueda" (keyup.enter)="procesarCodigo()" placeholder="Escanea y presiona Enter"></ion-input></ion-item>
-            <small class="scanner-help">Aquí aparecen todos los productos registrados. Los productos nuevos se agregan desde Inventario.</small>
+            <small class="scanner-help">Los productos están organizados por categoría. Los productos nuevos se agregan desde Inventario.</small>
             <div class="product-list">
-              <button type="button" class="product" [class.out-of-stock]="producto.stock <= 0" [disabled]="producto.stock <= 0" *ngFor="let producto of productosFiltrados" (click)="agregar(producto)">
-                <span>{{ producto.nombre }}</span><small>{{ producto.categoria }} · {{producto.stock > 0 ? 'Stock ' + producto.stock + ' ' + (esVentaGranel(producto) ? 'kg' : 'pzas.') : 'AGOTADO'}}</small><strong>{{ producto.precioVenta | currency:'MXN' }} / {{ esVentaGranel(producto) ? 'kg' : 'pza.' }}</strong>
-              </button>
+              <section class="product-section" *ngFor="let seccion of seccionesProductos">
+                <header class="product-section-heading">
+                  <h3>{{ seccion.categoria }}</h3>
+                  <span>{{ seccion.productos.length }} {{ seccion.productos.length === 1 ? 'producto' : 'productos' }}</span>
+                </header>
+                <div class="product-section-grid">
+                  <button type="button" class="product" [class.out-of-stock]="producto.stock <= 0" [disabled]="producto.stock <= 0" *ngFor="let producto of seccion.productos" (click)="agregar(producto)">
+                    <span>{{ producto.nombre }}</span><small>{{producto.stock > 0 ? 'Stock ' + producto.stock + ' ' + (esVentaGranel(producto) ? 'kg' : 'pzas.') : 'AGOTADO'}}</small><strong>{{ producto.precioVenta | currency:'MXN' }} / {{ esVentaGranel(producto) ? 'kg' : 'pza.' }}</strong>
+                  </button>
+                </div>
+              </section>
+              <p class="empty product-empty" *ngIf="!seccionesProductos.length">No encontramos productos con esa búsqueda.</p>
             </div>
           </ion-card-content>
         </ion-card>
@@ -169,6 +178,7 @@
                 </div>
               </section>
               <p *ngIf="r.motivo">Motivo: {{r.motivo}}</p>
+              <ion-button *ngIf="r.estado==='EXITOSA'" size="small" fill="outline" (click)="imprimirTicketRecarga(r)">Reimprimir ticket</ion-button>
               <ion-button *ngIf="puedeAdministrarRecargas && r.estado==='EXITOSA'" size="small" color="danger" fill="clear" (click)="cancelarRecarga(r)">Cancelar y reembolsar</ion-button>
             </article>
             <p *ngIf="!recargas.length">No hay recargas registradas en este turno.</p>

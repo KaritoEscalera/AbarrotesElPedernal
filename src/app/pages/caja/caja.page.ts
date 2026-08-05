@@ -26,6 +26,11 @@ interface ProductoCaja {
   promoValor?: number|null;
 }
 
+interface SeccionProductosCaja {
+  categoria: string;
+  productos: ProductoCaja[];
+}
+
 interface ClienteCaja { id: number; nombre: string; telefono: string; activo: boolean; limiteCredito:number; adeudo:number; fiadosVencidos:number; }
 interface LineaCarrito extends ProductoCaja {
   /** Cantidad normalizada: kg para granel y unidades para productos por pieza. */
@@ -116,6 +121,10 @@ export class CajaPage implements OnInit, OnDestroy {
   readonly puedeAdministrarRecargas=this.puedeCancelar;
   denominaciones:Denominacion[]=[1000,500,200,100,50,20,10,5,2,1,.5].map(valor=>({valor,etiqueta:valor>=20?`Billetes de $${valor}`:`Monedas de $${valor}`,cantidad:null}));
 
+  private productosSeccionesFuente: ProductoCaja[] | null = null;
+  private productosSeccionesBusqueda = '';
+  private productosSeccionesCache: SeccionProductosCaja[] = [];
+
   private readonly alVolverConexion = ():void => { void this.sincronizarPendientes(); };
 
   async ngOnInit(): Promise<void> {
@@ -129,6 +138,29 @@ export class CajaPage implements OnInit, OnDestroy {
   get productosFiltrados(): ProductoCaja[] {
     const term = this.busqueda.trim().toLowerCase();
     return this.productos.filter((p) => p.activo && (!term || p.nombre.toLowerCase().includes(term) || p.codigo?.toLowerCase().includes(term)));
+  }
+
+  get seccionesProductos(): SeccionProductosCaja[] {
+    const busqueda = this.busqueda.trim().toLowerCase();
+    if (this.productosSeccionesFuente === this.productos && this.productosSeccionesBusqueda === busqueda) {
+      return this.productosSeccionesCache;
+    }
+    const secciones = new Map<string, ProductoCaja[]>();
+    for (const producto of this.productosFiltrados) {
+      const categoria = producto.categoria?.trim() || 'Sin categoría';
+      const productos = secciones.get(categoria) ?? [];
+      productos.push(producto);
+      secciones.set(categoria, productos);
+    }
+    this.productosSeccionesFuente = this.productos;
+    this.productosSeccionesBusqueda = busqueda;
+    this.productosSeccionesCache = [...secciones.entries()]
+      .sort(([categoriaA], [categoriaB]) => categoriaA.localeCompare(categoriaB, 'es', { sensitivity: 'base' }))
+      .map(([categoria, productos]) => ({
+        categoria,
+        productos: productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
+      }));
+    return this.productosSeccionesCache;
   }
 
   get subtotal(): number { return this.carrito.reduce((sum, p) => sum + p.precioVenta * p.cantidad, 0); }
@@ -280,17 +312,21 @@ export class CajaPage implements OnInit, OnDestroy {
 
   cambiarCantidad(linea: LineaCarrito, cantidad: unknown): void {
     const nueva = Number(cantidad);
-    if (!Number.isFinite(nueva) || nueva <= 0) this.quitar(linea.id);
-    else {
-      const normalizada = linea.unidadCaptura === 'Gramo' ? nueva / 1000 : nueva;
-      linea.cantidad = Math.min(normalizada, linea.stock);
+    // Ionic emite temporalmente null al editar o cambiar el selector. La línea
+    // sólo se elimina con el botón "Quitar", nunca por un valor transitorio.
+    if (cantidad === null || cantidad === undefined || cantidad === '' || !Number.isFinite(nueva) || nueva <= 0) {
       this.sincronizarCantidadCapturada(linea);
+      return;
     }
+    const normalizada = linea.unidadCaptura === 'Gramo' ? nueva / 1000 : nueva;
+    linea.cantidad = Math.min(normalizada, linea.stock);
+    this.sincronizarCantidadCapturada(linea);
   }
 
   quitar(id: number): void { this.carrito = this.carrito.filter((item) => item.id !== id); }
 
   cambiarUnidadCaptura(linea: LineaCarrito, unidad: 'Kilogramo'|'Gramo'): void {
+    if (unidad !== 'Kilogramo' && unidad !== 'Gramo') return;
     linea.unidadCaptura = unidad;
     this.sincronizarCantidadCapturada(linea);
   }
@@ -387,7 +423,7 @@ export class CajaPage implements OnInit, OnDestroy {
     if(!/^\d{10}$/.test(telefono)||!Number.isFinite(monto)||monto<=0||comision<0||comision>monto)return this.fallar('Captura teléfono, monto y comisión válidos.');
     await this.ejecutar(async()=>{await this.api.post('cash/services',{tipo:'RECARGA',compania:this.recargaCompania,telefono,monto,comision});this.recargaTelefono='';this.recargaMonto=null;this.recargaComision=0;await this.cargarRecargas();this.mensaje=`Recarga ${this.recargaCompania} creada como pendiente. Confirma el resultado del proveedor.`;});
   }
-  async resolverRecarga(item:Recarga,estado:'EXITOSA'|'RECHAZADA'):Promise<void>{const folio=String(item.folioCaptura||'').trim(),motivo=String(item.motivoCaptura||'').trim();item.validacion='';if(estado==='EXITOSA'&&!folio){item.validacion='Captura el folio entregado por el proveedor para confirmar.';return;}if(estado==='RECHAZADA'&&motivo.length<4){item.validacion='Escribe un motivo de al menos 4 caracteres para rechazarla.';return;}await this.ejecutar(async()=>{await this.api.patch(`recharges/${item.id}/resolve`,{estado,folioProveedor:folio,motivo});await Promise.all([this.cargarRecargas(),this.cargarEstado()]);this.mensaje=`Recarga marcada como ${estado.toLowerCase()}.`;});}
+  async resolverRecarga(item:Recarga,estado:'EXITOSA'|'RECHAZADA'):Promise<void>{const folio=String(item.folioCaptura||'').trim(),motivo=String(item.motivoCaptura||'').trim();item.validacion='';if(estado==='EXITOSA'&&!folio){item.validacion='Captura el folio entregado por el proveedor para confirmar.';return;}if(estado==='RECHAZADA'&&motivo.length<4){item.validacion='Escribe un motivo de al menos 4 caracteres para rechazarla.';return;}await this.ejecutar(async()=>{await this.api.patch(`recharges/${item.id}/resolve`,{estado,folioProveedor:folio,motivo});const comprobante:Recarga={...item,estado,folioProveedor:folio||null};await Promise.all([this.cargarRecargas(),this.cargarEstado()]);this.mensaje=`Recarga marcada como ${estado.toLowerCase()}.`;if(estado==='EXITOSA')await this.imprimirTicketRecarga(comprobante);});}
   cancelarRecarga(item:Recarga):void{this.recargaCancelar=item;this.motivoCancelacionRecarga='';this.error='';}
   cerrarCancelacionRecarga():void{if(this.procesando)return;this.recargaCancelar=null;this.motivoCancelacionRecarga='';}
   async confirmarCancelacionRecarga():Promise<void>{const item=this.recargaCancelar,motivo=this.motivoCancelacionRecarga.trim();if(!item||motivo.length<5)return this.fallar('El motivo debe tener al menos 5 caracteres.');await this.ejecutar(async()=>{await this.api.post(`recharges/${item.id}/cancel`,{motivo});this.recargaCancelar=null;this.motivoCancelacionRecarga='';await Promise.all([this.cargarRecargas(),this.cargarEstado()]);this.mensaje='Recarga cancelada y reembolso registrado en caja.';});}
@@ -433,6 +469,34 @@ export class CajaPage implements OnInit, OnDestroy {
     const pagos=venta.pagos.map(p=>`<tr><td>${this.escapar(p.metodo==='TARJETA'?'TERMINAL / TARJETA':p.metodo)}</td><td>${dinero(p.monto)}</td></tr>`).join('');
     const credito=venta.fiado?`<section class="credit"><b>VENTA A FIADO</b><div>Cliente: ${this.escapar(venta.cliente)}</div><div>Monto fiado: ${dinero(venta.fiado.monto)}</div><div>Total que debe: ${dinero(venta.fiado.saldoPendiente)}</div><div>Vence: ${new Date(`${venta.fiado.fechaLimite}T00:00:00`).toLocaleDateString('es-MX')}</div></section>`:'';
     w.document.write(`<html><head><title>${this.escapar(venta.folio)}</title><style>body{font:13px monospace;width:300px;margin:18px auto;color:#111}h2,p{text-align:center;margin:6px}table{width:100%;border-collapse:collapse;margin:10px 0}td{padding:5px 0;border-bottom:1px dashed #bbb}td:last-child{text-align:right}.total{font-size:17px;font-weight:bold}.credit{border:2px solid #111;padding:10px;margin-top:12px}.credit b{display:block;text-align:center;margin-bottom:8px}.credit div{padding:3px 0}small{display:block;text-align:center;margin-top:16px}.ticket-logo{display:block;max-width:130px;max-height:90px;object-fit:contain;margin:14px auto 0;filter:grayscale(1) contrast(1.35)}@media print{.ticket-logo{filter:grayscale(1) contrast(1.5)}}</style></head><body><h2>Abarrotes El Pedernal</h2><p>${this.escapar(venta.folio)}<br>${new Date(venta.fecha).toLocaleString('es-MX')}<br>Atendió: ${this.escapar(venta.usuario)}</p><table>${filas}</table><table><tr><td>Subtotal</td><td>${dinero(venta.subtotal)}</td></tr>${venta.descuento?`<tr><td>Descuento</td><td>-${dinero(venta.descuento)}</td></tr>`:''}<tr><td>IVA</td><td>${dinero(venta.impuestos)}</td></tr><tr class="total"><td>Total</td><td>${dinero(venta.total)}</td></tr>${pagos}${cambio?`<tr><td>Cambio</td><td>${dinero(cambio)}</td></tr>`:''}</table>${credito}<small>Gracias por su compra</small><img class="ticket-logo" src="${this.escapar(logo)}" alt="Abarrotes El Pedernal"><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();
+  }
+
+  async imprimirTicketRecarga(recarga:Recarga):Promise<void>{
+    if(recarga.estado!=='EXITOSA')return;
+    const texto=this.construirTicketRecargaBluetooth(recarga);
+    if(this.bluetoothPrinter.disponible){
+      try{
+        const impresora=await this.bluetoothPrinter.imprimir(texto);
+        this.mensaje=`${this.mensaje} Ticket de recarga impreso en ${impresora}.`.trim();
+      }catch(error:unknown){
+        const detalle=error instanceof Error?error.message:String((error as{message?:string})?.message??'');
+        this.error=`La recarga quedó confirmada, pero el ticket no se imprimió. ${detalle||'Revisa que “Bluetooth Printer” esté encendida y emparejada.'}`;
+      }
+      return;
+    }
+    const w=window.open('','_blank','width=420,height=620');
+    if(!w){this.error='La recarga quedó confirmada. Permite ventanas emergentes para imprimir su ticket.';return;}
+    const dinero=(n:number)=>`$${Number(n).toFixed(2)}`;
+    const logo=`${window.location.origin}/assets/logo-pedernal.png`;
+    w.document.write(`<html><head><title>Recarga ${this.escapar(recarga.folioProveedor||String(recarga.id))}</title><style>body{font:13px monospace;width:300px;margin:18px auto;color:#111}h2,h3,p{text-align:center;margin:6px}.divider{border-top:1px dashed #777;margin:14px 0}table{width:100%;border-collapse:collapse}td{padding:6px 0;border-bottom:1px dashed #bbb}td:last-child{text-align:right;font-weight:bold}.total{font-size:18px}.phone{font-size:21px;font-weight:bold;letter-spacing:1px}.ticket-logo{display:block;max-width:130px;max-height:90px;object-fit:contain;margin:16px auto 0;filter:grayscale(1) contrast(1.35)}</style></head><body><h2>Abarrotes El Pedernal</h2><h3>COMPROBANTE DE RECARGA</h3><p>${new Date(recarga.fecha).toLocaleString('es-MX')}<br>Atendió: ${this.escapar(recarga.usuario)}</p><div class="divider"></div><p>${this.escapar(recarga.compania)}</p><p class="phone">${this.escapar(recarga.telefono)}</p><table><tr class="total"><td>Monto</td><td>${dinero(recarga.monto)}</td></tr><tr><td>Comisión</td><td>${dinero(recarga.comision)}</td></tr><tr><td>Folio</td><td>${this.escapar(recarga.folioProveedor||'Sin folio')}</td></tr><tr><td>Estado</td><td>EXITOSA</td></tr></table><p class="divider">Conserva este comprobante</p><img class="ticket-logo" src="${this.escapar(logo)}" alt="Abarrotes El Pedernal"><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();
+  }
+
+  private construirTicketRecargaBluetooth(recarga:Recarga):string{
+    const ancho=32;
+    const centro=(texto:string)=>{const limpio=texto.slice(0,ancho);return ' '.repeat(Math.max(0,Math.floor((ancho-limpio.length)/2)))+limpio;};
+    const fila=(etiqueta:string,valor:string)=>{const derecha=valor.slice(0,18);const izquierda=etiqueta.slice(0,Math.max(1,ancho-derecha.length-1));return izquierda+' '.repeat(Math.max(1,ancho-izquierda.length-derecha.length))+derecha;};
+    const dinero=(n:number)=>`$${Number(n).toFixed(2)}`;
+    return [centro('ABARROTES EL PEDERNAL'),centro('COMPROBANTE DE RECARGA'),'-'.repeat(ancho),centro(recarga.compania),centro(recarga.telefono),'-'.repeat(ancho),fila('Monto',dinero(recarga.monto)),fila('Comision',dinero(recarga.comision)),fila('Folio',recarga.folioProveedor||'Sin folio'),fila('Estado','EXITOSA'),'-'.repeat(ancho),new Date(recarga.fecha).toLocaleString('es-MX'),`Atendio: ${recarga.usuario}`.slice(0,ancho),centro('Conserva este comprobante')].join('\n');
   }
 
   private construirTicketBluetooth(venta:VentaDetalle,cambio:number):string {

@@ -1,16 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import {
-  IonButton,
   IonCard,
   IonCardContent,
   IonCardHeader,
   IonCardTitle,
   IonContent,
-  IonInput,
-  IonItem,
-  IonLabel,
   IonSearchbar,
 } from '@ionic/angular/standalone';
 import { BusinessApi } from '../../services/business-api';
@@ -32,24 +29,19 @@ interface Cliente {
   imports: [
     CommonModule,
     FormsModule,
-    IonButton,
     IonCard,
     IonCardContent,
     IonCardHeader,
     IonCardTitle,
     IonContent,
-    IonInput,
-    IonItem,
-    IonLabel,
     IonSearchbar,
   ],
 })
 export class ClientesPage implements OnInit {
   private readonly api = inject(BusinessApi);
+  private readonly router = inject(Router);
   busqueda = '';
-  formularioVisible = false;
   mensajeFormulario = '';
-  nuevoCliente = { nombre: '', telefono: '', direccion: '' };
 
   clientes: Cliente[] = [];
 
@@ -71,31 +63,8 @@ export class ClientesPage implements OnInit {
     return this.clientes.filter(cliente => cliente.adeudo > 0).length;
   }
 
-  alternarFormulario(): void {
-    this.formularioVisible = !this.formularioVisible;
-    this.mensajeFormulario = '';
-  }
-
-  async guardarCliente(): Promise<void> {
-    const { nombre, telefono, direccion } = this.nuevoCliente;
-
-    if (!nombre.trim()) {
-      this.mensajeFormulario = 'Escribe el nombre o una referencia para identificar al cliente.';
-      return;
-    }
-
-    try {
-      await this.api.post('clients', { nombre, telefono, direccion });
-      await this.cargarClientes();
-      this.nuevoCliente = { nombre: '', telefono: '', direccion: '' };
-      this.mensajeFormulario = 'Cliente registrado correctamente en MySQL.';
-    } catch { this.mensajeFormulario = 'No fue posible guardar el cliente. Revisa la API.'; }
-  }
-
-  prepararGenerico(): void {
-    this.nuevoCliente = { nombre: `Cliente genérico ${this.clientes.length + 1}`, telefono: '', direccion: '' };
-    this.formularioVisible = true;
-    this.mensajeFormulario = 'Puedes cambiar el nombre de referencia; teléfono y dirección son opcionales.';
+  abrirCliente(cliente: Cliente): void {
+    void this.router.navigate(['/fiados'], { queryParams: { cliente: cliente.id } });
   }
 
   private async cargarClientes(): Promise<void> {
