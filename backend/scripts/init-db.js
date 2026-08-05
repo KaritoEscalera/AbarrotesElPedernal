@@ -12,12 +12,41 @@ const connection = await mysql.createConnection({
 
 try {
   const scriptUrl = new URL('../../database/AbarrotesElPedernal.sql', import.meta.url);
-  const sql = await readFile(scriptUrl, 'utf8');
-  await connection.query(sql);
-  const [tables] = await connection.query(
-    "SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema = 'AbarrotesElPedernal' AND table_type = 'BASE TABLE'",
+  const sourceSql = await readFile(scriptUrl, 'utf8');
+  const databaseName = String(config.database.database);
+  const escapedDatabase = `\`${databaseName.replaceAll('`', '``')}\``;
+  const sql = sourceSql.replace(
+    /CREATE DATABASE IF NOT EXISTS `AbarrotesElPedernal`[\s\S]*?USE `AbarrotesElPedernal`;/,
+    `USE ${escapedDatabase};`,
   );
-  console.log(`Base AbarrotesElPedernal inicializada correctamente con ${tables[0].total} tablas.`);
+  await connection.query(sql);
+  const [saldoColumns] = await connection.query(
+    "SELECT COUNT(*) AS total FROM information_schema.columns WHERE table_schema=? AND table_name='saldos_clientes' AND column_name='monto_usado'",
+    [databaseName],
+  );
+  if (Number(saldoColumns[0].total) === 0) {
+    await connection.query(`ALTER TABLE ${escapedDatabase}.saldos_clientes ADD COLUMN monto_usado DECIMAL(12,2) NOT NULL DEFAULT 0.00 AFTER monto`);
+  }
+  const [sessionColumns] = await connection.query(
+    "SELECT COUNT(*) AS total FROM information_schema.columns WHERE table_schema=? AND table_name='usuarios' AND column_name='sesion_version'",
+    [databaseName],
+  );
+  if (Number(sessionColumns[0].total) === 0) {
+    await connection.query(`ALTER TABLE ${escapedDatabase}.usuarios ADD COLUMN sesion_version INT UNSIGNED NOT NULL DEFAULT 0 AFTER password_hash`);
+  }
+  const [deletedUserColumns] = await connection.query(
+    "SELECT COUNT(*) AS total FROM information_schema.columns WHERE table_schema=? AND table_name='usuarios' AND column_name='eliminado_en'",
+    [databaseName],
+  );
+  if (Number(deletedUserColumns[0].total) === 0) {
+    await connection.query(`ALTER TABLE ${escapedDatabase}.usuarios ADD COLUMN eliminado_en DATETIME NULL AFTER activo, ADD INDEX idx_usuarios_eliminado (eliminado_en)`);
+  }
+  await connection.query(`ALTER TABLE ${escapedDatabase}.compras MODIFY COLUMN metodo_pago ENUM('EFECTIVO','TARJETA','TRANSFERENCIA','CREDITO','MIXTO','OTRO') NOT NULL DEFAULT 'CREDITO'`);
+  const [tables] = await connection.query(
+    "SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema = ? AND table_type = 'BASE TABLE'",
+    [databaseName],
+  );
+  console.log(`Base ${databaseName} inicializada correctamente con ${tables[0].total} tablas.`);
 } catch (error) {
   console.error(`No fue posible inicializar la base: ${error.message}`);
   process.exitCode = 1;

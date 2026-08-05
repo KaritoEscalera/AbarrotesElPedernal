@@ -13,6 +13,7 @@ import {
 
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
+import { descargarPdf } from '../../services/document-download';
 import { BusinessApi } from '../../services/business-api';
 
 type PeriodoReporte =
@@ -55,6 +56,7 @@ interface FiadoReporte {
   saldoPendiente: number;
   estado: string;
 }
+interface PartidaDevolucion { detalleId:number; nombre:string; cantidad:number; devuelto:number; disponible:number; devolver:number|null; }
 
 @Component({
   selector: 'app-reportes',
@@ -86,17 +88,26 @@ export class ReportesPage implements OnInit {
   fiados: FiadoReporte[] = [];
 
   mensaje = '';
+  ventaCancelar:VentaReporte|null=null;
+  motivoCancelacion='';
+  ventaDevolver:VentaReporte|null=null;
+  partidasDevolucion:PartidaDevolucion[]=[];
+  motivoDevolucion='';
+  procesandoOperacion=false;
 
   async ngOnInit(): Promise<void> {
     await this.cargarDatos();
   }
 
-  async cancelarVenta(venta: VentaReporte): Promise<void> {
-    const motivo = prompt(`Motivo para cancelar ${venta.folio}:`)?.trim() ?? '';
-    if (!motivo) return;
-    if (!confirm(`Se devolverán los productos al inventario. ¿Cancelar ${venta.folio}?`)) return;
-    try { await this.api.post(`sales/${venta.id}/cancel`, { motivo }); await this.cargarDatos(); this.mensaje = `${venta.folio} fue cancelada correctamente.`; }
-    catch (e: unknown) { const x = e as { error?: { error?: { error?: string } } }; this.mensaje = x.error?.error?.error ?? 'No fue posible cancelar la venta.'; }
+  cancelarVenta(venta: VentaReporte): void { this.ventaCancelar=venta;this.motivoCancelacion='';this.mensaje=''; }
+  cerrarOperacion():void{if(this.procesandoOperacion)return;this.ventaCancelar=null;this.ventaDevolver=null;this.partidasDevolucion=[];}
+  async confirmarCancelacion():Promise<void>{
+    const venta=this.ventaCancelar,motivo=this.motivoCancelacion.trim();
+    if(!venta||motivo.length<5){this.mensaje='Escribe un motivo de al menos 5 caracteres.';return;}
+    this.procesandoOperacion=true;
+    try{await this.api.post(`sales/${venta.id}/cancel`,{motivo});this.ventaCancelar=null;await this.cargarDatos();this.mensaje=`${venta.folio} fue cancelada; el inventario quedó repuesto.`;}
+    catch(e:unknown){const x=e as{error?:{error?:{error?:string}}};this.mensaje=x.error?.error?.error??'No fue posible cancelar la venta.';}
+    finally{this.procesandoOperacion=false;}
   }
 
   async imprimirTicket(venta: VentaReporte): Promise<void> {
@@ -112,7 +123,21 @@ export class ReportesPage implements OnInit {
   }
 
   async devolverVenta(venta:VentaReporte):Promise<void>{
-    try{const detail=await this.api.get<{items:Array<{detalleId:number;nombre:string;cantidad:number;devuelto:number}>}>(`sales/${venta.id}`);const items:Array<{detalleId:number;cantidad:number}>=[];for(const item of detail.items){const disponible=Number(item.cantidad)-Number(item.devuelto);if(disponible<=0)continue;const value=prompt(`${item.nombre}: cantidad a devolver (máximo ${disponible}). Deja vacío para omitir:`);if(value===null||value.trim()==='')continue;const cantidad=Number(value);if(cantidad<=0||cantidad>disponible){this.mensaje=`Cantidad inválida para ${item.nombre}.`;return;}items.push({detalleId:item.detalleId,cantidad});}if(!items.length)return;const motivo=prompt('Motivo de la devolución:')?.trim()??'';if(motivo.length<5){this.mensaje='Escribe un motivo de al menos 5 caracteres.';return;}if(!confirm('Se repondrá inventario y se registrará el reembolso. ¿Continuar?'))return;const result=await this.api.post<{reembolso:number}>(`sales/${venta.id}/returns`,{items,motivo});this.mensaje=`Devolución registrada. Reembolso: $${Number(result.reembolso).toFixed(2)}.`;await this.cargarDatos();}catch(e:unknown){const x=e as{error?:{error?:{error?:string}}};this.mensaje=x.error?.error?.error??'No fue posible registrar la devolución.';}
+    try{const detail=await this.api.get<{items:Array<{detalleId:number;nombre:string;cantidad:number;devuelto:number}>}>(`sales/${venta.id}`);this.partidasDevolucion=detail.items.map(item=>({...item,cantidad:Number(item.cantidad),devuelto:Number(item.devuelto),disponible:Number(item.cantidad)-Number(item.devuelto),devolver:null})).filter(item=>item.disponible>0);if(!this.partidasDevolucion.length){this.mensaje='Esta venta ya no tiene productos disponibles para devolución.';return;}this.ventaDevolver=venta;this.motivoDevolucion='';this.mensaje='';}
+    catch{this.mensaje='No fue posible consultar las partidas de la venta.';}
+  }
+  async confirmarDevolucion():Promise<void>{
+    const venta=this.ventaDevolver;
+    if(!venta)return;
+    const invalid=this.partidasDevolucion.find(item=>Number(item.devolver)<0||Number(item.devolver)>item.disponible);
+    const items=this.partidasDevolucion.filter(item=>Number(item.devolver)>0).map(item=>({detalleId:item.detalleId,cantidad:Number(item.devolver)}));
+    if(invalid){this.mensaje=`Cantidad inválida para ${invalid.nombre}.`;return;}
+    if(!items.length){this.mensaje='Selecciona al menos una cantidad para devolver.';return;}
+    if(this.motivoDevolucion.trim().length<5){this.mensaje='Escribe un motivo de al menos 5 caracteres.';return;}
+    this.procesandoOperacion=true;
+    try{const result=await this.api.post<{reembolso:number}>(`sales/${venta.id}/returns`,{items,motivo:this.motivoDevolucion.trim()});this.ventaDevolver=null;this.partidasDevolucion=[];this.mensaje=`Devolución registrada. Reembolso: $${Number(result.reembolso).toFixed(2)}.`;await this.cargarDatos();}
+    catch(e:unknown){const x=e as{error?:{error?:{error?:string}}};this.mensaje=x.error?.error?.error??'No fue posible registrar la devolución.';}
+    finally{this.procesandoOperacion=false;}
   }
 
   private async cargarDatos(): Promise<void> {
@@ -538,7 +563,7 @@ export class ReportesPage implements OnInit {
     ).format(fecha);
   }
 
-  generarPDF(): void {
+  async generarPDF(): Promise<void> {
 
     const documento = new jsPDF({
       orientation: 'landscape',
@@ -610,7 +635,7 @@ export class ReportesPage implements OnInit {
     const nombreArchivo =
       `reporte-${this.tipoReporteSeleccionado}-${this.periodoSeleccionado}.pdf`;
 
-    documento.save(nombreArchivo);
+    await descargarPdf(documento, nombreArchivo);
   }
 
   private generarPDFVentas(

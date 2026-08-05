@@ -21,7 +21,7 @@ authRouter.post('/login', async (req, res, next) => {
     if (recent.length >= MAX_ATTEMPTS) return res.status(429).json({ error: 'Demasiados intentos. Espera 15 minutos antes de volver a intentar.' });
 
     const [rows] = await pool.execute(
-      `SELECT u.id, u.nombre, u.correo, u.password_hash, u.activo, r.nombre AS rol
+      `SELECT u.id, u.nombre, u.correo, u.password_hash, u.sesion_version, u.activo, r.nombre AS rol
        FROM usuarios u JOIN roles r ON r.id = u.rol_id WHERE u.correo = ? LIMIT 1`,
       [correo],
     );
@@ -42,7 +42,7 @@ authRouter.post('/login', async (req, res, next) => {
       `INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,ip) VALUES(?,'Autenticación','LOGIN','Inicio de sesión correcto',?)`,
       [usuario.id, req.ip],
     );
-    const token = jwt.sign({ sub: usuario.id, nombre: usuario.nombre, rol: usuario.rol }, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
+    const token = jwt.sign({ sub: usuario.id, nombre: usuario.nombre, rol: usuario.rol, version: Number(usuario.sesion_version) }, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
     return res.json({ token, usuario: { id: usuario.id, nombre: usuario.nombre, correo: usuario.correo, rol: usuario.rol } });
   } catch (error) {
     return next(error);
@@ -58,7 +58,7 @@ authRouter.post('/change-password', requireAuth, async (req, res, next) => {
     if (!user || !(await bcrypt.compare(actual, user.password_hash))) return res.status(401).json({ error: 'La contraseña actual no es correcta.' });
     if (await bcrypt.compare(nueva, user.password_hash)) return res.status(400).json({ error: 'La contraseña nueva debe ser diferente.' });
     const hash = await bcrypt.hash(nueva, 12);
-    await pool.execute('UPDATE usuarios SET password_hash=? WHERE id=?', [hash, req.user.sub]);
+    await pool.execute('UPDATE usuarios SET password_hash=?,sesion_version=sesion_version+1 WHERE id=?', [hash, req.user.sub]);
     await pool.execute(`INSERT INTO bitacora(usuario_id,modulo,accion,descripcion) VALUES(?,'Seguridad','CAMBIO_PASSWORD','El usuario cambió su contraseña')`, [req.user.sub]);
     return res.status(204).end();
   } catch (error) { return next(error); }

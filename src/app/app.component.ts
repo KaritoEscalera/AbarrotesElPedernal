@@ -17,6 +17,7 @@ import { filter } from 'rxjs';
 import { Auth, RolUsuario } from './services/auth';
 import { AlertasProveedores } from './services/alertas-proveedores';
 import { ModoTema, TemaService } from './services/tema';
+import { ConnectivityService } from './services/connectivity';
 
 interface OpcionMenu {
   etiqueta: string;
@@ -37,6 +38,7 @@ export class AppComponent {
   private readonly destroyRef = inject(DestroyRef);
   readonly alertasService = inject(AlertasProveedores);
   readonly tema = inject(TemaService);
+  readonly connectivity = inject(ConnectivityService);
 
   mostrarMenu = false;
   rol: RolUsuario | null = null;
@@ -47,6 +49,7 @@ export class AppComponent {
 
   private readonly opciones: OpcionMenu[] = [
     { etiqueta: 'Mi cuenta', ruta: '/perfil', roles: ['administrador', 'gerente', 'cajera'] },
+    { etiqueta: 'Caja', ruta: '/caja', roles: ['administrador', 'gerente', 'cajera'] },
     { etiqueta: 'Productos', ruta: '/productos', roles: ['administrador', 'gerente'] },
     { etiqueta: 'Inventario', ruta: '/inventario', roles: ['administrador', 'gerente'] },
     { etiqueta: 'Proveedores', ruta: '/proveedores', roles: ['administrador', 'gerente'] },
@@ -54,7 +57,6 @@ export class AppComponent {
     { etiqueta: 'Promociones', ruta: '/promociones', roles: ['administrador', 'gerente'] },
     { etiqueta: 'Clientes', ruta: '/clientes', roles: ['administrador', 'gerente', 'cajera'] },
     { etiqueta: 'Fiados', ruta: '/fiados', roles: ['administrador', 'gerente', 'cajera'] },
-    { etiqueta: 'Caja', ruta: '/caja', roles: ['administrador', 'gerente', 'cajera'] },
     { etiqueta: 'Estadísticas', ruta: '/estadisticas', roles: ['administrador', 'gerente'] },
     { etiqueta: 'Reportes', ruta: '/reportes', roles: ['administrador'] },
     { etiqueta: 'Usuarios', ruta: '/usuarios', roles: ['administrador'] },
@@ -112,7 +114,7 @@ export class AppComponent {
 
   async activarNotificaciones(): Promise<void> {
     const resultado = await this.alertasService.solicitarPermiso();
-    this.mensajeNotificaciones = resultado === 'granted' ? 'Notificaciones y campanitas activadas.' : resultado === 'denied' ? 'El navegador no autorizó las notificaciones.' : 'Este navegador no admite notificaciones.';
+    this.mensajeNotificaciones = resultado === 'granted' ? 'Notificaciones y sonido activados.' : resultado === 'denied' ? 'Android no autorizó las notificaciones. Puedes habilitarlas en Ajustes.' : 'Este navegador no admite notificaciones.';
   }
 
   seleccionarTema(modo: ModoTema): void { this.tema.seleccionar(modo); }

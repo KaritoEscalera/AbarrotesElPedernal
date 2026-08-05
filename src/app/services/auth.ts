@@ -4,6 +4,7 @@ import { inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import type { Usuario } from '../models/usuario';
+import { OfflineStorage } from './offline-storage';
 
 export type RolUsuario = 'administrador' | 'gerente' | 'cajera';
 
@@ -12,6 +13,7 @@ export type RolUsuario = 'administrador' | 'gerente' | 'cajera';
 })
 export class Auth {
   private readonly http = inject(HttpClient, { optional: true });
+  private readonly offline = inject(OfflineStorage);
   private readonly claveRol = 'rol';
   private readonly claveSesion = 'sesionActiva';
   private readonly claveUsuario = 'usuario';
@@ -52,6 +54,20 @@ export class Auth {
     localStorage.setItem(this.claveSesion, 'true');
     localStorage.setItem(this.claveRol, respuesta.usuario.rol);
     localStorage.setItem(this.claveUsuario, respuesta.usuario.nombre);
+    localStorage.removeItem('sesionOffline');
+    await this.offline.saveOfflineCredential(correo, password, respuesta.usuario.nombre, respuesta.usuario.rol);
+    return rol;
+  }
+
+  async iniciarSesionOffline(correo: string, password: string): Promise<RolUsuario | null> {
+    const usuario = await this.offline.verifyOfflineCredential(correo, password);
+    if (!usuario) return null;
+    const rol = usuario.rol.toLowerCase() as RolUsuario;
+    if (!['administrador', 'gerente', 'cajera'].includes(rol)) return null;
+    localStorage.setItem(this.claveSesion, 'true');
+    localStorage.setItem(this.claveRol, usuario.rol);
+    localStorage.setItem(this.claveUsuario, usuario.nombre);
+    localStorage.setItem('sesionOffline', 'true');
     return rol;
   }
 
@@ -60,6 +76,7 @@ export class Auth {
     localStorage.removeItem(this.claveRol);
     localStorage.removeItem(this.claveUsuario);
     localStorage.removeItem('token');
+    localStorage.removeItem('sesionOffline');
   }
 
   obtenerRol(): RolUsuario | null {

@@ -1,14 +1,91 @@
 # Operación de Abarrotes El Pedernal
 
-## Arranque diario
+## Instalación definitiva en una sola tablet
 
-Desde la raíz del proyecto ejecuta:
+La versión instalada en la tablet no debe apuntar a una Mac ni a una IP privada.
+La API y MySQL deben alojarse en un servicio con HTTPS y disponibilidad permanente.
+Antes de generar el APK definitivo, sustituye `apiUrl` en
+`src/environments/environment.android.ts` por el dominio público de la API.
+
+La tablet conserva una copia de productos, clientes y caja después del primer acceso
+correcto. Si pierde internet:
+
+1. El usuario previamente validado puede iniciar sesión en modo sin conexión.
+2. Caja permite abrir un turno local y registrar ventas.
+3. Cada venta recibe un UUID, se conserva en la tablet y descuenta la existencia local.
+4. Al recuperar conexión se abre el turno remoto si hace falta y las ventas se envían
+   una sola vez; el servidor rechaza duplicados.
+5. Caja no permite cerrar mientras queden ventas por sincronizar.
+
+WhatsApp, timbrado fiscal, respaldos remotos y recargas requieren internet. No borres
+los datos de la aplicación ni desinstales el APK cuando existan ventas pendientes.
+
+## Infraestructura en la nube y costo operativo
+
+Para la operación real se utiliza **Railway** como plataforma de alojamiento. Dentro
+del proyecto existen dos servicios:
+
+- **API AbarrotesElPedernal:** ejecuta el backend desarrollado con Node.js y Express,
+  autentica usuarios, valida las operaciones y coordina ventas, caja, inventario,
+  compras, clientes, fiados, reportes y respaldos.
+- **MySQL:** conserva permanentemente la información del negocio. La API se comunica
+  con esta base mediante la red privada de Railway; las credenciales se almacenan
+  como variables protegidas y no se incluyen en el código ni en la aplicación.
+
+La tablet se conecta mediante HTTPS al dominio público de la API. La API procesa la
+solicitud y consulta o actualiza MySQL. Este diseño evita depender de una computadora
+encendida dentro del establecimiento y permite utilizar el sistema desde cualquier
+red con acceso a Internet.
+
+Cuando la conexión se interrumpe, la tablet mantiene disponibles el usuario
+previamente validado, el catálogo, los clientes y el estado de caja. Las ventas se
+guardan localmente con un identificador único y se sincronizan al recuperar conexión,
+evitando su registro duplicado. Las funciones externas, como WhatsApp, recargas y
+operaciones fiscales, esperan hasta que vuelva Internet.
+
+Railway ofrece actualmente una prueba limitada por tiempo o crédito. Al concluirla,
+la empresa deberá mantener un plan activo para conservar la API, MySQL y la
+sincronización en línea. Antes de la entrega deben acordarse:
+
+1. El responsable y propietario de la cuenta de Railway.
+2. El método de pago y el plan autorizado por la empresa.
+3. El resguardo de las credenciales administrativas.
+4. La supervisión del consumo y disponibilidad de los servicios.
+5. La programación y revisión periódica de respaldos.
+
+Si el servicio se suspende, la tablet puede conservar temporalmente las ventas
+offline, pero no podrá sincronizarlas ni utilizar las funciones que requieren el
+servidor hasta que Railway vuelva a estar activo.
+
+### Despliegue recomendado
+
+El backend incluye `Dockerfile` y `railway.json`. En Railway:
+
+1. Crea un proyecto y agrega MySQL.
+2. Conecta este repositorio completo; `railway.json` utilizará `backend/Dockerfile`.
+3. Define `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` y `DB_NAME` usando las
+   variables del servicio MySQL.
+4. Define `JWT_SECRET` con una cadena aleatoria extensa y `FRONTEND_URL` con
+   `http://localhost,https://localhost,capacitor://localhost`.
+5. Inicializa el esquema con `npm run init-db`, crea los usuarios y activa respaldos
+   automáticos del proveedor.
+6. Genera un dominio HTTPS, colócalo en `environment.android.ts`, ejecuta
+   `npm run android:sync` y genera el APK firmado.
+
+## Arranque diario en desarrollo local
+
+La Mac tiene registrados MySQL y la API como servicios de inicio automático. La API
+se recupera sola si llega a cerrarse. Para comprobarla desde cualquier equipo de la
+red del negocio abre:
 
 ```bash
-npm run dev:all
+http://192.168.120.230:3000/api/health
 ```
 
-El comando comprueba MySQL y levanta la API y Angular. Mantén la terminal abierta. Para detener ambos procesos usa `Ctrl+C`.
+Debe aparecer un estado `ok`. La Mac debe permanecer encendida, conectada a la red
+del negocio y con la dirección `192.168.120.230` reservada en el módem/router.
+
+`npm run dev:all` sigue disponible para trabajar en la versión web durante el desarrollo.
 
 ## Verificación
 
@@ -51,6 +128,9 @@ npm run build
 - Conserva copias fuera de la computadora de caja.
 - Antes de restaurar, crea una copia nueva.
 - La restauración requiere un administrador, archivo `.sql`, confirmación escrita y confirmación visual.
+- Configura `OFFSITE_BACKUP_DIR` con la ruta de un disco externo o carpeta sincronizada
+  para crear una segunda copia automática. El respaldo se considera fallido si esa
+  copia configurada no puede escribirse.
 
 ## Seguridad
 

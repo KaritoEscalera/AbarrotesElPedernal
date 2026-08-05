@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import {
   IonButton, IonContent, IonInput, IonItem, IonLabel, IonSearchbar, IonSelect, IonSelectOption
 } from '@ionic/angular/standalone';
@@ -18,8 +19,10 @@ type ErroresFormulario = Partial<Record<'nombre' | 'empresa' | 'telefono' | 'cor
   imports: [CommonModule, FormsModule, IonContent, IonButton, IonInput, IonItem, IonLabel, IonSearchbar, IonSelect, IonSelectOption],
 })
 export class ProveedoresPage implements OnInit {
+  confirmandoArchivarId:number|null=null;
   private readonly api = inject(BusinessApi);
   private readonly auth = inject(Auth);
+  private readonly route = inject(ActivatedRoute);
 
   busqueda = '';
   filtroEstado = 'Todos';
@@ -30,7 +33,10 @@ export class ProveedoresPage implements OnInit {
   formulario: Proveedor = this.crearProveedorVacio();
   proveedores: Proveedor[] = [];
 
-  async ngOnInit(): Promise<void> { await this.recargar(); }
+  async ngOnInit(): Promise<void> {
+    await this.recargar();
+    if (this.puedeAdministrar && this.route.snapshot.queryParamMap.get('nuevo') === '1') this.abrirFormulario();
+  }
 
   get puedeAdministrar(): boolean {
     const rol = this.auth.obtenerRol();
@@ -105,8 +111,8 @@ export class ProveedoresPage implements OnInit {
   }
 
   async archivarProveedor(proveedor: Proveedor): Promise<void> {
-    if (!confirm(`¿Deseas archivar a ${proveedor.empresa}? Su historial se conservará.`)) return;
-    try { await this.api.delete(`providers/${proveedor.id}`); await this.recargar(); this.mensaje = 'Proveedor archivado; su historial se conservó.'; } catch { this.mensaje = 'No fue posible archivar el proveedor.'; }
+    if(this.confirmandoArchivarId!==proveedor.id){this.confirmandoArchivarId=proveedor.id;this.mensaje=`Confirma eliminar a ${proveedor.empresa}. Su historial de compras se conservará.`;return;}
+    try { await this.api.delete(`providers/${proveedor.id}`); await this.recargar();this.confirmandoArchivarId=null; this.mensaje = 'Proveedor eliminado; su historial se conservó.'; } catch { this.mensaje = 'No fue posible eliminar el proveedor.'; }
   }
 
   cancelarFormulario(): void {
@@ -133,7 +139,7 @@ export class ProveedoresPage implements OnInit {
     const errores: ErroresFormulario = {};
     if (!this.formulario.nombre.trim()) errores.nombre = 'Escribe el nombre del contacto.';
     if (!this.formulario.empresa.trim()) errores.empresa = 'Escribe el nombre de la empresa.';
-    if (!/^\d{10}$/.test(this.formulario.telefono.trim())) errores.telefono = 'El teléfono debe tener 10 dígitos.';
+    if (this.formulario.telefono.trim() && !/^\d{10}$/.test(this.formulario.telefono.trim())) errores.telefono = 'Si capturas teléfono, debe tener 10 dígitos.';
     if (this.formulario.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.formulario.correo.trim())) errores.correo = 'Escribe un correo válido.';
     if (!this.formulario.productoPrincipal.trim()) errores.productoPrincipal = 'Indica qué productos suministra.';
     if (!this.formulario.diaEntrega.trim()) errores.diaEntrega = 'Indica el día habitual de entrega.';

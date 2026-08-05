@@ -6,6 +6,7 @@ import { verifyDatabase } from './database.js';
 import { authRouter } from './routes/auth.js';
 import { usersRouter } from './routes/users.js';
 import { businessRouter } from './routes/business.js';
+import { startBackupScheduler } from './backup-scheduler.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -32,5 +33,8 @@ app.use((error, _req, res, _next) => {
 });
 
 verifyDatabase()
-  .then((database) => app.listen(config.port, () => console.log(`API disponible en http://localhost:${config.port} · BD ${database.databaseName}`)))
+  .then((database) => app.listen(config.port, '0.0.0.0', () => {
+    console.log(`API disponible en toda la red, puerto ${config.port} · BD ${database.databaseName}`);
+    startBackupScheduler();
+  }))
   .catch((error) => { console.error('No fue posible conectar con MySQL:', error.message); process.exit(1); });

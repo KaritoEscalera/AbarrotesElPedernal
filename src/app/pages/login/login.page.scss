@@ -1,15 +1,19 @@
 ion-content {
-  --background: #F5E6D3;
+  --background:
+    radial-gradient(circle at 20% 15%, rgba(255, 194, 26, .18), transparent 22rem),
+    radial-gradient(circle at 85% 90%, rgba(0, 124, 120, .13), transparent 24rem),
+    #f7f5ef !important;
 }
 
 .login-container {
   box-sizing: border-box;
   width: min(100%, 28rem);
-  margin: clamp(2rem, 12vh, 7rem) auto 2rem;
+  margin: clamp(2rem, 10vh, 6rem) auto 2rem;
   background: white;
   padding: clamp(1.5rem, 5vw, 2.5rem);
-  border-radius: clamp(1rem, 3vw, 1.25rem);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .1);
+  border: 1px solid #dbe9e6;
+  border-radius: clamp(1.125rem, 3vw, 1.5rem);
+  box-shadow: 0 22px 60px rgba(17, 74, 71, .13);
 }
 
 .login-logo {
@@ -45,20 +49,23 @@ h2 {
 }
 
 p {
-  color: #7A4E2D;
+  color: #58716f;
   margin: .25rem 0 1.875rem;
   text-align: center;
 }
 
 ion-item {
-  --background: transparent;
-  --padding-start: 0;
-  --inner-padding-end: 0;
-  margin-bottom: 1rem;
+  --background: #f7fbfa;
+  --padding-start: 14px;
+  --inner-padding-end: 12px;
+  --border-color: transparent;
+  margin-bottom: .875rem;
+  border: 1px solid #d8e8e5;
+  border-radius: 12px;
 }
 
 ion-button {
-  margin-top: .5rem;
+  margin-top: .75rem;
 }
 
 @media (max-width: 575px) {

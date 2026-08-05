@@ -30,7 +30,7 @@
         <ion-input [(ngModel)]="nuevoUsuario.correo" type="email" inputmode="email" autocomplete="email"></ion-input>
       </ion-item>
       <ion-item lines="none">
-        <ion-label position="stacked">Contraseña</ion-label>
+        <ion-label position="stacked">{{usuarioEditando ? 'Nueva contraseña (opcional)' : 'Contraseña'}}</ion-label>
         <ion-input [(ngModel)]="nuevoUsuario.password" type="password" autocomplete="new-password"></ion-input>
       </ion-item>
       <ion-item lines="none">
@@ -41,7 +41,7 @@
           <ion-select-option value="administrador">Administrador</ion-select-option>
         </ion-select>
       </ion-item>
-      <ion-button type="button" (click)="guardarUsuario()">Guardar usuario</ion-button>
+      <ion-button type="button" (click)="guardarUsuario()">{{usuarioEditando ? 'Guardar cambios' : 'Guardar usuario'}}</ion-button>
     </section>
 
     <p class="message" [class.error]="esError" aria-live="polite" *ngIf="mensaje">{{ mensaje }}</p>
@@ -62,6 +62,8 @@
               <ion-button size="small" [fill]="usuario.activo ? 'outline' : 'solid'" (click)="cambiarEstado(usuario)">
                 {{ usuario.activo ? 'Desactivar' : 'Activar' }}
               </ion-button>
+              <ion-button size="small" fill="outline" (click)="editarUsuario(usuario)">Editar</ion-button>
+              <ion-button size="small" fill="outline" color="danger" (click)="eliminarUsuario(usuario)">Eliminar</ion-button>
             </div>
           </article>
         </div>

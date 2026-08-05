@@ -1,6 +1,3 @@
--- Abarrotes El Pedernal - Esquema MySQL 8+
--- Este script crea la base sin eliminar bases o tablas existentes.
-
 CREATE DATABASE IF NOT EXISTS `AbarrotesElPedernal`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_0900_ai_ci;
@@ -20,13 +17,16 @@ CREATE TABLE IF NOT EXISTS usuarios (
   nombre VARCHAR(120) NOT NULL,
   correo VARCHAR(190) NOT NULL,
   password_hash VARCHAR(255) NOT NULL COMMENT 'Hash bcrypt o Argon2; nunca contraseña en texto plano',
+  sesion_version INT UNSIGNED NOT NULL DEFAULT 0,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
+  eliminado_en DATETIME NULL,
   ultimo_acceso DATETIME NULL,
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT uq_usuarios_correo UNIQUE (correo),
   CONSTRAINT fk_usuarios_rol FOREIGN KEY (rol_id) REFERENCES roles(id),
-  INDEX idx_usuarios_rol_activo (rol_id, activo)
+  INDEX idx_usuarios_rol_activo (rol_id, activo),
+  INDEX idx_usuarios_eliminado (eliminado_en)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS categorias (
@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS compras (
   fecha_compra DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   fecha_entrega DATE NULL,
   estado ENUM('BORRADOR','PEDIDA','RECIBIDA','PARCIAL','CANCELADA','ATRASADA') NOT NULL DEFAULT 'BORRADOR',
-  metodo_pago ENUM('EFECTIVO','TARJETA','TRANSFERENCIA','CREDITO','OTRO') NOT NULL DEFAULT 'CREDITO',
+  metodo_pago ENUM('EFECTIVO','TARJETA','TRANSFERENCIA','CREDITO','MIXTO','OTRO') NOT NULL DEFAULT 'CREDITO',
   subtotal DECIMAL(14,2) NOT NULL DEFAULT 0.00,
   impuestos DECIMAL(14,2) NOT NULL DEFAULT 0.00,
   total DECIMAL(14,2) NOT NULL DEFAULT 0.00,
@@ -256,6 +256,28 @@ CREATE TABLE IF NOT EXISTS movimientos_caja (
   INDEX idx_mov_caja_sesion_fecha (sesion_caja_id, creado_en)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS recargas (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  sesion_caja_id BIGINT UNSIGNED NOT NULL,
+  usuario_id BIGINT UNSIGNED NOT NULL,
+  compania VARCHAR(30) NOT NULL,
+  telefono VARCHAR(10) NOT NULL,
+  monto DECIMAL(12,2) NOT NULL,
+  comision DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  estado ENUM('PENDIENTE','EXITOSA','RECHAZADA','CANCELADA') NOT NULL DEFAULT 'PENDIENTE',
+  folio_proveedor VARCHAR(120) NULL,
+  motivo VARCHAR(255) NULL,
+  resuelta_por BIGINT UNSIGNED NULL,
+  creada_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  resuelta_en DATETIME NULL,
+  CONSTRAINT chk_recarga_importes CHECK (monto > 0 AND comision >= 0 AND comision <= monto),
+  CONSTRAINT fk_recarga_sesion FOREIGN KEY (sesion_caja_id) REFERENCES sesiones_caja(id),
+  CONSTRAINT fk_recarga_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  CONSTRAINT fk_recarga_resuelta FOREIGN KEY (resuelta_por) REFERENCES usuarios(id),
+  INDEX idx_recargas_estado_fecha (estado, creada_en),
+  INDEX idx_recargas_telefono (telefono)
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS fiados (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   cliente_id BIGINT UNSIGNED NOT NULL,
@@ -288,6 +310,24 @@ CREATE TABLE IF NOT EXISTS fiado_abonos (
   CONSTRAINT fk_abono_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
   INDEX idx_abonos_fiado_fecha (fiado_id, creado_en)
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS saldos_clientes (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  cliente_id BIGINT UNSIGNED NOT NULL,
+  usuario_id BIGINT UNSIGNED NOT NULL,
+  monto DECIMAL(12,2) NOT NULL,
+  monto_usado DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  estado ENUM('PENDIENTE','ENTREGADO','CANCELADO') NOT NULL DEFAULT 'PENDIENTE',
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  liquidado_por BIGINT UNSIGNED NULL,
+  liquidado_en DATETIME NULL,
+  CONSTRAINT chk_saldo_cliente_monto CHECK (monto > 0),
+  CONSTRAINT fk_saldo_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+  CONSTRAINT fk_saldo_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  CONSTRAINT fk_saldo_liquidado FOREIGN KEY (liquidado_por) REFERENCES usuarios(id),
+  INDEX idx_saldos_cliente_estado (cliente_id, estado)
+) ENGINE=InnoDB;
+
 
 CREATE TABLE IF NOT EXISTS configuracion_fiscal (
   id TINYINT UNSIGNED PRIMARY KEY DEFAULT 1,
@@ -337,6 +377,46 @@ CREATE TABLE IF NOT EXISTS documentos_cfdi (
   INDEX idx_cfdi_fecha_tipo (fecha_emision, tipo_comprobante),
   INDEX idx_cfdi_emisor (rfc_emisor),
   INDEX idx_cfdi_receptor (rfc_receptor)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS facturas_borrador (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  tipo ENUM('INDIVIDUAL','GLOBAL') NOT NULL,
+  cliente_id BIGINT UNSIGNED NULL,
+  fecha_inicio DATE NOT NULL,
+  fecha_fin DATE NOT NULL,
+  periodicidad VARCHAR(5) NULL,
+  meses VARCHAR(5) NULL,
+  anio SMALLINT UNSIGNED NULL,
+  rfc_receptor VARCHAR(13) NOT NULL,
+  nombre_receptor VARCHAR(200) NOT NULL,
+  regimen_receptor VARCHAR(10) NOT NULL,
+  codigo_postal_receptor VARCHAR(5) NOT NULL,
+  uso_cfdi VARCHAR(10) NOT NULL,
+  subtotal DECIMAL(14,2) NOT NULL,
+  descuento DECIMAL(14,2) NOT NULL DEFAULT 0,
+  impuestos DECIMAL(14,2) NOT NULL DEFAULT 0,
+  total DECIMAL(14,2) NOT NULL,
+  estado ENUM('BORRADOR','PENDIENTE_TIMBRADO','TIMBRADA','CANCELADA','ERROR') NOT NULL DEFAULT 'BORRADOR',
+  proveedor_pac VARCHAR(80) NULL,
+  uuid CHAR(36) NULL,
+  mensaje_error VARCHAR(500) NULL,
+  creado_por BIGINT UNSIGNED NOT NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_factura_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL,
+  CONSTRAINT fk_factura_usuario FOREIGN KEY (creado_por) REFERENCES usuarios(id),
+  INDEX idx_facturas_periodo (tipo,fecha_inicio,fecha_fin),
+  INDEX idx_facturas_estado (estado,creado_en)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS factura_borrador_ventas (
+  factura_id BIGINT UNSIGNED NOT NULL,
+  venta_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (factura_id,venta_id),
+  CONSTRAINT fk_factura_venta_factura FOREIGN KEY (factura_id) REFERENCES facturas_borrador(id) ON DELETE CASCADE,
+  CONSTRAINT fk_factura_venta_venta FOREIGN KEY (venta_id) REFERENCES ventas(id),
+  INDEX idx_factura_venta (venta_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS movimientos_contables (
@@ -488,7 +568,10 @@ INSERT INTO categorias (nombre, descripcion) VALUES
   ('Botanas', 'Frituras, galletas y snacks'),
   ('Lácteos', 'Leche, queso y productos refrigerados'),
   ('Panadería', 'Pan empacado y pan dulce'),
-  ('Granel', 'Productos vendidos por peso')
+  ('Granel', 'Productos vendidos por peso'),
+  ('Frutas', 'Frutas frescas vendidas por kilogramo'),
+  ('Verduras', 'Verduras frescas vendidas por kilogramo'),
+  ('Carnes', 'Carne fresca vendida por kilogramo')
 ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
 
 CREATE OR REPLACE VIEW vista_inventario_alertas AS
