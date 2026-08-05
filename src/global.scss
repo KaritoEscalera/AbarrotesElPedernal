@@ -822,3 +822,83 @@ html.theme-dark ion-item ion-icon {
   color: #8de7e1 !important;
   opacity: 1;
 }
+
+/* Correcciones puntuales detectadas en Caja y Fiados. */
+html.theme-dark .saldo,
+html.theme-dark td .saldo {
+  color: #ffcc70 !important;
+}
+
+html.theme-dark ion-button[color="success"],
+html.theme-dark ion-button[color="success"][fill="clear"] {
+  --color: #7ff0c2 !important;
+  color: #7ff0c2 !important;
+}
+
+html.theme-dark .product-section-heading {
+  color: #eefcff !important;
+  background: #184650 !important;
+  border-color: #ff9b58 !important;
+  box-shadow: none !important;
+}
+
+html.theme-dark .product-section-heading h3 {
+  color: #fff4df !important;
+}
+
+html.theme-dark .product-section-heading span {
+  color: #bfe2e5 !important;
+}
+
+html.theme-dark .recharge-summary > div {
+  color: #eefcff !important;
+  background: #194650 !important;
+  border: 1px solid #39717a;
+}
+
+html.theme-dark .recharge-summary span {
+  color: #bfe0e3 !important;
+}
+
+html.theme-dark .recharge-summary strong {
+  color: #ffe075 !important;
+}
+
+html.theme-dark .recharge-help {
+  color: #e7f7f8 !important;
+  background: #16404a !important;
+  border: 1px solid #39717a;
+}
+
+html.theme-dark .recharge-list > article {
+  color: #eefcff !important;
+  background: #10343c !important;
+  border-color: #4b7b83 !important;
+}
+
+html.theme-dark .recharge-list header small {
+  color: #aed2d5 !important;
+}
+
+html.theme-dark .recharge-amount,
+html.theme-dark .recharge-amount span {
+  color: #d7ecee !important;
+}
+
+html.theme-dark .recharge-amount b {
+  color: #ffcc70 !important;
+}
+
+html.theme-dark ion-button[disabled] {
+  --color: #a9c9cc !important;
+  --border-color: #4e747b !important;
+  opacity: .78 !important;
+}
+
+html.theme-dark input::placeholder,
+html.theme-dark textarea::placeholder,
+html.theme-dark ion-input::part(placeholder),
+html.theme-dark ion-searchbar input::placeholder {
+  color: #a9c9cc !important;
+  opacity: 1 !important;
+}
