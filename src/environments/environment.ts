@@ -4,7 +4,8 @@
 
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000/api'
+  // Safari local y la aplicación de la tablet deben operar sobre la misma caja e inventario.
+  apiUrl: 'https://abarroteselpedernal-production.up.railway.app/api'
 };
 
 /*
