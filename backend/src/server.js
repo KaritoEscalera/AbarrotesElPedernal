@@ -20,7 +20,7 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/health', async (_req, res, next) => {
-  try { res.json({ status: 'ok', database: await verifyDatabase() }); }
+  try { res.json({ status: 'ok', release: 'cash-purchases-v2', database: await verifyDatabase() }); }
   catch (error) { next(error); }
 });
 app.use('/api/auth', authRouter);
