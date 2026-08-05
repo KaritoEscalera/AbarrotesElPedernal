@@ -703,3 +703,122 @@ html.theme-dark ::-webkit-scrollbar-track {
 html.theme-dark ::-webkit-calendar-picker-indicator {
   filter: invert(1);
 }
+
+/* Contraste reforzado: cubre módulos que aún declaran colores del tema claro. */
+html.theme-dark [class$="-card"],
+html.theme-dark [class*="-card "],
+html.theme-dark [class$="-panel"],
+html.theme-dark [class*="-panel "],
+html.theme-dark .inventory-card,
+html.theme-dark .entry-form,
+html.theme-dark .filters,
+html.theme-dark .table-wrapper,
+html.theme-dark .detail-card,
+html.theme-dark .purchase-confirmation,
+html.theme-dark .account-panel,
+html.theme-dark .operation-panel,
+html.theme-dark .edit-product-panel {
+  color: #eefcff !important;
+  background: #0f3038 !important;
+  border-color: #32636c !important;
+}
+
+html.theme-dark .filters,
+html.theme-dark .section-title,
+html.theme-dark .table-title,
+html.theme-dark .detail-card header,
+html.theme-dark .operation-panel header,
+html.theme-dark .purchase-confirmation header,
+html.theme-dark .account-panel header {
+  color: #eefcff !important;
+  border-color: #32636c !important;
+}
+
+html.theme-dark .section-title h2,
+html.theme-dark .table-title h2,
+html.theme-dark .inventory-card strong,
+html.theme-dark .suggestions-card strong,
+html.theme-dark .movements-card strong,
+html.theme-dark .detail-card strong,
+html.theme-dark .purchase-confirmation strong,
+html.theme-dark .account-panel strong,
+html.theme-dark .operation-panel strong,
+html.theme-dark ion-label {
+  color: #f5feff !important;
+}
+
+html.theme-dark .inventory-card span:not(.status),
+html.theme-dark .suggestions-card span,
+html.theme-dark .movements-card span,
+html.theme-dark .detail-card span,
+html.theme-dark .purchase-confirmation span,
+html.theme-dark .account-panel span,
+html.theme-dark .operation-panel p,
+html.theme-dark .operation-panel label {
+  color: #d8edef !important;
+}
+
+html.theme-dark .section-title > span,
+html.theme-dark .table-count,
+html.theme-dark .records,
+html.theme-dark .admin-badge {
+  color: #c6fffa !important;
+  background: #184a52 !important;
+  border-color: #3d7780 !important;
+}
+
+html.theme-dark .stock-button:not(.add):not(.edit):not(.delete),
+html.theme-dark .action-button:not(.danger),
+html.theme-dark .cash-shortcuts button,
+html.theme-dark .secondary-button {
+  color: #f1ffff !important;
+  background: #1b4a53 !important;
+  border-color: #3b717a !important;
+}
+
+html.theme-dark .stock-button.delete,
+html.theme-dark .delete-button,
+html.theme-dark button.danger {
+  color: #ffd5dc !important;
+  background: #572c38 !important;
+  border-color: #a85469 !important;
+}
+
+html.theme-dark .stock-button.edit,
+html.theme-dark .edit-button,
+html.theme-dark .primary-button {
+  color: #eaffff !important;
+  background: #086e70 !important;
+  border-color: #32bfc0 !important;
+}
+
+html.theme-dark .status.low,
+html.theme-dark .status.warning,
+html.theme-dark .low-stock,
+html.theme-dark .pending {
+  color: #ffe89a !important;
+  background: #51431a !important;
+  border-color: #9c8230 !important;
+}
+
+html.theme-dark .status.out,
+html.theme-dark .status.danger,
+html.theme-dark .overdue {
+  color: #ffc5cf !important;
+  background: #592936 !important;
+  border-color: #a64c63 !important;
+}
+
+html.theme-dark ion-select::part(text),
+html.theme-dark ion-input::part(native),
+html.theme-dark ion-textarea::part(native),
+html.theme-dark ion-searchbar input {
+  color: #f4feff !important;
+  caret-color: #67e2da;
+}
+
+html.theme-dark ion-select::part(icon),
+html.theme-dark ion-item ion-icon {
+  color: #8de7e1 !important;
+  opacity: 1;
+}
