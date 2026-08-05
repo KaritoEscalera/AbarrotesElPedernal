@@ -56,6 +56,15 @@ try {
   }
   await connection.query(`ALTER TABLE ${escapedDatabase}.compras MODIFY COLUMN metodo_pago ENUM('EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA','CREDITO','MIXTO','OTRO') NOT NULL DEFAULT 'CREDITO'`);
   await connection.query(`ALTER TABLE ${escapedDatabase}.movimientos_caja MODIFY COLUMN metodo ENUM('EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA','FIADO','OTRO') NOT NULL`);
+  // Corrección confirmada por la tienda: esta compra se pagó en efectivo de caja,
+  // pero una versión anterior del cliente omitió el desglose del pago.
+  await connection.query(`
+    INSERT INTO ${escapedDatabase}.compra_pagos(compra_id,origen,metodo,monto)
+    SELECT c.id,'CAJA','EFECTIVO',c.total
+    FROM ${escapedDatabase}.compras c
+    WHERE c.folio='C-1785957097705' AND c.total=50.00 AND c.metodo_pago='EFECTIVO'
+      AND NOT EXISTS (SELECT 1 FROM ${escapedDatabase}.compra_pagos cp WHERE cp.compra_id=c.id)
+  `);
   const [reconciled] = await connection.query(`
     INSERT INTO ${escapedDatabase}.movimientos_caja
       (sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto,referencia,creado_en)

@@ -709,8 +709,17 @@ businessRouter.post('/purchases', requireRole('Administrador','Gerente'), async 
       subtotal += base; taxes += tax; details.push({ product, productoId, cantidad, costo, importe: base + tax, lote:String(item?.lote??'').trim(), fechaCaducidad:String(item?.fechaCaducidad??'').trim()||null });
     }
     const total = Math.round((subtotal + taxes) * 100) / 100;
-    const pagosCompra=(Array.isArray(req.body?.pagos)?req.body.pagos:[]).map(p=>({metodo:String(p?.metodo??'').toUpperCase(),origen:String(p?.origen??'').toUpperCase(),monto:Math.round(Number(p?.monto)*100)/100})).filter(p=>p.monto>0);
+    let pagosCompra=(Array.isArray(req.body?.pagos)?req.body.pagos:[]).map(p=>({metodo:String(p?.metodo??'').toUpperCase(),origen:String(p?.origen??'').toUpperCase(),monto:Math.round(Number(p?.monto)*100)/100})).filter(p=>p.monto>0);
+    // Compatibilidad defensiva con instalaciones que enviaron el selector visible
+    // de origen, pero omitieron accidentalmente el arreglo de pagos.
+    if(metodoPago!=='CREDITO'&&metodoPago!=='MIXTO'&&!pagosCompra.length){
+      const origenPago=String(req.body?.origenPago??'').toUpperCase();
+      if(['CAJA','EXTERNO'].includes(origenPago))pagosCompra=[{metodo:metodoPago,origen:origenPago,monto:total}];
+    }
     if(metodoPago!=='CREDITO'&&(pagosCompra.some(p=>!['EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA'].includes(p.metodo)||!['CAJA','EXTERNO'].includes(p.origen)||!Number.isFinite(p.monto))||Math.abs(pagosCompra.reduce((s,p)=>s+p.monto,0)-total)>.009)){await connection.rollback();return res.status(400).json({error:`Los pagos deben sumar exactamente $${total.toFixed(2)} e indicar si salen de caja o son externos.`});}
+    const montoCajaEsperado=Number(req.body?.montoCajaEsperado);
+    const montoCajaRecibido=pagosCompra.filter(p=>p.origen==='CAJA').reduce((s,p)=>s+p.monto,0);
+    if(Number.isFinite(montoCajaEsperado)&&Math.abs(montoCajaEsperado-montoCajaRecibido)>.009){await connection.rollback();return res.status(400).json({error:'No se registró la compra porque el dinero de caja no coincide con la forma de pago seleccionada.'});}
     const folio = String(req.body?.folio ?? '').trim() || `C-${Date.now()}`;
     const balance = metodoPago === 'CREDITO' ? total : 0;
     const [purchase] = await connection.execute(
