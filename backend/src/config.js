@@ -14,7 +14,14 @@ if (missing.length) {
 
 export const config = {
   port: Number(process.env.PORT ?? 3000),
-  frontendUrls: (process.env.FRONTEND_URL ?? 'http://localhost:4200,http://localhost:8100,http://localhost,https://localhost,capacitor://localhost').split(',').map((url) => url.trim()),
+  frontendUrls: [
+    'http://localhost:4200',
+    'http://localhost:8100',
+    'http://localhost',
+    'https://localhost',
+    'capacitor://localhost',
+    ...(process.env.FRONTEND_URL ?? '').split(','),
+  ].map((url) => url.trim()).filter(Boolean),
   database: {
     host: process.env.DB_HOST ?? process.env.MYSQLHOST,
     port: Number(process.env.DB_PORT ?? process.env.MYSQLPORT ?? 3306),

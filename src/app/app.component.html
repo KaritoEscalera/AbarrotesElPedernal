@@ -1,7 +1,7 @@
 <ion-app>
   <div *ngIf="mostrarMenu && !connectivity.online" class="offline-banner" role="status">
-    <strong>Modo sin conexión</strong>
-    <span>La tablet conservará las ventas.</span>
+    <strong>{{ connectivity.deviceOnline ? 'Servidor no disponible' : 'Sin conexión a internet' }}</strong>
+    <span>{{ connectivity.deviceOnline ? 'Tu internet funciona; no se pudo contactar al servidor.' : 'La tablet conservará las ventas.' }}</span>
     <span *ngIf="connectivity.pendingSales">{{ connectivity.pendingSales }} pendiente(s) de sincronizar.</span>
   </div>
   <ion-menu *ngIf="mostrarMenu" menuId="menu-principal" contentId="contenido-principal" type="overlay">

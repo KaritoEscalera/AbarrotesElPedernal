@@ -60,7 +60,7 @@ export class ComprasPage implements OnInit {
     this.confirmacionVisible=false;
     this.guardando = true;
     try {
-      const pagos=this.metodoPago==='MIXTO'?[{metodo:'EFECTIVO',monto:Number(this.efectivoCompra||0),origen:this.origenEfectivo},{metodo:'TARJETA',monto:Number(this.tarjetaCompra||0),origen:this.origenTarjeta},{metodo:'TERMINAL',monto:Number(this.terminalCompra||0),origen:this.origenTerminal},{metodo:'TRANSFERENCIA',monto:Number(this.transferenciaCompra||0),origen:this.origenTransferencia}]:this.metodoPago==='CREDITO'?[]:[{metodo:this.metodoPago,monto:this.totalCompra,origen:this.origenPago}];
+      const pagos=this.metodoPago==='MIXTO'?[{metodo:'EFECTIVO',monto:Number(this.efectivoCompra||0),origen:'CAJA'},{metodo:'TARJETA',monto:Number(this.tarjetaCompra||0),origen:this.origenTarjeta},{metodo:'TERMINAL',monto:Number(this.terminalCompra||0),origen:this.origenTerminal},{metodo:'TRANSFERENCIA',monto:Number(this.transferenciaCompra||0),origen:this.origenTransferencia}]:this.metodoPago==='CREDITO'?[]:[{metodo:this.metodoPago,monto:this.totalCompra,origen:this.metodoPago==='EFECTIVO'?'CAJA':this.origenPago}];
       const montoCajaEsperado=pagos.filter(p=>p.origen==='CAJA').reduce((s,p)=>s+Number(p.monto),0);
       const result = await this.api.post<{ folio: string; total: number;cajaDescontada:number }>('purchases', { proveedorId: this.proveedorId, folio: this.folio, metodoPago: this.metodoPago, origenPago:this.origenPago, montoCajaEsperado, notas: this.notas, items: this.partidas,pagos });
       if(Math.abs(Number(result.cajaDescontada)-montoCajaEsperado)>.009)throw new Error('La compra se recibió, pero la salida de caja no coincide. No hagas otra captura y repórtala para corregirla.');

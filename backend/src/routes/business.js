@@ -328,7 +328,7 @@ businessRouter.get('/cash/current', async (req, res, next) => {
       pool.execute(
         `SELECT
           COALESCE(SUM(CASE WHEN tipo='INGRESO' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) AS ingresosEfectivo,
-          COALESCE(SUM(CASE WHEN tipo='SALIDA' AND (metodo='EFECTIVO' OR categoria='COMPRA') THEN monto ELSE 0 END),0) AS salidasEfectivo,
+          COALESCE(SUM(CASE WHEN tipo='SALIDA' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) AS salidasEfectivo,
           COALESCE(SUM(CASE WHEN categoria='VENTA' THEN monto ELSE 0 END),0) AS ventas,
           COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) AS ventasEfectivo,
           COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='TARJETA' THEN monto ELSE 0 END),0) AS ventasTarjeta,
@@ -438,7 +438,7 @@ businessRouter.post('/cash/close', async (req, res, next) => {
     if (!session) { await connection.rollback(); return res.status(409).json({ error: 'La caja de la tienda no está abierta.' }); }
     const [[totals]] = await connection.execute(
       `SELECT COALESCE(SUM(CASE WHEN tipo='INGRESO' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) ingresos,
-              COALESCE(SUM(CASE WHEN tipo='SALIDA' AND (metodo='EFECTIVO' OR categoria='COMPRA') THEN monto ELSE 0 END),0) salidas,
+              COALESCE(SUM(CASE WHEN tipo='SALIDA' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) salidas,
               COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) ventasEfectivo,
               COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='TARJETA' THEN monto ELSE 0 END),0) ventasTarjeta,
               COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='TRANSFERENCIA' THEN monto ELSE 0 END),0) ventasTransferencia,
@@ -730,6 +730,9 @@ businessRouter.post('/purchases', requireRole('Administrador','Gerente'), async 
       const origenPago=String(req.body?.origenPago??'').toUpperCase();
       if(['CAJA','EXTERNO'].includes(origenPago))pagosCompra=[{metodo:metodoPago,origen:origenPago,monto:total}];
     }
+    // Todo efectivo entregado al proveedor sale físicamente de la caja y debe
+    // aparecer en el historial y en el corte, sin depender de lo enviado por UI.
+    pagosCompra=pagosCompra.map(p=>p.metodo==='EFECTIVO'?{...p,origen:'CAJA'}:p);
     if(metodoPago!=='CREDITO'&&(pagosCompra.some(p=>!['EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA'].includes(p.metodo)||!['CAJA','EXTERNO'].includes(p.origen)||!Number.isFinite(p.monto))||Math.abs(pagosCompra.reduce((s,p)=>s+p.monto,0)-total)>.009)){await connection.rollback();return res.status(400).json({error:`Los pagos deben sumar exactamente $${total.toFixed(2)} e indicar si salen de caja o son externos.`});}
     const montoCajaEsperado=Number(req.body?.montoCajaEsperado);
     const montoCajaRecibido=pagosCompra.filter(p=>p.origen==='CAJA').reduce((s,p)=>s+p.monto,0);
