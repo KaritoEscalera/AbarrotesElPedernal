@@ -334,7 +334,7 @@ businessRouter.get('/cash/current', async (req, res, next) => {
           COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='TARJETA' THEN monto ELSE 0 END),0) AS ventasTarjeta,
           COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='TRANSFERENCIA' THEN monto ELSE 0 END),0) AS ventasTransferencia,
           COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='FIADO' THEN monto ELSE 0 END),0) AS ventasFiado,
-          COALESCE(SUM(CASE WHEN categoria='COMPRA' THEN monto ELSE 0 END),0) AS comprasCaja,
+          COALESCE(SUM(CASE WHEN categoria='COMPRA' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) AS comprasCaja,
           COALESCE(SUM(CASE WHEN categoria='COMPRA' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) AS comprasEfectivo,
           COALESCE(SUM(CASE WHEN categoria='COMPRA' AND metodo='TARJETA' THEN monto ELSE 0 END),0) AS comprasTarjeta,
           COALESCE(SUM(CASE WHEN categoria='COMPRA' AND metodo='TERMINAL' THEN monto ELSE 0 END),0) AS comprasTerminal,
@@ -343,7 +343,7 @@ businessRouter.get('/cash/current', async (req, res, next) => {
         [session.id],
       ),
       pool.execute(
-        `SELECT id,tipo,categoria,descripcion,metodo,monto,referencia,creado_en AS fecha
+        `SELECT id,compra_id AS compraId,tipo,categoria,descripcion,metodo,monto,referencia,creado_en AS fecha
          FROM movimientos_caja WHERE sesion_caja_id=? ORDER BY creado_en DESC LIMIT 100`,
         [session.id],
       ),
@@ -443,7 +443,7 @@ businessRouter.post('/cash/close', async (req, res, next) => {
               COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='TARJETA' THEN monto ELSE 0 END),0) ventasTarjeta,
               COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='TRANSFERENCIA' THEN monto ELSE 0 END),0) ventasTransferencia,
               COALESCE(SUM(CASE WHEN categoria='VENTA' AND metodo='FIADO' THEN monto ELSE 0 END),0) ventasFiado,
-              COALESCE(SUM(CASE WHEN categoria='COMPRA' THEN monto ELSE 0 END),0) comprasCaja,
+              COALESCE(SUM(CASE WHEN categoria='COMPRA' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) comprasCaja,
               COALESCE(SUM(CASE WHEN categoria='COMPRA' AND metodo='EFECTIVO' THEN monto ELSE 0 END),0) comprasEfectivo,
               COALESCE(SUM(CASE WHEN categoria='COMPRA' AND metodo='TARJETA' THEN monto ELSE 0 END),0) comprasTarjeta,
               COALESCE(SUM(CASE WHEN categoria='COMPRA' AND metodo='TERMINAL' THEN monto ELSE 0 END),0) comprasTerminal,
@@ -685,8 +685,11 @@ businessRouter.get('/cash/purchase-history', async (_req, res, next) => {
     const [rows] = await pool.query(
       `SELECT c.id,c.folio,c.fecha_compra AS fecha,c.estado,c.metodo_pago AS metodoPago,c.total,
               p.empresa AS proveedor,u.nombre AS usuario,
-              COALESCE(SUM(CASE WHEN cp.origen='CAJA' THEN cp.monto ELSE 0 END),0) AS montoCaja,
-              COALESCE(GROUP_CONCAT(CONCAT(cp.metodo,' ',cp.origen,' $',FORMAT(cp.monto,2)) ORDER BY cp.id SEPARATOR ' · '),IF(c.metodo_pago='CREDITO','CRÉDITO','Sin desglose')) AS pagoDetalle
+              COALESCE(SUM(CASE WHEN cp.metodo='EFECTIVO' AND cp.origen='CAJA' THEN cp.monto ELSE 0 END),0) AS montoCaja,
+              COALESCE(GROUP_CONCAT(CONCAT(
+                CASE cp.metodo WHEN 'EFECTIVO' THEN 'Efectivo' WHEN 'TARJETA' THEN 'Tarjeta' WHEN 'TERMINAL' THEN 'Terminal' WHEN 'TRANSFERENCIA' THEN 'Transferencia' ELSE cp.metodo END,
+                ' $',FORMAT(cp.monto,2),' · ',CASE cp.origen WHEN 'CAJA' THEN 'Caja' ELSE 'Fuera de caja' END
+              ) ORDER BY cp.id SEPARATOR ' + '),IF(c.metodo_pago='CREDITO','Crédito','Sin desglose')) AS pagoDetalle
        FROM compras c
        JOIN proveedores p ON p.id=c.proveedor_id
        JOIN usuarios u ON u.id=c.usuario_id
@@ -707,7 +710,7 @@ businessRouter.post('/purchases', requireRole('Administrador','Gerente'), async 
     const metodoPago = String(req.body?.metodoPago ?? 'CREDITO').toUpperCase();
     if (!Number.isInteger(proveedorId) || !items.length || !['EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA','CREDITO','MIXTO','OTRO'].includes(metodoPago)) return res.status(400).json({ error: 'La compra no es válida.' });
     await connection.beginTransaction();
-    const [[provider]] = await connection.execute("SELECT id FROM proveedores WHERE id=? AND estado<>'ARCHIVADO'", [proveedorId]);
+    const [[provider]] = await connection.execute("SELECT id,empresa FROM proveedores WHERE id=? AND estado<>'ARCHIVADO'", [proveedorId]);
     if (!provider) { await connection.rollback(); return res.status(400).json({ error: 'Proveedor no válido.' }); }
     const productIds=items.map(item=>Number(item?.productoId));
     if(new Set(productIds).size!==productIds.length){await connection.rollback();return res.status(400).json({error:'La compra contiene un producto repetido. Suma la cantidad en una sola partida.'});}
@@ -730,12 +733,10 @@ businessRouter.post('/purchases', requireRole('Administrador','Gerente'), async 
       const origenPago=String(req.body?.origenPago??'').toUpperCase();
       if(['CAJA','EXTERNO'].includes(origenPago))pagosCompra=[{metodo:metodoPago,origen:origenPago,monto:total}];
     }
-    // Todo efectivo entregado al proveedor sale físicamente de la caja y debe
-    // aparecer en el historial y en el corte, sin depender de lo enviado por UI.
-    pagosCompra=pagosCompra.map(p=>p.metodo==='EFECTIVO'?{...p,origen:'CAJA'}:p);
     if(metodoPago!=='CREDITO'&&(pagosCompra.some(p=>!['EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA'].includes(p.metodo)||!['CAJA','EXTERNO'].includes(p.origen)||!Number.isFinite(p.monto))||Math.abs(pagosCompra.reduce((s,p)=>s+p.monto,0)-total)>.009)){await connection.rollback();return res.status(400).json({error:`Los pagos deben sumar exactamente $${total.toFixed(2)} e indicar si salen de caja o son externos.`});}
+    if(metodoPago!=='MIXTO'&&metodoPago!=='CREDITO'&&(pagosCompra.length!==1||pagosCompra[0].metodo!==metodoPago)){await connection.rollback();return res.status(400).json({error:'El desglose del pago no coincide con el método seleccionado.'});}
     const montoCajaEsperado=Number(req.body?.montoCajaEsperado);
-    const montoCajaRecibido=pagosCompra.filter(p=>p.origen==='CAJA').reduce((s,p)=>s+p.monto,0);
+    const montoCajaRecibido=pagosCompra.filter(p=>p.metodo==='EFECTIVO'&&p.origen==='CAJA').reduce((s,p)=>s+p.monto,0);
     if(Number.isFinite(montoCajaEsperado)&&Math.abs(montoCajaEsperado-montoCajaRecibido)>.009){await connection.rollback();return res.status(400).json({error:'No se registró la compra porque el dinero de caja no coincide con la forma de pago seleccionada.'});}
     const folio = String(req.body?.folio ?? '').trim() || `C-${Date.now()}`;
     const balance = metodoPago === 'CREDITO' ? total : 0;
@@ -761,11 +762,14 @@ businessRouter.post('/purchases', requireRole('Administrador','Gerente'), async 
       );
       if (detail.lote) await connection.execute(`INSERT INTO producto_lotes(producto_id,compra_id,lote,fecha_caducidad,cantidad_inicial,cantidad_disponible,costo_unitario) VALUES(?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE cantidad_inicial=cantidad_inicial+VALUES(cantidad_inicial),cantidad_disponible=cantidad_disponible+VALUES(cantidad_disponible),fecha_caducidad=COALESCE(VALUES(fecha_caducidad),fecha_caducidad),costo_unitario=VALUES(costo_unitario)`,[detail.productoId,purchase.insertId,detail.lote,detail.fechaCaducidad,detail.cantidad,detail.cantidad,detail.costo]);
     }
-    const pagosARegistrar=pagosCompra.filter(p=>p.origen==='CAJA');
+    // Regla de caja: solo el efectivo que realmente se toma de la caja física
+    // genera una salida. Tarjetas y dinero externo conservan su desglose en
+    // compra_pagos, pero nunca modifican el efectivo esperado del turno.
+    const pagosARegistrar=pagosCompra.filter(p=>p.metodo==='EFECTIVO'&&p.origen==='CAJA');
     if(pagosARegistrar.length){
       const [[cashSession]]=await connection.execute("SELECT id FROM sesiones_caja WHERE estado='ABIERTA' ORDER BY fecha_apertura DESC LIMIT 1 FOR UPDATE");
       if(!cashSession){await connection.rollback();return res.status(409).json({error:'Abre la caja de la tienda para usar dinero de caja, o cambia el origen del pago a externo.'});}
-      for(const pago of pagosARegistrar)await connection.execute(`INSERT INTO movimientos_caja(sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto,referencia) VALUES(?,?,'SALIDA','COMPRA',?,?,?,?)`,[cashSession.id,req.user.sub,`Pago a proveedor ${provider.id} · compra ${folio}`,pago.metodo,pago.monto,folio]);
+      for(const pago of pagosARegistrar)await connection.execute(`INSERT INTO movimientos_caja(sesion_caja_id,usuario_id,compra_id,tipo,categoria,descripcion,metodo,monto,referencia) VALUES(?,?,?,'SALIDA','COMPRA',?,'EFECTIVO',?,?)`,[cashSession.id,req.user.sub,purchase.insertId,`Pago a proveedor ${provider.empresa} · compra ${folio}`,pago.monto,folio]);
     }
     await connection.execute(
       `INSERT INTO bitacora(usuario_id,modulo,accion,descripcion,entidad,entidad_id) VALUES(?,'Compras','RECIBIR',?,'COMPRA',?)`,

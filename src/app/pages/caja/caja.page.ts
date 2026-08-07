@@ -39,7 +39,7 @@ interface LineaCarrito extends ProductoCaja {
   unidadCaptura: 'Pieza' | 'Kilogramo' | 'Gramo';
 }
 interface SesionCaja { id: number; estado: 'ABIERTA'; fondoInicial: number; fechaApertura: string; }
-interface MovimientoCaja { id: number; tipo: string; descripcion: string; metodo: string; monto: number; fecha: string; }
+interface MovimientoCaja { id: number; compraId?:number|null; tipo: string; descripcion: string; metodo: string; monto: number; fecha: string; }
 
 interface EstadoCaja {
   session: SesionCaja | null;
@@ -533,7 +533,7 @@ export class CajaPage implements OnInit, OnDestroy {
 
   imprimirCorteX(): void {
     if (!this.sesion) return;
-    const compras=this.movimientos.filter(m=>m.tipo==='SALIDA'&&m.descripcion.startsWith('Pago a proveedor'));
+    const compras=this.movimientos.filter(m=>m.tipo==='SALIDA'&&m.metodo==='EFECTIVO'&&m.descripcion.startsWith('Pago a proveedor'));
     const suma=(metodo?:string)=>compras.filter(m=>!metodo||m.metodo===metodo).reduce((total,m)=>total+Number(m.monto),0);
     this.imprimirCorte({ fondoInicial:this.sesion.fondoInicial,efectivoEsperado:this.efectivoEsperado,ventasEfectivo:this.ventasPorMetodo.EFECTIVO,ventasTarjeta:this.ventasPorMetodo.TARJETA,ventasTransferencia:this.ventasPorMetodo.TRANSFERENCIA,ventasFiado:this.ventasPorMetodo.FIADO,comprasCaja:suma(),comprasEfectivo:suma('EFECTIVO'),comprasTarjeta:suma('TARJETA'),comprasTerminal:suma('TERMINAL'),comprasTransferencia:suma('TRANSFERENCIA') }, 'X');
   }

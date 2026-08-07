@@ -259,6 +259,7 @@ CREATE TABLE IF NOT EXISTS movimientos_caja (
   sesion_caja_id BIGINT UNSIGNED NOT NULL,
   usuario_id BIGINT UNSIGNED NOT NULL,
   venta_id BIGINT UNSIGNED NULL,
+  compra_id BIGINT UNSIGNED NULL,
   tipo ENUM('INGRESO','SALIDA') NOT NULL,
   categoria VARCHAR(80) NOT NULL,
   descripcion VARCHAR(255) NOT NULL,
@@ -270,6 +271,7 @@ CREATE TABLE IF NOT EXISTS movimientos_caja (
   CONSTRAINT fk_mov_caja_sesion FOREIGN KEY (sesion_caja_id) REFERENCES sesiones_caja(id),
   CONSTRAINT fk_mov_caja_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
   CONSTRAINT fk_mov_caja_venta FOREIGN KEY (venta_id) REFERENCES ventas(id) ON DELETE SET NULL,
+  CONSTRAINT fk_mov_caja_compra FOREIGN KEY (compra_id) REFERENCES compras(id) ON DELETE SET NULL,
   INDEX idx_mov_caja_sesion_fecha (sesion_caja_id, creado_en)
 ) ENGINE=InnoDB;
 

@@ -56,55 +56,20 @@ try {
   }
   await connection.query(`ALTER TABLE ${escapedDatabase}.compras MODIFY COLUMN metodo_pago ENUM('EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA','CREDITO','MIXTO','OTRO') NOT NULL DEFAULT 'CREDITO'`);
   await connection.query(`ALTER TABLE ${escapedDatabase}.movimientos_caja MODIFY COLUMN metodo ENUM('EFECTIVO','TARJETA','TERMINAL','TRANSFERENCIA','FIADO','OTRO') NOT NULL`);
-  // Reparación de datos: esta compra se confirmó en la tienda como efectivo
-  // tomado de caja, pero el cliente anterior no envió su desglose de pago.
-  await connection.query(`
-    INSERT INTO ${escapedDatabase}.compra_pagos(compra_id,origen,metodo,monto)
-    SELECT c.id,'CAJA','EFECTIVO',c.total
-    FROM ${escapedDatabase}.compras c
-    WHERE c.folio='C-1785957097705' AND c.metodo_pago='EFECTIVO'
-      AND NOT EXISTS (SELECT 1 FROM ${escapedDatabase}.compra_pagos cp WHERE cp.compra_id=c.id)
-  `);
-  await connection.query(`
-    INSERT INTO ${escapedDatabase}.movimientos_caja
-      (sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto,referencia,creado_en)
-    SELECT sc.id,c.usuario_id,'SALIDA','COMPRA',
-      CONCAT('Pago a proveedor ',c.proveedor_id,' · compra ',c.folio),
-      'EFECTIVO',c.total,c.folio,NOW()
-    FROM ${escapedDatabase}.compras c
-    JOIN (SELECT id FROM ${escapedDatabase}.sesiones_caja WHERE estado='ABIERTA' ORDER BY fecha_apertura DESC LIMIT 1) sc
-    WHERE c.folio='C-1785957097705' AND c.metodo_pago='EFECTIVO'
-      AND NOT EXISTS (
-        SELECT 1 FROM ${escapedDatabase}.movimientos_caja mc
-        WHERE mc.categoria='COMPRA' AND mc.referencia=c.folio
-      )
-  `);
-  const [reconciled] = await connection.query(`
-    INSERT INTO ${escapedDatabase}.movimientos_caja
-      (sesion_caja_id,usuario_id,tipo,categoria,descripcion,metodo,monto,referencia,creado_en)
-    SELECT
-      (SELECT sc.id FROM ${escapedDatabase}.sesiones_caja sc
-       WHERE sc.fecha_apertura<=c.fecha_compra
-         AND (sc.fecha_cierre IS NULL OR sc.fecha_cierre>=c.fecha_compra)
-       ORDER BY sc.fecha_apertura DESC LIMIT 1),
-      c.usuario_id,'SALIDA','COMPRA',
-      CONCAT('Pago a proveedor ',c.proveedor_id,' · compra ',COALESCE(c.folio,c.id)),
-      cp.metodo,cp.monto,COALESCE(c.folio,CONCAT('C-',c.id)),c.fecha_compra
-    FROM ${escapedDatabase}.compra_pagos cp
-    JOIN ${escapedDatabase}.compras c ON c.id=cp.compra_id
-    WHERE cp.origen='CAJA'
-      AND (SELECT sc.id FROM ${escapedDatabase}.sesiones_caja sc
-           WHERE sc.fecha_apertura<=c.fecha_compra
-             AND (sc.fecha_cierre IS NULL OR sc.fecha_cierre>=c.fecha_compra)
-           ORDER BY sc.fecha_apertura DESC LIMIT 1) IS NOT NULL
-      AND NOT EXISTS (
-        SELECT 1 FROM ${escapedDatabase}.movimientos_caja mc
-        WHERE mc.categoria='COMPRA'
-          AND mc.referencia=COALESCE(c.folio,CONCAT('C-',c.id))
-          AND mc.metodo=cp.metodo AND mc.monto=cp.monto
-      )
-  `);
-  if (Number(reconciled.affectedRows) > 0) console.log(`Movimientos de compras desde caja recuperados: ${reconciled.affectedRows}`);
+  const [purchaseMovementColumns] = await connection.query(
+    "SELECT COUNT(*) AS total FROM information_schema.columns WHERE table_schema=? AND table_name='movimientos_caja' AND column_name='compra_id'",
+    [databaseName],
+  );
+  if (Number(purchaseMovementColumns[0].total) === 0) {
+    await connection.query(`ALTER TABLE ${escapedDatabase}.movimientos_caja ADD COLUMN compra_id BIGINT UNSIGNED NULL AFTER venta_id`);
+  }
+  const [purchaseMovementConstraints] = await connection.query(
+    "SELECT COUNT(*) AS total FROM information_schema.table_constraints WHERE table_schema=? AND table_name='movimientos_caja' AND constraint_name='fk_mov_caja_compra' AND constraint_type='FOREIGN KEY'",
+    [databaseName],
+  );
+  if (Number(purchaseMovementConstraints[0].total) === 0) {
+    await connection.query(`ALTER TABLE ${escapedDatabase}.movimientos_caja ADD CONSTRAINT fk_mov_caja_compra FOREIGN KEY (compra_id) REFERENCES compras(id) ON DELETE SET NULL`);
+  }
   const [tables] = await connection.query(
     "SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema = ? AND table_type = 'BASE TABLE'",
     [databaseName],

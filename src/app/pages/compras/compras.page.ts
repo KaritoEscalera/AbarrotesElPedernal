@@ -60,12 +60,12 @@ export class ComprasPage implements OnInit {
     this.confirmacionVisible=false;
     this.guardando = true;
     try {
-      const pagos=this.metodoPago==='MIXTO'?[{metodo:'EFECTIVO',monto:Number(this.efectivoCompra||0),origen:'CAJA'},{metodo:'TARJETA',monto:Number(this.tarjetaCompra||0),origen:this.origenTarjeta},{metodo:'TERMINAL',monto:Number(this.terminalCompra||0),origen:this.origenTerminal},{metodo:'TRANSFERENCIA',monto:Number(this.transferenciaCompra||0),origen:this.origenTransferencia}]:this.metodoPago==='CREDITO'?[]:[{metodo:this.metodoPago,monto:this.totalCompra,origen:this.metodoPago==='EFECTIVO'?'CAJA':this.origenPago}];
-      const montoCajaEsperado=pagos.filter(p=>p.origen==='CAJA').reduce((s,p)=>s+Number(p.monto),0);
+      const pagos=this.metodoPago==='MIXTO'?[{metodo:'EFECTIVO',monto:Number(this.efectivoCompra||0),origen:this.origenEfectivo},{metodo:'TARJETA',monto:Number(this.tarjetaCompra||0),origen:this.origenTarjeta},{metodo:'TERMINAL',monto:Number(this.terminalCompra||0),origen:this.origenTerminal},{metodo:'TRANSFERENCIA',monto:Number(this.transferenciaCompra||0),origen:this.origenTransferencia}]:this.metodoPago==='CREDITO'?[]:[{metodo:this.metodoPago,monto:this.totalCompra,origen:this.origenPago}];
+      const montoCajaEsperado=pagos.filter(p=>p.metodo==='EFECTIVO'&&p.origen==='CAJA').reduce((s,p)=>s+Number(p.monto),0);
       const result = await this.api.post<{ folio: string; total: number;cajaDescontada:number }>('purchases', { proveedorId: this.proveedorId, folio: this.folio, metodoPago: this.metodoPago, origenPago:this.origenPago, montoCajaEsperado, notas: this.notas, items: this.partidas,pagos });
       if(Math.abs(Number(result.cajaDescontada)-montoCajaEsperado)>.009)throw new Error('La compra se recibió, pero la salida de caja no coincide. No hagas otra captura y repórtala para corregirla.');
       this.mensaje = `Compra ${result.folio} recibida por $${Number(result.total).toFixed(2)}. Inventario actualizado.${Number(result.cajaDescontada)>0?` Se descontaron $${Number(result.cajaDescontada).toFixed(2)} de caja.`:' No se descontó dinero de caja.'}`;
-      this.proveedorId = null; this.folio = ''; this.notas = ''; this.partidas = [this.nuevaPartida()];this.efectivoCompra=null;this.tarjetaCompra=null;this.terminalCompra=null;this.transferenciaCompra=null;this.origenPago='CAJA'; await this.cargar();
+      this.proveedorId = null; this.folio = ''; this.notas = ''; this.partidas = [this.nuevaPartida()];this.efectivoCompra=null;this.tarjetaCompra=null;this.terminalCompra=null;this.transferenciaCompra=null;this.origenPago='CAJA';this.origenEfectivo='CAJA';this.origenTarjeta='EXTERNO'; await this.cargar();
     } catch (e: unknown) { const x = e as { message?:string;error?: { error?: { error?: string } } }; this.error = x.error?.error?.error ?? x.message ?? 'No fue posible registrar la compra.'; }
     finally { this.guardando = false; }
   }
