@@ -1,13 +1,14 @@
 <ion-content class="ion-padding">
 
   <main class="login-container">
+    <header class="login-header">
+      <img class="login-logo" src="assets/logo-pedernal.png" alt="Abarrotes El Pedernal">
+      <span>Administración del negocio</span>
+      <h1>Bienvenido</h1>
+      <p>Ingresa tus datos para continuar</p>
+    </header>
 
-    <img class="login-logo" src="assets/logo-pedernal.png" alt="Abarrotes Pedernal">
-    <h1 class="sr-only">Abarrotes El Pedernal</h1>
-
-    <p>Inicia sesión para continuar</p>
-
-    <ion-item>
+    <ion-item class="password-field">
       <ion-input
         [(ngModel)]="correo"
         name="correo"
@@ -26,10 +27,13 @@
         name="password"
         label="Contraseña"
         labelPlacement="floating"
-        type="password"
+        [type]="mostrarPassword ? 'text' : 'password'"
         autocomplete="current-password"
         required>
       </ion-input>
+      <button slot="end" class="password-toggle" type="button" [attr.aria-label]="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'" (click)="mostrarPassword = !mostrarPassword">
+        <span aria-hidden="true">{{ mostrarPassword ? '◉' : '◌' }}</span>
+      </button>
     </ion-item>
 
     <ion-button
@@ -40,6 +44,8 @@
       (click)="login()">
       {{ cargando ? 'Ingresando…' : 'Iniciar sesión' }}
     </ion-button>
+
+    <small class="login-helper">Acceso seguro para personal autorizado</small>
 
   </main>
 

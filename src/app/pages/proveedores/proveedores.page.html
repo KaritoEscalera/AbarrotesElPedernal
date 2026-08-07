@@ -53,7 +53,7 @@
               <td><span class="status" [class.active]="proveedor.estado === 'Activo'" [class.inactive]="proveedor.estado === 'Inactivo'">{{ proveedor.estado }}</span></td>
               <td><div class="actions" *ngIf="puedeAdministrar; else soloConsulta"><button type="button" class="action-button edit" (click)="editarProveedor(proveedor)">Editar</button><button type="button" class="action-button status-button" (click)="cambiarEstado(proveedor)">{{ proveedor.estado === 'Activo' ? 'Desactivar' : 'Activar' }}</button><button type="button" class="action-button delete" (click)="archivarProveedor(proveedor)">{{ confirmandoArchivarId === proveedor.id ? 'Confirmar eliminación' : 'Eliminar' }}</button></div><ng-template #soloConsulta><small>Solo consulta</small></ng-template></td>
             </tr>
-            <tr *ngIf="proveedoresFiltrados.length === 0"><td colspan="7" class="empty-state">No se encontraron proveedores con esos filtros.</td></tr>
+            <tr *ngIf="proveedoresFiltrados.length === 0"><td colspan="7" class="empty-state">{{ proveedoresVisibles.length === 0 ? 'Aún no hay proveedores registrados. Usa Agregar proveedor para crear el primero.' : 'No se encontraron proveedores con esos filtros.' }}</td></tr>
           </tbody>
         </table>
       </div>
@@ -65,6 +65,7 @@
           <div class="contact-actions"><a *ngIf="proveedor.telefono" [href]="'tel:' + proveedor.telefono">Llamar</a><a *ngIf="proveedor.telefono" [href]="'https://wa.me/52' + proveedor.telefono" target="_blank" rel="noopener">WhatsApp</a><a *ngIf="proveedor.correo" [href]="'mailto:' + proveedor.correo">Correo</a><span *ngIf="!proveedor.telefono && !proveedor.correo">Sin datos de contacto</span></div>
           <div class="actions" *ngIf="puedeAdministrar"><button type="button" class="action-button edit" (click)="editarProveedor(proveedor)">Editar</button><button type="button" class="action-button status-button" (click)="cambiarEstado(proveedor)">{{ proveedor.estado === 'Activo' ? 'Desactivar' : 'Activar' }}</button><button type="button" class="action-button delete" (click)="archivarProveedor(proveedor)">{{ confirmandoArchivarId === proveedor.id ? 'Confirmar eliminación' : 'Eliminar' }}</button></div>
         </article>
+        <p class="empty-state" *ngIf="proveedoresFiltrados.length === 0">{{ proveedoresVisibles.length === 0 ? 'Aún no hay proveedores registrados. Usa Agregar proveedor para crear el primero.' : 'No se encontraron proveedores con esos filtros.' }}</p>
       </div>
     </section>
   </main>

@@ -24,3 +24,6 @@ ion-searchbar { --background: #fffaf5; --border-radius: .75rem; --box-shadow: no
   .products-header ion-button { width: 100%; }
   ion-card-content { padding-inline: .75rem; }
 }
+
+/* Tema v1.2.0 */
+ion-content{--background:var(--app-background)!important}.products-header{padding:var(--app-space-4) clamp(1rem,2.5vw,1.5rem);background:var(--app-surface);border:1px solid var(--app-border);border-radius:var(--app-radius-lg);box-shadow:var(--app-shadow-sm)}.eyebrow{color:var(--app-primary-active)}h1{color:var(--app-heading)}.welcome{color:var(--app-text-muted)}.products-table{overflow:hidden;background:var(--app-surface);border:1px solid var(--app-border);border-radius:var(--app-radius-lg);box-shadow:var(--app-shadow-sm)}.table-heading{color:#fff8f1;background:var(--app-heading)}.product-row{min-height:62px;color:var(--app-text);border-color:var(--app-border)}.product-row:hover{background:var(--app-surface-soft)}.product-name strong,.price{color:var(--app-heading)}.product-name small{color:var(--app-text-muted)}.stock-status{color:var(--app-success);background:var(--app-success-soft)}html.theme-dark .products-header,html.theme-dark .products-table,html.theme-dark .product-row{color:var(--app-text);background:var(--app-surface);border-color:var(--app-border)}html.theme-dark .product-row:hover{background:var(--app-surface-soft)}

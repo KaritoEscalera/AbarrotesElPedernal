@@ -1,1 +1,4 @@
 ion-content{--background:#f5e6d3}main{max-width:620px;margin:auto}h1{color:#4a2c1d}ion-card{border-radius:18px}.success,.error{padding:12px;border-radius:10px}.success{background:#dff4e6;color:#175c32}.error{background:#fde1e1;color:#8a2525}small{display:block;color:#80624f;margin:12px 0}ion-button{margin-top:14px}
+
+/* Tema v1.2.0 */
+ion-content{--background:var(--app-background)!important}main{padding-top:clamp(1rem,5vh,3rem)}h1{color:var(--app-heading)}ion-card{background:var(--app-surface);border:1px solid var(--app-border);border-radius:var(--app-radius-lg);box-shadow:var(--app-shadow-md)}small{color:var(--app-text-muted)}.success{color:var(--app-success);background:var(--app-success-soft);border:1px solid var(--app-success)}.error{color:var(--app-danger);background:var(--app-danger-soft);border:1px solid var(--app-danger)}html.theme-dark ion-card{color:var(--app-text);background:var(--app-surface);border-color:var(--app-border)}

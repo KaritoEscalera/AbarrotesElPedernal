@@ -455,3 +455,60 @@ tbody tr:hover {
     font-size: 28px;
   }
 }
+
+/* Capa visual v1.2.0: reduce saturación sin modificar cálculos fiscales. */
+ion-content { --background: var(--app-background) !important; }
+.page-container { width: min(1450px, calc(100% - 32px)); }
+.page-header { padding: var(--app-space-4) clamp(1rem, 2.5vw, 1.5rem); background: var(--app-surface); border: 1px solid var(--app-border); border-radius: var(--app-radius-lg); box-shadow: var(--app-shadow-sm); }
+.eyebrow { color: var(--app-primary-active); }
+h1,h2 { color: var(--app-heading); }
+.subtitle,.summary-card span,.summary-card small,.tax-card span,.tax-card small,.reconciliation-card span,.reconciliation-card small { color: var(--app-text-muted); }
+.admin-badge,.records { color: var(--app-primary-active); background: var(--app-primary-soft); border: 1px solid var(--app-border); }
+.notice-card { color: var(--app-secondary); background: var(--app-warning-soft); border-color: var(--app-border-strong); }
+.summary-grid,.tax-grid,.reconciliation-grid { gap: var(--app-space-3); }
+.summary-card,.tax-card,.reconciliation-card,.form-card,.table-card,.calendar-card { background: var(--app-surface); border-color: var(--app-border); border-radius: var(--app-radius-lg); box-shadow: var(--app-shadow-sm); }
+.summary-card { padding: 20px; border-top: 3px solid var(--app-primary); }
+.summary-card::before { display: none; }
+.summary-card.success-card { border-top-color: var(--app-success); }
+.summary-card.warning-card { border-top-color: var(--app-warning); }
+.summary-card.danger-card { border-top-color: var(--app-danger); }
+.summary-card strong,.tax-card strong,.reconciliation-card strong { color: var(--app-heading); }
+.tax-card { background: var(--app-surface-soft); }
+.net-card { background: var(--app-success-soft); border-color: var(--app-success); }
+.form-card { padding: clamp(1rem, 2.5vw, 1.5rem); }
+.form-grid ion-item,.filter-row ion-item { --background: var(--app-surface-soft); border: 1px solid var(--app-border); border-radius: var(--app-radius-md); }
+.invoice-preview { background: var(--app-surface-soft); border-color: var(--app-border); }
+.invoice-preview strong { color: var(--app-heading); }
+.calendar-list article { background: var(--app-surface-soft); border: 1px solid var(--app-border); border-radius: var(--app-radius-md); }
+.calendar-list time { color: var(--app-primary-active); }
+.table-title { border-color: var(--app-border); }
+td { color: var(--app-text); border-color: var(--app-border); }
+tbody tr:hover { background: var(--app-surface-soft); }
+.money { color: var(--app-heading); }
+.xml-button { background: var(--app-secondary); border-radius: var(--app-radius-md); }
+.change-button { color: var(--app-secondary); background: var(--app-beige); border-radius: var(--app-radius-sm); }
+
+html.theme-dark .page-header,
+html.theme-dark .summary-card,
+html.theme-dark .tax-card,
+html.theme-dark .reconciliation-card,
+html.theme-dark .form-card,
+html.theme-dark .table-card,
+html.theme-dark .calendar-card { color: var(--app-text); background: var(--app-surface) !important; border-color: var(--app-border) !important; }
+html.theme-dark .notice-card { color: var(--app-text); background: var(--app-warning-soft); border-color: var(--app-border-strong); }
+html.theme-dark .form-grid ion-item,
+html.theme-dark .filter-row ion-item,
+html.theme-dark .invoice-preview,
+html.theme-dark .calendar-list article { --background: var(--app-surface-soft); color: var(--app-text); background: var(--app-surface-soft); border-color: var(--app-border); }
+html.theme-dark .summary-card strong,
+html.theme-dark .tax-card strong,
+html.theme-dark .reconciliation-card strong,
+html.theme-dark .money,
+html.theme-dark .invoice-preview strong { color: var(--app-heading) !important; }
+
+/* Contraste explícito para las métricas fiscales en modo oscuro. */
+html.theme-dark .tax-card { color: var(--app-text) !important; background: var(--app-surface-soft) !important; }
+html.theme-dark .tax-card span,
+html.theme-dark .tax-card small { color: var(--app-text-muted) !important; }
+html.theme-dark .tax-card strong { color: var(--app-heading) !important; }
+html.theme-dark .tax-card.net-card { background: var(--app-success-soft) !important; border-color: var(--app-success) !important; }

@@ -33,6 +33,7 @@ export class LoginPage {
 
   correo: string = '';
   password: string = '';
+  mostrarPassword = false;
 
   private readonly router = inject(Router);
   private readonly auth = inject(Auth);

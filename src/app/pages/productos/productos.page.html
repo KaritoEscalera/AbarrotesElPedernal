@@ -52,7 +52,7 @@
           </div>
 
           <p class="empty-state" *ngIf="productosFiltrados.length === 0">
-            No se encontraron productos con esa búsqueda.
+            {{ productos.length === 0 ? 'Aún no hay productos registrados. Usa Inventario para agregar el primero.' : 'No se encontraron productos con esa búsqueda.' }}
           </p>
         </div>
       </ion-card-content>

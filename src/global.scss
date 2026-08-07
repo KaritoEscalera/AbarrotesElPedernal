@@ -947,3 +947,457 @@ html.theme-dark .catalog-products article {
   background: #12343c !important;
   border-color: #39717a !important;
 }
+
+/* --------------------------------------------------------------------------
+   Base visual v1.2.0
+   Esta capa conserva los selectores históricos y unifica componentes globales.
+   -------------------------------------------------------------------------- */
+body {
+  background: var(--app-background);
+  color: var(--app-text);
+}
+
+button:focus-visible,
+a:focus-visible,
+ion-button:focus-visible,
+ion-item:focus-visible {
+  outline: 3px solid rgba(var(--app-primary-rgb), .34);
+  outline-offset: 3px;
+}
+
+ion-content {
+  --background:
+    radial-gradient(circle at 94% 3%, rgba(var(--app-primary-rgb), .10), transparent 23rem),
+    linear-gradient(145deg, var(--app-background) 0%, var(--app-surface) 48%, var(--app-surface-soft) 100%) !important;
+  --color: var(--app-text);
+}
+
+.routed-content { color: var(--app-text) !important; background: var(--app-background) !important; }
+
+html:not(.theme-dark) h1,
+html:not(.theme-dark) h2,
+html:not(.theme-dark) h3,
+html:not(.theme-dark) h4,
+html:not(.theme-dark) ion-card-title,
+html:not(.theme-dark) .pedernal-title,
+html:not(.theme-dark) .page-container h1,
+html:not(.theme-dark) .page-container h2,
+html:not(.theme-dark) .page-container h3,
+html:not(.theme-dark) .table-title h2,
+html:not(.theme-dark) .section-title h2 {
+  color: var(--app-heading) !important;
+}
+
+html:not(.theme-dark) .eyebrow,
+html:not(.theme-dark) .page-container .eyebrow {
+  color: var(--app-primary-active) !important;
+}
+
+ion-card,
+.pedernal-card,
+html:not(.theme-dark) .summary-card,
+html:not(.theme-dark) .report-card,
+html:not(.theme-dark) .bitacora-card,
+html:not(.theme-dark) .table-card,
+html:not(.theme-dark) .filters-card,
+html:not(.theme-dark) .calendar-card,
+html:not(.theme-dark) .chart-card,
+html:not(.theme-dark) .main-chart-card,
+html:not(.theme-dark) .products-card,
+html:not(.theme-dark) .fiados-card {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  border-radius: var(--app-radius-lg);
+  box-shadow: var(--app-shadow-md) !important;
+}
+
+ion-item {
+  --background: var(--app-surface-soft);
+  --color: var(--app-text);
+  --border-color: var(--app-border);
+  --highlight-color-focused: var(--app-primary);
+}
+
+ion-input,
+ion-select,
+ion-textarea,
+ion-searchbar {
+  --color: var(--app-text);
+  --placeholder-color: var(--app-text-muted);
+}
+
+ion-searchbar {
+  --background: var(--app-surface);
+  --icon-color: var(--app-secondary);
+  --clear-button-color: var(--app-secondary);
+  --border-radius: var(--app-radius-md);
+  --box-shadow: var(--app-shadow-sm);
+}
+
+input,
+select,
+textarea {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+  border-radius: var(--app-radius-sm);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--app-primary);
+  box-shadow: var(--app-focus);
+  outline: none;
+}
+
+ion-button,
+.pedernal-button {
+  --border-radius: var(--app-radius-md);
+  min-height: 44px;
+}
+
+ion-button:not([fill]):not([color]),
+.pedernal-button,
+html:not(.theme-dark) .primary-button,
+html:not(.theme-dark) .pdf-button,
+html:not(.theme-dark) .save-entry,
+html:not(.theme-dark) .xml-button,
+html:not(.theme-dark) .secondary-button,
+html:not(.theme-dark) .abono-button,
+html:not(.theme-dark) .action-button.edit,
+html:not(.theme-dark) .stock-button.add {
+  --background: var(--app-primary) !important;
+  --background-hover: var(--app-primary-hover) !important;
+  --background-activated: var(--app-primary-active) !important;
+  --color: #fff !important;
+  background: var(--app-primary) !important;
+  border-color: var(--app-primary) !important;
+}
+
+ion-button[fill="outline"] {
+  --color: var(--app-primary-active);
+  --border-color: var(--app-primary);
+  --background-hover: var(--app-primary-soft);
+}
+
+ion-button[fill="clear"] { --color: var(--app-primary-active); }
+
+/* Variantes reutilizables para botones nativos o Ionic. */
+.button-primary,
+.app-button--primary {
+  --background: var(--app-primary);
+  --background-hover: var(--app-primary-hover);
+  --background-activated: var(--app-primary-active);
+  --color: #fff;
+  color: #fff;
+  background: var(--app-primary);
+  border: 1px solid var(--app-primary);
+}
+
+.button-secondary,
+.app-button--secondary {
+  --background: var(--app-secondary);
+  --background-hover: var(--app-heading);
+  --color: #fff;
+  color: #fff;
+  background: var(--app-secondary);
+  border: 1px solid var(--app-secondary);
+}
+
+.button-outline,
+.app-button--outline {
+  --background: transparent;
+  --color: var(--app-primary-active);
+  --border-color: var(--app-primary);
+  color: var(--app-primary-active);
+  background: transparent;
+  border: 1px solid var(--app-primary);
+}
+
+.button-ghost,
+.app-button--ghost {
+  --background: transparent;
+  --color: var(--app-secondary);
+  color: var(--app-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.button-danger,
+.app-button--danger {
+  --background: var(--app-danger);
+  --background-hover: #bf413d;
+  --color: #fff;
+  color: #fff;
+  background: var(--app-danger);
+  border: 1px solid var(--app-danger);
+}
+
+.button-primary,
+.button-secondary,
+.button-outline,
+.button-ghost,
+.button-danger,
+[class*="app-button--"] {
+  min-height: 44px;
+  padding: .7rem 1rem;
+  border-radius: var(--app-radius-md);
+  font-weight: 750;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled,
+ion-input[disabled],
+ion-select[disabled],
+ion-textarea[disabled] { cursor: not-allowed; opacity: .58; }
+
+.field-error,
+.input-error,
+[aria-invalid="true"] { border-color: var(--app-danger) !important; }
+
+.field-error:focus,
+.input-error:focus,
+[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px rgba(217, 83, 79, .18); }
+
+.app-badge,
+.badge,
+.status,
+.table-count,
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: .25rem .65rem;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-pill);
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.app-badge.success,
+.badge.success,
+.status.success,
+.status.active { color: var(--app-success); background: var(--app-success-soft); border-color: var(--app-success); }
+.app-badge.warning,
+.badge.warning,
+.status.warning,
+.status.pending { color: var(--app-warning); background: var(--app-warning-soft); border-color: var(--app-warning); }
+.app-badge.danger,
+.badge.danger,
+.status.danger,
+.status.error { color: var(--app-danger); background: var(--app-danger-soft); border-color: var(--app-danger); }
+
+html:not(.theme-dark) table thead,
+html:not(.theme-dark) .account-table thead { color: #fff !important; background: var(--app-heading) !important; }
+html:not(.theme-dark) table td,
+html:not(.theme-dark) table td strong { color: var(--app-text) !important; }
+html:not(.theme-dark) table td a { color: var(--app-primary-active) !important; }
+
+html.theme-dark body,
+html.theme-dark .routed-content { color: var(--app-text) !important; background: var(--app-background) !important; }
+
+html.theme-dark ion-content {
+  --background:
+    radial-gradient(circle at 88% 4%, rgba(var(--app-primary-rgb), .11), transparent 26rem),
+    linear-gradient(145deg, var(--app-background), #211914) !important;
+  --color: var(--app-text);
+}
+
+html.theme-dark ion-card,
+html.theme-dark .login-container,
+html.theme-dark .summary-card,
+html.theme-dark .report-card,
+html.theme-dark .fiados-card,
+html.theme-dark .form-card,
+html.theme-dark .table-card,
+html.theme-dark .filters-card,
+html.theme-dark .calendar-card,
+html.theme-dark .tax-card,
+html.theme-dark .reconciliation-card,
+html.theme-dark .new-fiado-panel,
+html.theme-dark .abono-panel,
+html.theme-dark .chart-card,
+html.theme-dark .history,
+html.theme-dark .grid > article,
+html.theme-dark .alerts-panel,
+html.theme-dark .pedernal-card,
+html.theme-dark [class$="-card"],
+html.theme-dark [class*="-card "],
+html.theme-dark [class$="-panel"],
+html.theme-dark [class*="-panel "] {
+  color: var(--app-text) !important;
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  box-shadow: var(--app-shadow-md) !important;
+}
+
+html.theme-dark h1,
+html.theme-dark h2,
+html.theme-dark h3,
+html.theme-dark h4,
+html.theme-dark ion-card-title,
+html.theme-dark .pedernal-title,
+html.theme-dark main h1,
+html.theme-dark main h2,
+html.theme-dark main h3,
+html.theme-dark main h4 { color: var(--app-heading) !important; }
+
+html.theme-dark p,
+html.theme-dark small,
+html.theme-dark .subtitle,
+html.theme-dark .helper,
+html.theme-dark .hint,
+html.theme-dark .meta,
+html.theme-dark .empty,
+html.theme-dark .empty-state { color: var(--app-text-muted) !important; }
+
+html.theme-dark ion-item,
+html.theme-dark ion-searchbar {
+  --background: var(--app-surface-soft) !important;
+  --color: var(--app-text) !important;
+  --border-color: var(--app-border) !important;
+  --placeholder-color: var(--app-text-muted);
+}
+
+html.theme-dark input,
+html.theme-dark select,
+html.theme-dark textarea {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+
+html.theme-dark table,
+html.theme-dark td,
+html.theme-dark tr:nth-child(even) td { color: var(--app-text) !important; background: var(--app-surface) !important; border-color: var(--app-border) !important; }
+html.theme-dark table th { color: #fff8f1 !important; background: #4a2c1d !important; border-color: var(--app-border-strong) !important; }
+html.theme-dark table tr:hover td { background: var(--app-surface-soft) !important; }
+
+html.theme-dark ion-button[fill="outline"] {
+  --color: var(--app-primary);
+  --border-color: var(--app-primary);
+  --background-hover: var(--app-primary-soft);
+}
+
+html.theme-dark ::-webkit-scrollbar-thumb { background: var(--app-border-strong); }
+html.theme-dark ::-webkit-scrollbar-track { background: var(--app-background); }
+
+/* Panel principal compartido por administrador, gerente y cajera. */
+.dashboard-shell {
+  width: min(100%, 75rem);
+  margin: 0 auto;
+  padding-bottom: var(--app-space-6);
+}
+
+.dashboard-header {
+  align-items: center !important;
+  margin-bottom: var(--app-space-5) !important;
+  padding: clamp(1rem, 2.5vw, 1.6rem);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  box-shadow: var(--app-shadow-sm);
+}
+
+.dashboard-header .eyebrow {
+  margin-bottom: var(--app-space-2);
+  color: var(--app-primary-active) !important;
+  font-size: .72rem;
+  font-weight: 850;
+  letter-spacing: .1em;
+}
+
+.dashboard-header h1 {
+  color: var(--app-heading) !important;
+  font-size: clamp(1.75rem, 4vw, 2.45rem);
+}
+
+.dashboard-header .welcome { color: var(--app-text-muted) !important; }
+
+.quick-actions {
+  gap: var(--app-space-2) !important;
+  margin-bottom: var(--app-space-5) !important;
+  padding: var(--app-space-2);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.quick-actions ion-button {
+  --background: var(--app-surface) !important;
+  --background-hover: var(--app-primary-soft) !important;
+  --color: var(--app-secondary) !important;
+  --border-color: var(--app-border) !important;
+  --box-shadow: none;
+  flex: 0 0 auto;
+  min-height: 44px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-md);
+}
+
+.quick-actions ion-button:first-child {
+  --background: var(--app-primary) !important;
+  --background-hover: var(--app-primary-hover) !important;
+  --color: #fff !important;
+  border-color: var(--app-primary);
+}
+
+.dashboard-shell .cards { gap: var(--app-space-4) !important; }
+
+.dashboard-shell .cards ion-card {
+  min-height: 142px;
+  border: 1px solid var(--app-border) !important;
+  border-top: 3px solid var(--app-primary) !important;
+  border-radius: var(--app-radius-lg) !important;
+  box-shadow: var(--app-shadow-sm) !important;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.dashboard-shell .cards ion-card:nth-child(2) { border-top-color: var(--app-secondary) !important; }
+.dashboard-shell .cards ion-card:nth-child(3) { border-top-color: var(--app-warning) !important; }
+.dashboard-shell .cards ion-card:nth-child(4) { border-top-color: var(--app-danger) !important; }
+.dashboard-shell .cards ion-card::before { display: none; }
+.dashboard-shell .cards ion-card:hover { transform: translateY(-2px); box-shadow: var(--app-shadow-md) !important; }
+.dashboard-shell ion-card-title { color: var(--app-secondary) !important; font-size: .92rem !important; font-weight: 750; }
+.dashboard-shell .cards ion-card-content { color: var(--app-heading) !important; font-size: clamp(1.65rem, 4vw, 2.1rem) !important; font-weight: 850; }
+
+.dashboard-shell .details-grid {
+  gap: var(--app-space-4) !important;
+  margin-top: var(--app-space-4) !important;
+}
+
+.dashboard-shell .details-grid ion-card { border-radius: var(--app-radius-lg) !important; }
+.dashboard-shell .activity-list { color: var(--app-text-muted) !important; }
+.dashboard-shell .activity-list li { min-height: 42px; padding: .75rem 0 !important; border-color: var(--app-border) !important; }
+.dashboard-shell .activity-list a { color: var(--app-primary-active) !important; }
+
+html.theme-dark .dashboard-header { background: var(--app-surface) !important; border-color: var(--app-border) !important; }
+html.theme-dark .quick-actions ion-button { --background: var(--app-surface-soft) !important; --color: var(--app-text) !important; border-color: var(--app-border) !important; }
+html.theme-dark .quick-actions ion-button:first-child { --background: var(--app-primary) !important; --color: #2b170c !important; border-color: var(--app-primary) !important; }
+html.theme-dark .dashboard-shell .cards ion-card { background: var(--app-surface) !important; }
+
+@media (max-width: 575px) {
+  .dashboard-header { align-items: stretch !important; }
+  .dashboard-header > ion-button { width: 100%; }
+  .quick-actions { flex-wrap: nowrap !important; }
+}
+
+/* Módulos administrativos: jerarquía común para la última fase v1.2.0. */
+.page-container > .page-header { padding: var(--app-space-4) clamp(1rem, 2.5vw, 1.5rem); background: var(--app-surface); border: 1px solid var(--app-border); border-radius: var(--app-radius-lg); box-shadow: var(--app-shadow-sm); }
+.page-container > .page-header h1 { color: var(--app-heading) !important; }
+.page-container > .page-header .subtitle { color: var(--app-text-muted) !important; }
+.page-container > .page-header .eyebrow { color: var(--app-primary-active) !important; }
+.page-container .summary-grid { gap: var(--app-space-3); }
+.page-container .summary-card { border: 1px solid var(--app-border) !important; border-top: 3px solid var(--app-primary) !important; border-radius: var(--app-radius-lg) !important; box-shadow: var(--app-shadow-sm) !important; }
+.page-container .summary-card::before { display: none !important; }
+.page-container .summary-card.success-card { border-top-color: var(--app-success) !important; }
+.page-container .summary-card.warning-card { border-top-color: var(--app-warning) !important; }
+.page-container .summary-card.danger-card { border-top-color: var(--app-danger) !important; }
+.page-container .summary-card strong { color: var(--app-heading) !important; }
+.page-container .summary-card span,.page-container .summary-card small { color: var(--app-text-muted) !important; }
+.page-container .filters,.page-container .filters-card,.page-container .form-card,.page-container .table-card,.page-container .report-card,.page-container .bitacora-card,.page-container .fiados-card,.page-container .inventory-card,.page-container .providers-card { background: var(--app-surface) !important; border-color: var(--app-border) !important; border-radius: var(--app-radius-lg) !important; box-shadow: var(--app-shadow-sm) !important; }
+.page-container .filters ion-item,.page-container .filters-grid ion-item,.page-container .filter-select,.page-container .entry-form,.page-container .form-grid ion-item { --background: var(--app-surface-soft) !important; --color: var(--app-text) !important; border-color: var(--app-border) !important; border-radius: var(--app-radius-md) !important; }
+.page-container .table-title,.page-container .section-title { border-color: var(--app-border) !important; }
+.page-container tbody tr:hover { background: var(--app-surface-soft) !important; }
+html.theme-dark .page-container > .page-header,html.theme-dark .page-container .filters,html.theme-dark .page-container .filters-card,html.theme-dark .page-container .form-card,html.theme-dark .page-container .table-card,html.theme-dark .page-container .report-card,html.theme-dark .page-container .bitacora-card,html.theme-dark .page-container .fiados-card,html.theme-dark .page-container .inventory-card,html.theme-dark .page-container .providers-card { color: var(--app-text) !important; background: var(--app-surface) !important; border-color: var(--app-border) !important; }

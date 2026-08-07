@@ -23,6 +23,13 @@ interface OpcionMenu {
   etiqueta: string;
   ruta: string;
   roles: RolUsuario[];
+  grupo: 'operacion' | 'compras' | 'ventas' | 'analisis' | 'administracion' | 'cuenta';
+  icono: string;
+}
+
+interface GrupoMenu {
+  id: OpcionMenu['grupo'];
+  etiqueta: string;
 }
 
 @Component({
@@ -48,21 +55,30 @@ export class AppComponent {
   private temporizadorInactividad?: number;
 
   private readonly opciones: OpcionMenu[] = [
-    { etiqueta: 'Mi cuenta', ruta: '/perfil', roles: ['administrador', 'gerente', 'cajera'] },
-    { etiqueta: 'Caja', ruta: '/caja', roles: ['administrador', 'gerente', 'cajera'] },
-    { etiqueta: 'Productos', ruta: '/productos', roles: ['administrador', 'gerente'] },
-    { etiqueta: 'Inventario', ruta: '/inventario', roles: ['administrador', 'gerente'] },
-    { etiqueta: 'Proveedores', ruta: '/proveedores', roles: ['administrador', 'gerente'] },
-    { etiqueta: 'Compras', ruta: '/compras', roles: ['administrador', 'gerente'] },
-    { etiqueta: 'Promociones', ruta: '/promociones', roles: ['administrador', 'gerente'] },
-    { etiqueta: 'Clientes', ruta: '/clientes', roles: ['administrador', 'gerente', 'cajera'] },
-    { etiqueta: 'Fiados', ruta: '/fiados', roles: ['administrador', 'gerente', 'cajera'] },
-    { etiqueta: 'Estadísticas', ruta: '/estadisticas', roles: ['administrador', 'gerente'] },
-    { etiqueta: 'Reportes', ruta: '/reportes', roles: ['administrador'] },
-    { etiqueta: 'Usuarios', ruta: '/usuarios', roles: ['administrador'] },
-    { etiqueta: 'Bitácora', ruta: '/bitacora', roles: ['administrador'] },
-    { etiqueta: 'Respaldos', ruta: '/respaldos', roles: ['administrador'] },
-    { etiqueta: 'SAT y Contabilidad', ruta: '/sat', roles: ['administrador'] },
+    { etiqueta: 'Caja', ruta: '/caja', roles: ['administrador', 'gerente', 'cajera'], grupo: 'operacion', icono: '▣' },
+    { etiqueta: 'Productos', ruta: '/productos', roles: ['administrador', 'gerente'], grupo: 'operacion', icono: '◇' },
+    { etiqueta: 'Inventario', ruta: '/inventario', roles: ['administrador', 'gerente'], grupo: 'operacion', icono: '▦' },
+    { etiqueta: 'Proveedores', ruta: '/proveedores', roles: ['administrador', 'gerente'], grupo: 'compras', icono: '◎' },
+    { etiqueta: 'Compras', ruta: '/compras', roles: ['administrador', 'gerente'], grupo: 'compras', icono: '↓' },
+    { etiqueta: 'Promociones', ruta: '/promociones', roles: ['administrador', 'gerente'], grupo: 'ventas', icono: '%' },
+    { etiqueta: 'Clientes', ruta: '/clientes', roles: ['administrador', 'gerente', 'cajera'], grupo: 'ventas', icono: '♙' },
+    { etiqueta: 'Fiados', ruta: '/fiados', roles: ['administrador', 'gerente', 'cajera'], grupo: 'ventas', icono: '$' },
+    { etiqueta: 'Estadísticas', ruta: '/estadisticas', roles: ['administrador', 'gerente'], grupo: 'analisis', icono: '⌁' },
+    { etiqueta: 'Reportes', ruta: '/reportes', roles: ['administrador'], grupo: 'analisis', icono: '≡' },
+    { etiqueta: 'Usuarios', ruta: '/usuarios', roles: ['administrador'], grupo: 'administracion', icono: '♙' },
+    { etiqueta: 'Bitácora', ruta: '/bitacora', roles: ['administrador'], grupo: 'administracion', icono: '◷' },
+    { etiqueta: 'Respaldos', ruta: '/respaldos', roles: ['administrador'], grupo: 'administracion', icono: '↻' },
+    { etiqueta: 'SAT y Contabilidad', ruta: '/sat', roles: ['administrador'], grupo: 'administracion', icono: '§' },
+    { etiqueta: 'Mi cuenta', ruta: '/perfil', roles: ['administrador', 'gerente', 'cajera'], grupo: 'cuenta', icono: '○' },
+  ];
+
+  readonly gruposMenu: GrupoMenu[] = [
+    { id: 'operacion', etiqueta: 'Operación' },
+    { id: 'compras', etiqueta: 'Compras y proveedores' },
+    { id: 'ventas', etiqueta: 'Ventas y clientes' },
+    { id: 'analisis', etiqueta: 'Análisis' },
+    { id: 'administracion', etiqueta: 'Administración' },
+    { id: 'cuenta', etiqueta: 'Cuenta' },
   ];
 
   constructor() {
@@ -80,6 +96,10 @@ export class AppComponent {
 
   get opcionesVisibles(): OpcionMenu[] {
     return this.rol ? this.opciones.filter((opcion) => opcion.roles.includes(this.rol as RolUsuario)) : [];
+  }
+
+  opcionesDelGrupo(grupo: OpcionMenu['grupo']): OpcionMenu[] {
+    return this.opcionesVisibles.filter((opcion) => opcion.grupo === grupo);
   }
 
   get rutaDashboard(): string {
