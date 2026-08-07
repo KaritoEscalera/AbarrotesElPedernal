@@ -5,12 +5,12 @@ import { IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCon
 import { BusinessApi } from '../../services/business-api';
 
 interface Proveedor { id: number; empresa: string; estado: string; }
-interface Producto { id: number; nombre: string; codigo: string | null; costo: number; tasaIva:number; proveedorId:number|null; proveedor:string|null; }
+interface Producto { id: number; nombre: string; codigo: string | null; categoria:string; costo: number; tasaIva:number; proveedorId:number|null; proveedor:string|null; }
 interface Partida { productoId: number | null; cantidad: number | null; costoUnitario: number | null; lote: string; fechaCaducidad: string; }
 interface Compra { id: number; folio: string; fecha: string; proveedor: string; estado: string; metodoPago: string; pagoDetalle:string; total: number; saldoPendiente: number; }
 interface Sugerencia { productoId:number; nombre:string; stock:number; minimo:number; cantidadSugerida:number; costo:number; proveedorId:number|null; proveedor:string|null; }
 
-@Component({ selector: 'app-compras', templateUrl: './compras.page.html', styleUrls: ['./compras.page.scss'], standalone: true,
+@Component({ selector: 'app-compras', templateUrl: './compras.page.html', styleUrls: ['./compras.page.scss','./compras-categorias.scss'], standalone: true,
   imports: [CommonModule, FormsModule, IonContent, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonButton] })
 export class ComprasPage implements OnInit {
   private readonly api = inject(BusinessApi);
@@ -20,6 +20,7 @@ export class ComprasPage implements OnInit {
   origenPago:'CAJA'|'EXTERNO'='CAJA';origenEfectivo:'CAJA'|'EXTERNO'='CAJA';origenTarjeta:'CAJA'|'EXTERNO'='EXTERNO';origenTerminal:'CAJA'|'EXTERNO'='CAJA';origenTransferencia:'CAJA'|'EXTERNO'='EXTERNO';
   partidas: Partida[] = [this.nuevaPartida()]; mensaje = ''; error = ''; guardando = false;
   confirmacionVisible = false;
+  categoriaSeleccionada = 'TODAS';
 
   async ngOnInit(): Promise<void> { await this.cargar(); }
   get subtotal(): number { return this.partidas.reduce((s, p) => s + Number(p.cantidad || 0) * Number(p.costoUnitario || 0), 0); }
@@ -36,11 +37,13 @@ export class ComprasPage implements OnInit {
     else if(/coca.?cola/.test(empresa))patron=/coca.?cola|ciel|del valle|fanta|sprite|fresca/i;
     return this.productos.filter(producto=>producto.proveedorId===proveedor.id||!!patron&&patron.test(producto.nombre)).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es',{sensitivity:'base'}));
   }
+  get categoriasDelProveedor():string[]{return [...new Set(this.productosDelProveedor.map(producto=>producto.categoria?.trim()||'Sin categoría'))].sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));}
+  get productosFiltradosProveedor():Producto[]{return this.categoriaSeleccionada==='TODAS'?this.productosDelProveedor:this.productosDelProveedor.filter(producto=>(producto.categoria?.trim()||'Sin categoría')===this.categoriaSeleccionada);}
   get productosElegidos():Array<{producto:Producto;partida:Partida;importe:number}>{
     return this.partidas.map(partida=>{const producto=this.productos.find(item=>item.id===Number(partida.productoId));return producto?{producto,partida,importe:Number(partida.cantidad||0)*Number(partida.costoUnitario||0)*(1+Number(producto.tasaIva||0)/100)}:null;}).filter((item):item is {producto:Producto;partida:Partida;importe:number}=>item!==null);
   }
   agregarPartida(): void { this.partidas = [...this.partidas, this.nuevaPartida()]; }
-  cambiarProveedor():void{this.partidas=[this.nuevaPartida()];this.mensaje='Selecciona los productos que llegaron de este proveedor.';this.error='';}
+  cambiarProveedor():void{this.partidas=[this.nuevaPartida()];this.categoriaSeleccionada='TODAS';this.mensaje='Selecciona la categoría y los productos que llegaron de este proveedor.';this.error='';}
   cambiarMetodoPago():void{this.origenPago=this.metodoPago==='EFECTIVO'||this.metodoPago==='TERMINAL'?'CAJA':'EXTERNO';}
   agregarProductoProveedor(producto:Producto):void{
     if(this.partidas.some(partida=>Number(partida.productoId)===producto.id)){this.error=`${producto.nombre} ya está agregado a esta compra.`;return;}

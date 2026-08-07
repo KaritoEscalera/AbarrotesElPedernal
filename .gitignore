@@ -35,6 +35,12 @@ backend/node_modules
 backend/.env
 backend/backups/
 .env
+*.keystore
+*.jks
+*.p12
+*.pfx
+keystore.properties
+key.properties
 npm-debug.log
 yarn-error.log
 

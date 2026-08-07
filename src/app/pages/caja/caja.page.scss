@@ -7,6 +7,7 @@ ion-content { --background: linear-gradient(145deg,#fff8f1 0%,#fff 55%,#ffefe0 1
 .status.open { background: #ccebd6; color: #175c32; }
 ion-card { border-radius: 18px; border:1px solid #f0d2b8; box-shadow: 0 12px 30px rgba(74,44,29,.11); }
 ion-card-title { color: #8f3508; font-weight:800; }
+.collapsible-header{display:flex;align-items:center;justify-content:space-between;gap:12px}.collapse-button{display:grid;flex:0 0 38px;width:38px;height:38px;place-items:center;padding:0;color:#087d79;background:#effaf8;border:1px solid #9bd2cf;border-radius:50%;font-size:25px;line-height:1;cursor:pointer}.collapse-button:hover{background:#dff3f0}.collapse-button:focus-visible{outline:3px solid #f1a208;outline-offset:2px}
 ion-card-content { color: #4a2c1d; }
 .notice { padding: 12px 16px; border-radius: 12px; font-weight: 650; }
 .notice.success { background: #dff4e6; color: #175c32; }

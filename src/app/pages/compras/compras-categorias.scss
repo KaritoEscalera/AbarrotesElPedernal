@@ -1,0 +1,30 @@
+.category-strip {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 2px 0 8px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.category-strip button {
+  flex: 0 0 auto;
+  padding: 8px 13px;
+  color: #0b6765;
+  background: #fff;
+  border: 1px solid #0b817d;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+
+.category-strip button.active {
+  color: #fff;
+  background: #0b817d;
+  box-shadow: 0 3px 9px #0b817d40;
+}

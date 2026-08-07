@@ -115,6 +115,9 @@ export class CajaPage implements OnInit, OnDestroy {
   ventasPendientes:VentaPendiente[]=this.cargarPendientes();
   historialVentas:VentaResumen[]=[];
   historialCompras:CompraCajaResumen[]=[];
+  historialVentasVisible=true;
+  historialComprasVisible=true;
+  movimientosTurnoVisibles=true;
   busquedaVentas='';
   ventaSeleccionada:VentaDetalle|null=null;
   motivoCancelacion='';
