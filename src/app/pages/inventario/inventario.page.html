@@ -31,7 +31,7 @@
       <ion-item lines="none"><ion-label position="stacked">Forma de venta *</ion-label><ion-select [(ngModel)]="nuevoProducto.unidadMedida"><ion-select-option value="Pieza">Por pieza</ion-select-option><ion-select-option value="Kilogramo">A granel (precio por kg)</ion-select-option></ion-select></ion-item>
       <ion-item lines="none"><ion-label position="stacked">Existencia inicial ({{nuevoProducto.unidadMedida === 'Kilogramo' ? 'kg' : 'piezas'}})</ion-label><ion-input type="number" min="0" [step]="nuevoProducto.unidadMedida === 'Kilogramo' ? 0.001 : 1" [(ngModel)]="nuevoProducto.stock"></ion-input></ion-item>
       <ion-item lines="none"><ion-label position="stacked">Existencia mínima ({{nuevoProducto.unidadMedida === 'Kilogramo' ? 'kg' : 'piezas'}})</ion-label><ion-input type="number" min="0" [step]="nuevoProducto.unidadMedida === 'Kilogramo' ? 0.001 : 1" [(ngModel)]="nuevoProducto.stockMinimo"></ion-input></ion-item>
-      <ion-item lines="none"><ion-label position="stacked">Costo por {{nuevoProducto.unidadMedida === 'Kilogramo' ? 'kg' : 'pieza'}}</ion-label><ion-input type="number" min="0" step="0.01" [(ngModel)]="nuevoProducto.costo"></ion-input></ion-item>
+      <ion-item lines="none"><ion-label position="stacked">Costo por {{nuevoProducto.unidadMedida === 'Kilogramo' ? 'kg' : 'pieza'}} (opcional)</ion-label><ion-input type="number" min="0" step="0.01" placeholder="Costo pendiente" [(ngModel)]="nuevoProducto.costo"></ion-input></ion-item>
       <ion-item lines="none"><ion-label position="stacked">Precio al público por {{nuevoProducto.unidadMedida === 'Kilogramo' ? 'kg' : 'pieza'}} *</ion-label><ion-input type="number" min="0.01" step="0.01" [(ngModel)]="nuevoProducto.precioVenta"></ion-input></ion-item>
       <ion-item lines="none"><ion-label position="stacked">IVA %</ion-label><ion-input type="number" min="0" max="100" step="0.01" [(ngModel)]="nuevoProducto.tasaIva"></ion-input></ion-item>
       <ion-button class="save-entry" [disabled]="guardandoProducto" (click)="guardarProductoNuevo()">{{guardandoProducto ? 'Guardando…' : 'Guardar producto'}}</ion-button>
@@ -154,7 +154,7 @@
 
               <td>{{ producto.categoria }}</td>
 
-              <td>{{ producto.costo | currency:'MXN':'symbol':'1.2-2' }}</td>
+              <td>{{ producto.costo === null ? 'Costo pendiente' : (producto.costo | currency:'MXN':'symbol':'1.2-2') }}</td>
 
               <td>
                 {{ producto.precioVenta | currency:'MXN':'symbol':'1.2-2' }}
@@ -237,7 +237,7 @@
 
     </section>
 
-    <section class="suggestions-card" *ngIf="mostrarSugerencias"><button type="button" class="close-suggestions" aria-label="Cerrar productos por surtir" title="Cerrar" (click)="cerrarSugerencias()">×</button><div class="section-title"><div><p class="eyebrow">Reposición sugerida</p><h2>Productos por surtir</h2></div><span>{{sugerencias.length}} pendientes</span></div><div class="suggestions-grid"><article *ngFor="let item of sugerencias"><div><strong>{{item.nombre}}</strong><small>{{item.proveedor || 'Sin proveedor principal'}}</small></div><span>Existencia {{item.stock | number:'1.0-3'}} / mín. {{item.minimo | number:'1.0-3'}}</span><b>Sugerido: {{item.cantidadSugerida | number:'1.0-3'}}</b><small>Costo estimado: {{item.cantidadSugerida * item.costo | currency:'MXN'}}</small></article></div></section>
+    <section class="suggestions-card" *ngIf="mostrarSugerencias"><button type="button" class="close-suggestions" aria-label="Cerrar productos por surtir" title="Cerrar" (click)="cerrarSugerencias()">×</button><div class="section-title"><div><p class="eyebrow">Reposición sugerida</p><h2>Productos por surtir</h2></div><span>{{sugerencias.length}} pendientes</span></div><div class="suggestions-grid"><article *ngFor="let item of sugerencias"><div><strong>{{item.nombre}}</strong><small>{{item.proveedor || 'Sin proveedor principal'}}</small></div><span>Existencia {{item.stock | number:'1.0-3'}} / mín. {{item.minimo | number:'1.0-3'}}</span><b>Sugerido: {{item.cantidadSugerida | number:'1.0-3'}}</b><small *ngIf="item.costo === null">Costo pendiente</small><small *ngIf="item.costo !== null">Costo estimado: {{item.cantidadSugerida * item.costo | currency:'MXN'}}</small></article></div></section>
 
     <section class="movements-card" *ngIf="mostrarMovimientos"><button type="button" class="section-close" aria-label="Cerrar últimos movimientos" title="Cerrar" (click)="mostrarMovimientos=false">×</button><div class="section-title"><div><p class="eyebrow">Trazabilidad</p><h2>Últimos movimientos</h2></div><span>{{movimientos.length}} registros</span></div><div class="table-wrapper"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Antes</th><th>Después</th><th>Motivo</th><th>Usuario</th></tr></thead><tbody><tr *ngFor="let m of movimientos"><td>{{m.fecha | date:'short'}}</td><td>{{m.nombre}}</td><td>{{m.tipo}}</td><td>{{m.cantidad | number:'1.0-3'}} {{m.unidadMedida}}</td><td>{{m.stockAnterior | number:'1.0-3'}}</td><td>{{m.stockNuevo | number:'1.0-3'}}</td><td>{{m.motivo || '—'}}</td><td>{{m.usuario}}</td></tr></tbody></table></div></section>
 

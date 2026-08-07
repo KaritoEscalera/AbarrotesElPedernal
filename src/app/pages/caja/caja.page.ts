@@ -17,6 +17,7 @@ interface ProductoCaja {
   codigo: string | null;
   nombre: string;
   stock: number;
+  costo: number | null;
   precioVenta: number;
   tasaIva: number;
   activo: boolean;
@@ -249,6 +250,10 @@ export class CajaPage implements OnInit, OnDestroy {
   }
 
   agregar(producto: ProductoCaja): void {
+    if (producto.costo === null) {
+      this.fallar(`${producto.nombre} tiene costo pendiente. Registra primero una compra o entrada con costo real.`);
+      return;
+    }
     if (producto.stock <= 0) {
       this.fallar(`${producto.nombre} está agotado. Registra una entrada desde Inventario.`);
       return;
@@ -585,7 +590,7 @@ export class CajaPage implements OnInit, OnDestroy {
       this.api.get<ProductoCaja[]>('products'),
       this.api.get<ClienteCaja[]>('clients'),
     ]);
-    this.productos = productos.map((p) => ({ ...p, stock: Number(p.stock), precioVenta: Number(p.precioVenta), tasaIva: Number(p.tasaIva),promoValor:p.promoValor===null?null:Number(p.promoValor) }));
+    this.productos = productos.map((p) => ({ ...p, stock: Number(p.stock), costo:p.costo===null?null:Number(p.costo), precioVenta: Number(p.precioVenta), tasaIva: Number(p.tasaIva),promoValor:p.promoValor===null?null:Number(p.promoValor) }));
     this.clientes = clientes
       .filter((c) => c.activo)
       .map(c=>({...c,limiteCredito:Number(c.limiteCredito||0),adeudo:Number(c.adeudo||0),fiadosVencidos:Number(c.fiadosVencidos||0)}))

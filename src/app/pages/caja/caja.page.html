@@ -45,8 +45,8 @@
                   <span>{{ seccion.productos.length }} {{ seccion.productos.length === 1 ? 'producto' : 'productos' }}</span>
                 </header>
                 <div class="product-section-grid">
-                  <button type="button" class="product" [class.out-of-stock]="producto.stock <= 0" [disabled]="producto.stock <= 0" *ngFor="let producto of seccion.productos" (click)="agregar(producto)">
-                    <span>{{ producto.nombre }}</span><small>{{producto.stock > 0 ? 'Stock ' + producto.stock + ' ' + (esVentaGranel(producto) ? 'kg' : 'pzas.') : 'AGOTADO'}}</small><strong>{{ producto.precioVenta | currency:'MXN' }} / {{ esVentaGranel(producto) ? 'kg' : 'pza.' }}</strong>
+                  <button type="button" class="product" [class.out-of-stock]="producto.stock <= 0 || producto.costo === null" [disabled]="producto.stock <= 0 || producto.costo === null" *ngFor="let producto of seccion.productos" (click)="agregar(producto)">
+                    <span>{{ producto.nombre }}</span><small>{{producto.costo === null ? 'COSTO PENDIENTE' : producto.stock > 0 ? 'Stock ' + producto.stock + ' ' + (esVentaGranel(producto) ? 'kg' : 'pzas.') : 'AGOTADO'}}</small><strong>{{ producto.precioVenta | currency:'MXN' }} / {{ esVentaGranel(producto) ? 'kg' : 'pza.' }}</strong>
                   </button>
                 </div>
               </section>

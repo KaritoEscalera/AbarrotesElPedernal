@@ -70,6 +70,13 @@ try {
   if (Number(purchaseMovementConstraints[0].total) === 0) {
     await connection.query(`ALTER TABLE ${escapedDatabase}.movimientos_caja ADD CONSTRAINT fk_mov_caja_compra FOREIGN KEY (compra_id) REFERENCES compras(id) ON DELETE SET NULL`);
   }
+  const [productCostColumns] = await connection.query(
+    "SELECT is_nullable AS nullable,column_default AS defaultValue FROM information_schema.columns WHERE table_schema=? AND table_name='productos' AND column_name='costo'",
+    [databaseName],
+  );
+  if (productCostColumns[0]?.nullable !== 'YES' || ![null, 'NULL'].includes(productCostColumns[0]?.defaultValue)) {
+    await connection.query(`ALTER TABLE ${escapedDatabase}.productos MODIFY COLUMN costo DECIMAL(12,2) NULL DEFAULT NULL`);
+  }
   const [tables] = await connection.query(
     "SELECT COUNT(*) AS total FROM information_schema.tables WHERE table_schema = ? AND table_type = 'BASE TABLE'",
     [databaseName],

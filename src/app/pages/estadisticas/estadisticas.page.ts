@@ -10,7 +10,8 @@ import { BusinessApi } from '../../services/business-api';
 type Periodo = 'hoy' | 'ayer' | 'semana' | 'mes' | 'anio' | 'personalizado';
 type MetodoPago = 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Fiado' | 'Múltiple' | 'Otro';
 interface Venta { ventaId: number; fecha: string; hora: number; total: number; costo: number; metodo: MetodoPago; categoria: string; producto: string; unidades: number; }
-interface ProductoAnalisis { producto: string; categoria: string; stock: number; minimo: number; vendidos: number; precio: number; costo: number; diasSinVenta: number; merma: number; }
+interface ProductoAnalisis { producto: string; categoria: string; stock: number; minimo: number; vendidos: number; precio: number; costo: number|null; diasSinVenta: number; merma: number; }
+type ProductoConCosto = ProductoAnalisis & { costo: number };
 interface FiadoAnalisis { cliente: string; saldo: number; vencido: boolean; abonos: number; }
 interface CierreCaja { id: number; responsable: string; fechaApertura: string; fechaCierre: string; esperado: number; contado: number; diferencia: number; observaciones: string | null; }
 interface Recordatorio { tipo: string; titulo: string; detalle: string; nivel: 'URGENTE' | 'ATENCION'; ruta: string; }
@@ -60,7 +61,7 @@ export class EstadisticasPage implements OnInit {
     try {
       const datos = await this.conTiempoLimite(this.api.get<{ sales: Venta[]; products: ProductoAnalisis[]; credits: FiadoAnalisis[]; cashClosures: CierreCaja[]; reminders: Recordatorio[] }>('analytics'), 15000);
       this.ventas = (datos.sales ?? []).map((v) => ({ ...v, hora: Number(v.hora), total: Number(v.total), costo: Number(v.costo), unidades: Number(v.unidades) }));
-      this.productos = (datos.products ?? []).map((p) => ({ ...p, stock: Number(p.stock), minimo: Number(p.minimo), vendidos: Number(p.vendidos), precio: Number(p.precio), costo: Number(p.costo), diasSinVenta: Number(p.diasSinVenta), merma: Number(p.merma) }));
+      this.productos = (datos.products ?? []).map((p) => ({ ...p, stock: Number(p.stock), minimo: Number(p.minimo), vendidos: Number(p.vendidos), precio: Number(p.precio), costo: p.costo===null?null:Number(p.costo), diasSinVenta: Number(p.diasSinVenta), merma: Number(p.merma) }));
       this.fiados = (datos.credits ?? []).map((f) => ({ ...f, saldo: Number(f.saldo), vencido: Boolean(f.vencido), abonos: Number(f.abonos) }));
       this.cierresCaja = (datos.cashClosures ?? []).map((c) => ({ ...c, esperado: Number(c.esperado), contado: Number(c.contado), diferencia: Number(c.diferencia) }));
       this.recordatorios = datos.reminders ?? [];
@@ -93,11 +94,11 @@ export class EstadisticasPage implements OnInit {
   get totalFiado(): number { return this.fiados.reduce((suma, item) => suma + item.saldo, 0); }
   get carteraVencida(): number { return this.fiados.filter((item) => item.vencido).reduce((suma, item) => suma + item.saldo, 0); }
   get totalAbonos(): number { return this.fiados.reduce((suma, item) => suma + item.abonos, 0); }
-  get productosProblematicos(): ProductoAnalisis[] { return this.productos.filter((item) => item.stock <= item.minimo || item.diasSinVenta >= 14 || item.merma >= 4); }
-  get productosMasVendidos(): ProductoAnalisis[] {
+  get productosProblematicos(): ProductoConCosto[] { return this.productos.filter((item):item is ProductoConCosto => item.costo!==null&&(item.stock <= item.minimo || item.diasSinVenta >= 14 || item.merma >= 4)); }
+  get productosMasVendidos(): ProductoConCosto[] {
     const unidades = new Map<string, number>();
     this.ventasFiltradas.forEach((v) => unidades.set(v.producto, (unidades.get(v.producto) ?? 0) + v.unidades));
-    return this.productos.map((p) => ({ ...p, vendidos: unidades.get(p.producto) ?? 0 })).filter((p) => p.vendidos > 0).sort((a, b) => b.vendidos - a.vendidos).slice(0, 5);
+    return this.productos.map((p) => ({ ...p, vendidos: unidades.get(p.producto) ?? 0 })).filter((p):p is ProductoConCosto => p.costo!==null&&p.vendidos > 0).sort((a, b) => b.vendidos - a.vendidos).slice(0, 5);
   }
   get cierresConDiferencia(): CierreCaja[] { return this.cierresCaja.filter((c) => Math.abs(c.diferencia) >= 0.01); }
   get diferenciaAcumulada(): number { return this.cierresCaja.reduce((s, c) => s + c.diferencia, 0); }
@@ -133,7 +134,7 @@ export class EstadisticasPage implements OnInit {
     pdf.text('Estadísticas - Abarrotes El Pedernal', 14, 18);
     pdf.setFontSize(10);
     pdf.text(`Ventas: ${this.moneda(this.totalVentas)} | Utilidad: ${this.moneda(this.utilidad)} | Margen: ${this.margen.toFixed(1)}%`, 14, 27);
-    autoTable(pdf, { startY: 34, head: [['Producto', 'Categoría', 'Unidades', 'Stock', 'Margen']], body: this.productosMasVendidos.map((p) => [p.producto, p.categoria, p.vendidos, p.stock, `${(((p.precio - p.costo) / p.precio) * 100).toFixed(1)}%`]) });
+    autoTable(pdf, { startY: 34, head: [['Producto', 'Categoría', 'Unidades', 'Stock', 'Margen']], body: this.productosMasVendidos.map((p) => [p.producto, p.categoria, p.vendidos, p.stock, p.costo===null?'Costo pendiente':`${(((p.precio - p.costo) / p.precio) * 100).toFixed(1)}%`]) });
     await descargarPdf(pdf, 'estadisticas-pedernal.pdf');
   }
 

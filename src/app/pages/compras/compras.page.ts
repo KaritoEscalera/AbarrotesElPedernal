@@ -5,10 +5,10 @@ import { IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCon
 import { BusinessApi } from '../../services/business-api';
 
 interface Proveedor { id: number; empresa: string; estado: string; }
-interface Producto { id: number; nombre: string; codigo: string | null; categoria:string; costo: number; tasaIva:number; proveedorId:number|null; proveedor:string|null; }
+interface Producto { id: number; nombre: string; codigo: string | null; categoria:string; costo: number|null; tasaIva:number; proveedorId:number|null; proveedor:string|null; }
 interface Partida { productoId: number | null; cantidad: number | null; costoUnitario: number | null; lote: string; fechaCaducidad: string; }
 interface Compra { id: number; folio: string; fecha: string; proveedor: string; estado: string; metodoPago: string; pagoDetalle:string; total: number; saldoPendiente: number; }
-interface Sugerencia { productoId:number; nombre:string; stock:number; minimo:number; cantidadSugerida:number; costo:number; proveedorId:number|null; proveedor:string|null; }
+interface Sugerencia { productoId:number; nombre:string; stock:number; minimo:number; cantidadSugerida:number; costo:number|null; proveedorId:number|null; proveedor:string|null; }
 
 @Component({ selector: 'app-compras', templateUrl: './compras.page.html', styleUrls: ['./compras.page.scss','./compras-categorias.scss'], standalone: true,
   imports: [CommonModule, FormsModule, IonContent, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonButton] })
@@ -52,7 +52,7 @@ export class ComprasPage implements OnInit {
   }
   quitarPartida(index: number): void { this.partidas = this.partidas.filter((_, i) => i !== index); if (!this.partidas.length) this.agregarPartida(); }
   seleccionarProducto(partida: Partida): void { const p = this.productos.find((item) => item.id === Number(partida.productoId)); if (p && partida.costoUnitario === null) partida.costoUnitario = p.costo; }
-  usarSugerencia(s:Sugerencia):void{const cambiaProveedor=!!s.proveedorId&&Number(this.proveedorId)!==Number(s.proveedorId);if(s.proveedorId)this.proveedorId=Number(s.proveedorId);const existentes=cambiaProveedor?[]:this.partidas.filter(p=>p.productoId&&Number(p.productoId)!==Number(s.productoId));this.partidas=[...existentes,{productoId:Number(s.productoId),cantidad:Number(s.cantidadSugerida),costoUnitario:Number(s.costo),lote:'',fechaCaducidad:''}];this.mensaje=`${s.nombre} agregado a la compra sugerida.`;}
+  usarSugerencia(s:Sugerencia):void{const cambiaProveedor=!!s.proveedorId&&Number(this.proveedorId)!==Number(s.proveedorId);if(s.proveedorId)this.proveedorId=Number(s.proveedorId);const existentes=cambiaProveedor?[]:this.partidas.filter(p=>p.productoId&&Number(p.productoId)!==Number(s.productoId));this.partidas=[...existentes,{productoId:Number(s.productoId),cantidad:Number(s.cantidadSugerida),costoUnitario:s.costo===null?null:Number(s.costo),lote:'',fechaCaducidad:''}];this.mensaje=`${s.nombre} agregado a la compra sugerida. Captura el costo real de recepción.`;}
 
   abrirConfirmacion():void{const error=this.validarCompra();if(error){this.error=error;this.confirmacionVisible=false;return;}this.error='';this.confirmacionVisible=true;}
   cerrarConfirmacion():void{if(!this.guardando)this.confirmacionVisible=false;}
@@ -75,7 +75,7 @@ export class ComprasPage implements OnInit {
 
   private nuevaPartida(): Partida { return { productoId: null, cantidad: 1, costoUnitario: null, lote: '', fechaCaducidad: '' }; }
   private validarCompra():string|null{
-    if(!this.proveedorId||this.partidas.some(p=>!p.productoId||Number(p.cantidad)<=0||Number(p.costoUnitario)<0))return 'Completa proveedor, productos, cantidades y costos.';
+    if(!this.proveedorId||this.partidas.some(p=>!p.productoId||Number(p.cantidad)<=0||p.costoUnitario===null||!Number.isFinite(Number(p.costoUnitario))||Number(p.costoUnitario)<0))return 'Completa proveedor, productos, cantidades y costos reales.';
     const ids=this.partidas.map(p=>Number(p.productoId));if(new Set(ids).size!==ids.length)return 'Un producto está repetido. Conserva una sola partida y suma su cantidad.';
     if(this.metodoPago==='MIXTO'&&Math.abs(this.totalPagoMixto-this.totalCompra)>.009)return `El pago mixto debe sumar $${this.totalCompra.toFixed(2)}.`;
     if(this.partidas.some(p=>!!p.fechaCaducidad&&!p.lote.trim()))return 'Captura el lote de cada producto que tenga fecha de caducidad.';
@@ -85,9 +85,9 @@ export class ComprasPage implements OnInit {
     try {
       const [providers, products, purchases,suggestions] = await Promise.all([this.api.get<Proveedor[]>('providers'), this.api.get<Producto[]>('products'), this.api.get<Compra[]>('purchases'),this.api.get<Sugerencia[]>('purchase-suggestions')]);
       this.proveedores = providers.filter((p) => p.estado === 'ACTIVO');
-      this.productos = products.map((p) => ({ ...p, costo: Number(p.costo),tasaIva:Number(p.tasaIva||0),proveedorId:p.proveedorId?Number(p.proveedorId):null,proveedor:p.proveedor??null }));
+      this.productos = products.map((p) => ({ ...p, costo: p.costo===null?null:Number(p.costo),tasaIva:Number(p.tasaIva||0),proveedorId:p.proveedorId?Number(p.proveedorId):null,proveedor:p.proveedor??null }));
       this.compras = purchases.map((p) => ({ ...p, total: Number(p.total), saldoPendiente: Number(p.saldoPendiente) }));
-      this.sugerencias=suggestions.map(s=>({...s,stock:Number(s.stock),minimo:Number(s.minimo),cantidadSugerida:Number(s.cantidadSugerida),costo:Number(s.costo)}));
+      this.sugerencias=suggestions.map(s=>({...s,stock:Number(s.stock),minimo:Number(s.minimo),cantidadSugerida:Number(s.cantidadSugerida),costo:s.costo===null?null:Number(s.costo)}));
     } catch { this.error = 'No fue posible cargar compras y catálogos.'; }
   }
 }
