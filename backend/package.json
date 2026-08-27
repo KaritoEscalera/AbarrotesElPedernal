@@ -13,6 +13,7 @@
     "seed-users": "node scripts/seed-users.js",
     "seed-data": "node scripts/seed-data.js",
     "seed-catalog": "node scripts/seed-data.js",
+    "fill-stock": "node scripts/fill-stock.js",
     "smoke-test": "node scripts/smoke-test.js"
   },
   "dependencies": {
